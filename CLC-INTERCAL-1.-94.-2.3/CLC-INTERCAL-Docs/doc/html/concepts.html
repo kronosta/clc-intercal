@@ -1,0 +1,121 @@
+<HTML>
+    <HEAD>
+	<TITLE>CLC-INTERCAL Reference</TITLE>
+    </HEAD>
+    <BODY>
+	<H1>CLC-INTERCAL Reference</H1>
+	<H2>... Fundamental Concepts</H2>
+
+	<P>
+	Table of contents:
+	<UL>
+	    <LI><A HREF="index.html">Parent directory</A>
+	    <LI><A HREF="#history">History of INTERCAL</A>
+	    <LI><A HREF="#syntax">INTERCAL Syntax</A>
+	</UL>
+	</P>
+
+	<H2><A NAME="history">History of INTERCAL</A></H2>
+
+	<P>
+	This section will be left blank until somebody volunteers to write it.
+	</P>
+
+	<H2><A NAME="syntax">INTERCAL Syntax</A></H2>
+
+	<P>
+	INTERCAL enjoys a very simple and regular syntax. The input file is
+	completely free format. The whole program can be in one (very long) line,
+	or a newline can be inserted anywhere a space is permitted. There is
+	no need for a special statement termination symbol (like the hybrid
+	(<CODE>;</CODE>) used by C, Perl, Java, and other languages). Instead,
+	a statement simply ends when the next one starts.
+	</P>
+
+	<P>
+	Whitespace is allowed almost anywhere. The only exception is inside keywords
+	(so IGNORE cannot be written IG NORE) and numbers (so #65535 is not the
+	same as #655 35). However, if a keyword already contains a space (like
+	COME FROM), more can be added to keep it company, or the lone space can be
+	removed.
+	</P>
+
+	<P>
+	Note that a future version of CLC-INTERCAL plans to embed a
+	<A HREF="https://esolangs.org/wiki/Whitespace">Whitespace</A>
+	compiler inside the standard compiler. When that is done, whitespace
+	will be still ignored by the standard compiler, but it will have a
+	new meaning. We'll change this chapter as necessary when we do that.
+	</P>
+
+	<P>
+	A statement consists of up to five fields; only the second and fifth are
+	required, the rest being optional. When the compiler is looking for the
+	start of a statement, it will look for anything which resembles the contents
+	of the first or the second field and take it from there. The five fields
+	are:
+	<UL>
+	    <LI>Label - this is a number enclosed in parentheses, for example (1) or
+	    (65535). The number must be a positive integer less than 65536. Recent
+	    versions of CLC-INTERCAL allow computed labels if you specify the
+	    <I>computed-labels</I> compiler option: in this case any valid expression
+	    enclosed in parentheses and immediately preceding a statement identifier
+	    will count as a label.
+
+	    <LI>Statement identifier - this is one of the keywords "DO", "PLEASE", or
+	    "PLEASE DO". The programmer should achieve a good balance between these
+	    keywords, as otherwise the compiler will stop with an error. We
+	    recommend approximately one "PLEASE" every four statements. Note that
+	    CLC-INTERCAL does not currently check for a balance between politeness
+	    and rudeness, although it will one day.
+
+	    <LI>Initial ABSTAIN - this is one of the keywords "NOT" or "N'T", or
+	    <CODE>&#172;</CODE> (this is the symbol for logical negation, if the
+	    character set is ISO-8859-1 or UTF-8). See the discussion on ABSTAIN FROM in
+	    <A HREF="statements.html#abstain_from">the chapter about Statements</A>.
+
+	    <LI>Execution probability - this is the symbol double-oh-seven
+	    (<CODE>%</CODE>) followed by an expression. Before executing the statement,
+	    the value is calculated: if it is 100 or over, the statement is executed.
+	    Otherwise, the statement might or might not be executed, and the
+	    probability of executing it is the value of the expression. For
+	    compatibility with INTERCAL-72, which only accepted constant probabilities,
+	    constants can be written without the leading "#", i.e. "%#50" can be
+	    written simply "%50".
+
+	    <LI>Statement - this is described in <A HREF="statements.html">the chapter
+	    about Statements</A>, and can be composed of several subfields.
+	</UL>
+	</P>
+
+	<P>
+	For example, all the following statements are equivalent when executed:
+	<PRE><CODE>
+	DON'T PANIC
+	PLEASE DO NOT PANIC
+	PLEASE &#172; PANIC
+	DO&#172;PANIC
+	DONOTPANIC
+	</CODE></PRE>
+	</P>
+
+	<P>
+	As an aside, the above is a useful "no operation" statement which you
+	might want to know about. It does nothing, so it can't do any more damage
+	than the rest of the program already does. It can be REINSTATEd, though,
+	so you might end up executing it which will print DON'T PANIC on the terminal
+	and exit - this might also be useful.
+	</P>
+
+	<P>
+	Another common example of a &quot;no operation&quot; statement is:
+	<PRE><CODE>
+	DON'T GIVE UP
+	</CODE></PRE>
+	Unlike the previous example, this one cannot be reinstated, so il will
+	always be a very safe statement to execute.
+	</P>
+
+    </BODY>
+</HTML>
+

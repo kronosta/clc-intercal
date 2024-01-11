@@ -1,0 +1,273 @@
+<HTML>
+    <HEAD>
+	<TITLE>CLC-INTERCAL Reference</TITLE>
+    </HEAD>
+    <BODY>
+	<H1>CLC-INTERCAL Reference</H1>
+	<H2>... Classes and Lectures</H2>
+
+	<P>
+	Table of contents:
+	<UL>
+	    <LI><A HREF="index.html">Parent directory</A>
+	    <LI><A HREF="#lectures">Classes and Lectures</A>
+	</UL>
+	</P>
+
+	<H2><A NAME="lectures">Classes and Lectures</A></H2>
+
+	<P>
+	CLC-INTERCAL introduces a concept of classes and lectures which can be
+	used to build object-oriented programs.
+	</P>
+
+	<P>
+	Conceptually, a class is a place where you go and learn. This might differ
+	from the concept by the same name in other languages, but is perfectly
+	consistent with English usage of the word. To define a class, we need to
+	list which subjects one can learn there. We do this using the related
+	concept of <EM>lecture</EM>.
+	</P>
+
+	<P>
+	A lecture is more specialised than a class, in that you learn just one
+	subject. Like everything else in INTERCAL, subject are identified by a
+	number; lectures, on the other hand, are identified by a label. Just for
+	completeness, we mention here that classes are identified by a whirlpool
+	(<CODE>@</CODE>) register.
+	</P>
+
+	<P>
+	To tell the compiler that a lecture happens at (1000) in class <CODE>@2</CODE>,
+	and the subject of the lecture is <CODE>#5</CODE>, you say:
+<PRE><CODE>
+	DO STUDY #5 AT (1000) IN CLASS @2
+</CODE></PRE>
+	</P>
+
+	<P>
+	There is no need to explicitely define classes. The above line implies the
+	existence of a class numbered <CODE>@2</CODE>, and if several such lines
+	mention the same class then we know that all these subjects are taught there.
+	</P>
+
+	<P>
+	Note that the labels must exist, as the program will need to execute there.
+	However, the labels only need to exist when the LEARNS statement is executed,
+	and they do not need to exist when the STUDY is executed.
+	</P>
+
+	<P>
+	Once you have defined a class, you might want to have some students there.
+	Other languages create objects from a class. We don't. The object is there
+	before, and becomes a student by asking:
+<PRE><CODE>
+	PLEASE ENROL :2 TO LEARN #5 + #7
+</CODE></PRE>
+	</P>
+
+	<P>
+	This means, look for a class which teaches subjects <CODE>#5</CODE> and
+	<CODE>#7</CODE>, and make a note that <CODE>:2</CODE> now studies there.
+	<CODE>:2</CODE> can also study elsewhere. This is not a problem. Other
+	languages make a very big fuss about this and call it "multiple inheritance",
+	but it's all very simple as you'll see soon.
+	</P>
+
+	<P>
+	In fact, let's step back and define two classes:
+<PRE><CODE>
+	DO STUDY #5 AT (1000) IN CLASS @2
+	DO STUDY #7 AT (1100) IN CLASS @2
+	PLEASE STUDY #8 AT (1200) IN CLASS @2
+
+	DO STUDY #5 AT (2000) IN CLASS @5
+	DO STUDY #7 AT (2100) IN CLASS @5
+	PLEASE STUDY #9 AT (2200) IN CLASS @5
+</CODE></PRE>
+	</P>
+
+	<P>
+	We first note that now just asking to learn <CODE>#5</CODE> and <CODE>#7</CODE>
+	is not enough, as both classes teach these subjects. If you try that, you get
+	a CLASS WAR error. Intuitively, both classes are trying to get you as a student.
+	But this is easy to fix, just ask for <CODE>#8</CODE> or <CODE>#9</CODE>, as
+	appropriate. Let's now enrol three students:
+<PRE><CODE>
+	DO ENROL :1 TO LEARN #8
+
+	DO ENROL .2 TO LEARN #5 + #9
+
+	PLEASE ENROL ,3 TO LEARN #5 + #8
+	DO ENROL ,3 TO LEARN #7 + #9
+</CODE></PRE>
+	</P>
+
+	<P>
+	As a result, <CODE>:1</CODE> is in class <CODE>@2</CODE>, <CODE>.2</CODE> is
+	in class <CODE>@5</CODE>, and <CODE>,3</CODE> is in both classes. So what
+	happens when one of them wants to learn something?
+<PRE><CODE>
+	DO :1 LEARNS #5
+	DO .2 LEARNS #5
+	DO ,3 LEARNS #5
+</CODE></PRE>
+	</P>
+
+	<P>
+	Here the first statement will attend lecture at (1000), because <CODE>:1</CODE>
+	is in class <CODE>@2</CODE>, while the second attends the night lecture at
+	(2000), because <CODE>.2</CODE> is in class <CODE>@5</CODE>. What happens
+	with the third statement? <CODE>,3</CODE> is in both classes, so you get
+	a CLASS WAR error.
+	</P>
+
+	<P>
+	If you want to start afresh, you can remove any current ENROLment with:
+<PRE><CODE>
+	DO ,3 GRADUATES
+</CODE></PRE>
+	After this, you can ENROL again, and you know for sure what class you are in.
+	</P>
+
+	<P>
+	Having described the classes and students, it's about time to go to the
+	lectures. This is what other languages might call methods, except that other
+	languages don't select classes by example (find a class with methods "open",
+	"close", and "print" - it could be a useful extension to C++, Java, and Perl)
+	</P>
+
+	<P>
+	A lecture is identified by a label. When a student asks to study a subject,
+	program execution continues at that label until the statement FINISH LECTURE
+	is executed, at which point execution resumes where it was before. Note that
+	there are separate stacks for lectures and NEXT, so FORGETting any number of
+	levels will not change the return point for a lecture. It also allows very
+	interesting execution paths as there are two independent ways of executing
+	subroutines. For example, you can have a NEXT (or NEXT FROM) which is
+	executed inside a lecture, then FINISH LECTURE. That gets back just after
+	the LEARNS statement, however you are still allowed to RESUME. Just don't
+	ask us where you end up executing.
+	</P>
+
+	<P>
+	Within a lecture, the class register (<CODE>@</CODE><I>nnn</I>) is made
+	to belong to the student. So in lecture (1000) you can use <CODE>$@2</CODE>
+	for the student. The FINISH LECTURE statement automatically removes this
+	belong to relation. You can change that as well, but you are likely to run
+	into problems if you do.
+	</P>
+
+	<P>
+	Although not recommended, a whirlpool register is just a normal register
+	with special data stored in it; in particular, it behaves like a one
+	dimensional array in which subscripts are subjects and the corresponding
+	values are the lecture labels: therefore the following two statements
+	are actually equivalent:
+<PRE><CODE>
+	DO STUDY #5 AT (1000) IN CLASS @2
+	DO @2 SUB #5 &lt; #1000
+</CODE></PRE>
+	Assigning a value less than #1000 to an element of a whirlpool register
+	results in a splat, exactly like using a label less than (1000) in a
+	STUDY statement. Unlike normal arrays, accessing a subscript which has
+	never been assigned to produces a splat (Invalid subject). Also note
+	that referring to a whirlpool register may also have special meanings
+	unrelated to classes. We don't discuss these special meaning here, other
+	than to note that the syntax described in this chapter will never trigger
+	this special meaning, and that assignments to a whirlpool register
+	without subscripts is definitely not a class operation.
+	</P>
+
+	<P>
+	Let us conclude our discussion with an example, actually used in the Turing
+	Machine program which comes with the compiler. Class <CODE>@1</CODE>
+	implements 16 bit increment and decrement (inspired from the lib/plus.i
+	program in C-INTERCAL's code pit, but modified to avoid using NEXT and
+	similar horrors, using the much cleaner computed COME FROM). The student
+	<CODE>.2</CODE> learns <CODE>#1</CODE> (increment) a total of six times,
+	and <CODE>#2</CODE> (decrement) twice, so the end result is to add 4 to
+	the register. As for <CODE>.1</CODE>, that just gets incremented once
+	and decremented twice. And in fact the program prints MCCXXXVIII (1238)
+	followed by M (1000).
+<PRE><CODE>
+	    PLEASE STUDY #1 AT (1000) IN CLASS @1
+	    PLEASE STUDY #2 AT (2000) IN CLASS @1
+
+	    PLEASE ENROL .1 TO LEARN #1
+	    PLEASE ENROL .2 TO LEARN #1 + #2
+
+	    DO .1 &lt;- #1001
+	    DO .2 &lt;- #1234
+	    PLEASE .2 LEARNS #1
+	    DO .2 LEARNS #1
+	    DO .1 LEARNS #1
+	    DO .2 LEARNS #1
+	    DO .2 LEARNS #2
+	    DO .2 LEARNS #1
+	    PLEASE .2 LEARNS #1
+	    DO .1 LEARNS #2
+	    DO .1 LEARNS #2
+	    DO .2 LEARNS #1
+	    DO .2 LEARNS #2
+	    DO READ OUT .2
+	    PLEASE READ OUT .1
+	    DO GIVE UP
+
+    (1000)  PLEASE STASH .65530 + .65531 + .65532
+	    DO .65530 &lt;- $@1 ~ #65535
+	    DO .65531 &lt;- #1
+	    PLEASE COME FROM (1001)
+	    DO .65532 &lt;- .65530 ~ #1
+	    DO .65532 &lt;- '.65532 &#162; .65532' ~ #3
+	    DO .65532 &lt;- '.65532 &#162; .65532' ~ #15
+	    DO .65532 &lt;- '.65532 &#162; .65532' ~ #255
+	    DO .65532 &lt;- '.65532 &#162; .65532' ~ #65535
+    (1002)  DO .65532 &lt;- #1002 ~ .65532
+	    DO $@1 &lt;- "&#165; '.65531 &#162; "$@1 ~ #65535"'" ~ '#0 &#162; #65535'
+	    PLEASE RETRIEVE .65530 + .65531 + .65532
+	    PLEASE FINISH LECTURE
+	    PLEASE COME FROM .65532
+	    DO .65532 &lt;- #0
+	    DO .65530 &lt;- .65530 ~ #65534
+    (1001)  DO .65531 &lt;- '.65531 &#162; #1' ~ '#65535 &#162; #1'
+
+    (2000)  PLEASE STASH .65530 + .65531 + .65533
+	    DO .65530 &lt;- $@1 ~ #65535
+	    DO .65531 &lt;- #1
+	    PLEASE COME FROM (2001)
+	    DO .65533 &lt;- .65530 ~ #1
+	    DO .65533 &lt;- '.65533 &#162; .65533' ~ #3
+	    DO .65533 &lt;- '.65533 &#162; .65533' ~ #15
+	    DO .65533 &lt;- '.65533 &#162; .65533' ~ #255
+	    DO .65533 &lt;- '.65533 &#162; .65533' ~ #65535
+    (2002)  DO .65533 &lt;- #2002 ~ .65533
+	    DO .65533 &lt;- #0
+	    DO .65530 &lt;- .65530 ~ #65534
+    (2001)  DO .65531 &lt;- '.65531 &#162; #1' ~ '#65535 &#162; #1'
+	    PLEASE COME FROM .65533
+	    DO $@1 &lt;- "&#165; '.65531 &#162; "$@1 ~ #65535"'" ~ '#0 &#162; #65535'
+	    PLEASE RETRIEVE .65530 + .65531 + .65533
+	    PLEASE FINISH LECTURE
+</CODE></PRE>
+	</P>
+
+	<P>
+	This program is available in the Docs package as
+	&quot;doc/examples/increment-decrement.i&quot;. To compile it to Perl:
+<PRE><CODE>
+	sick -lObject increment-decrement.i
+</CODE></PRE>
+	This produces "increment-decrement.io", which is an executable. Alternatively,
+	run it directly with:
+<PRE><CODE>
+	sick -lRun increment-decrement.i
+</CODE></PRE>
+	</P>
+
+	<P>
+	We feel no need to comment on the program, as it is self-exlanatory.
+	</P>
+
+</BODY>
+</HTML>

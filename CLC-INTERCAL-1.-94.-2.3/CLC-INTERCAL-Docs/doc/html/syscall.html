@@ -1,0 +1,362 @@
+<HTML>
+    <HEAD>
+	<TITLE>CLC-INTERCAL Reference</TITLE>
+    </HEAD>
+    <BODY>
+	<H1>CLC-INTERCAL Reference</H1>
+	<H2>... The system call interface</H2>
+
+	<P>
+	Table of contents:
+	<UL>
+	    <LI><A HREF="index.html">Parent directory</A>
+	    <LI><A HREF="#compiling">Compiling a program with system
+		call support</A>
+	    <LI><A HREF="#using">Using the system call interface</A>
+	    <LI><A HREF="#list">List of available calls</A>
+	</UL>
+	</P>
+
+	<H2><A NAME="compiling">Compiling a program with system call support</A></H2>
+
+	<P>
+	Syscall is a standard compiler extension, so programs must include the
+	appropriate compile option to use it.
+	</P>
+	
+	<P>
+	The command-line compiler tool,
+	<I>sick</I>, automatically enables the Syscall extension if the program
+	suffix includes the letter &quot;s&quot;.
+	Alternatively, if you are not relying on <I>sick</I>'s guesses and
+	are specifying a list of preloads yourself, just add <I>-psyscall</I>
+	to your command line.
+	</P>
+
+	<P>
+	Using the INTERCAL Calculator, INTERCALC, you can easily add Syscall
+	support by selecting &quot;syscall&quot; from the Options menu or by
+	adding <I>-osyscall</I> to the command line.
+	</P>
+
+	<P>
+	The <I>syscall</I> compiler object, which implements this extension,
+	uses direct access to the runtime's internal state and other undocumented
+	methods to extend the runtime as necessary to support its functions.
+	If you really want to know, look at the assembler source in
+	<CODE>INTERCAL/Include/syscall.iasm</CODE> in the CLC-INTERCAL-Base distribution.
+	</P>
+
+	<H2><A NAME="using">Using the system call interface</A></H2>
+
+	<P>
+	The system call interface adds a hidden &quot;DO NEXT FROM (666)&quot; 
+	somewhere in your operating system. This means that when your program
+	uses label (666) you do a system call as soon as the corresponding
+	statement is executed.
+	</P>
+
+	<P>
+	The system call interface will access your program's registers to
+	execute. All registers accessed this way will have the same number,
+	for example .1 and ;1 - what number is actually used depends on
+	the last assignment you've made just before the system call.
+	For example, the fragment:
+<PRE>
+	DO :6 &lt;- #1
+(666)	DO READ OUT .1
+</PRE>
+	would use registers with number 6 - because the last register being
+	assigned to was :6. Since one must always provide a system call
+	number in a spot register, it is good practice to assign this number
+	in a statement with label (666) - this will have the side effect
+	of making sure the last assignment is to the correct register number.
+	For example:
+<PRE>
+(666)	DO .6 &lt;- #2
+	DO READ OUT ,6
+</PRE>
+	executes system call #2 (because .6 contains the system call code),
+	which just happens to store its result in ,6 (because it returns a
+	tail array, and it would naturally use the tail array with the same
+	register number). The second statement would therefore produce
+	&quot;CLC-INTERCAL&quot; as output, since system call #2 returns
+	the name of the compiler.
+	</P>
+
+	<H2><A NAME="list">List of available calls</A></H2>
+
+	<P>
+	In the following list, we use a cross (&quot;X&quot;) instead of a
+	register number, to remind the reader that the actual number used
+	depends on the most recent assignment before the system call was
+	executed. Also remember that the system call number is in the spot
+	register (.X). After the list of calls, a more extensive description,
+	or even an example, may follow for some of the calls.
+	</P>
+
+	<TABLE>
+	    <TR>
+		<TH>Number</TH>
+		<TH>Description</TH>
+		<TH>Registers modified</TH>
+	    </TR>
+	    <TR>
+		<TD>#0</TD>
+		<TD>No operation</TD>
+		<TD>-</TD>
+	    </TR>
+	    <TR>
+		<TD>#1</TD>
+		<TD>Store version number in ,X</TD>
+		<TD>,X</TD>
+	    </TR>
+	    <TR>
+		<TD>#2</TD>
+		<TD>Store compiler name in ,X</TD>
+		<TD>,X</TD>
+	    </TR>
+	    <TR>
+		<TD>#3</TD>
+		<TD>Open file using path in ,X and mode in :X</TD>
+		<TD>@X</TD>
+	    </TR>
+	    <TR>
+		<TD>#4</TD>
+		<TD>Reset (seek to position 0) file @X</TD>
+		<TD>@X</TD>
+	    </TR>
+	    <TR>
+		<TD>#5</TD>
+		<TD>Seek file @X to position :X</TD>
+		<TD>@X</TD>
+	    </TR>
+	    <TR>
+		<TD>#6</TD>
+		<TD>Open TCP socket using name in ,X and mode in :X</TD>
+		<TD>@X</TD>
+	    </TR>
+	    <TR>
+		<TD>#7</TD>
+		<TD>Toggle newline handling</TD>
+		<TD>-</TD>
+	    </TR>
+	</TABLE>
+
+	<P>
+	System calls #3 and #6 take their name from ,X - call #3 interprets
+	the name as a local file path, while call #6 interprets it as a
+	SERVER:PORT string, where SERVER can be a DNS name or IP address,
+	and PORT can be a port number or service name. The file access mode
+	in :X is one of:
+	<TABLE>
+	    <TR>
+		<TH>Mode</TH>
+		<TH>Meaning</TH>
+	    </TR>
+	    <TR>
+		<TD ALIGN="RIGHT">#97</TD>
+		<TD>Appending (like #114, but always at end of file); file is created if it does not exist</TD>
+	    </TR>
+	    <TR>
+		<TD ALIGN="RIGHT">#114</TD>
+		<TD>Reading out (that is, output only); file is created or truncated</TD>
+	    </TR>
+	    <TR>
+		<TD ALIGN="RIGHT">#117</TD>
+		<TD>Updating (that is, reading in and writing out); file is created if it does not exist</TD>
+	    </TR>
+	    <TR>
+		<TD ALIGN="RIGHT">#119</TD>
+		<TD>Writing in (that is, input only); file must already exist</TD>
+	    </TR>
+	    <TR>
+		<TD ALIGN="RIGHT">#353</TD>
+		<TD>Appending (like #97)</TD>
+	    </TR>
+	    <TR>
+		<TD ALIGN="RIGHT">#370</TD>
+		<TD>Reading out, like #114, but the file is not truncated if it already exists</TD>
+	    </TR>
+	    <TR>
+		<TD ALIGN="RIGHT">#373</TD>
+		<TD>Updating; same as #117</TD>
+	    </TR>
+	    <TR>
+		<TD ALIGN="RIGHT">#375</TD>
+		<TD>Updating, same as #117</TD>
+	    </TR>
+	</TABLE>
+	The resemblance of the first four codes with the ASCII codes for the letters &quot;a&quot;,
+	&quot;r&quot;, &quot;u&quot; and &quot;w&quot; is purely coincidental and should not be
+	construed as having any meaning; likewise, the resemblance of the other four codes with
+	the first four plus #256.
+	</P>
+
+	<P>
+	System call #7 affects all alphanumeric READ OUT in <I>sick</I> mode; it is not
+	localised to a specific filehandle. Normally, after an alphanumeric READ OUT
+	the runtime adds a newline character; executing system call #7 disables this;
+	executing the call again re-enables the newline.
+	</P>
+
+	<P>
+	Here is a simple example of using system calls #1, #2 and #7 to print the
+	name and version number of the compiler:
+<PRE>
+(666)	DO .1 &lt;- #2
+	DO ,2 &lt;- #3
+	DO ,2 SUB #1 &lt;- #91
+	DO ,2 SUB #2 &lt;- #95
+	DO ,2 SUB #3 &lt;- #68
+(666)	DO .3 &lt;- #1
+	DO ,4 &lt;- #3
+	DO ,4 SUB #1 &lt;- #91
+	DO ,4 SUB #2 &lt;- #95
+	DO ,4 SUB #3 &lt;- #66
+(666)   DO .1 &lt;- #7
+	PLEASE READ OUT ,1 + ,2 + ,3 + ,4
+	PLEASE GIVE UP
+</PRE>
+	The first line uses system call #2 to get the compiler name into ,1; the
+	next four lines prepare ,2 to contain a single space; after that, system
+	call #1 provides the compiler version number; then ,4 is prepared to
+	contain a newline; system call #7 disables the automatic newline.
+	finally, the four arrays are READ OUT, producing something like
+	&quot;<I>compiler-name</I> <I>version</I>&quot;, or, at the time of writing,
+	&quot;CLC-INTERCAL 1.-94.-2.1&quot; - the source for this example can be
+	found in <CODE>doc/examples/syscall1.si</CODE> in the CLC-INTERCAL-Docs
+	distribution.
+	</P>
+
+	<P>
+	A more interesting example (from <CODE>examples/http-get.si</CODE>) shows
+	how to use system call #6 to obtain a network socket, send a request to it
+	and print the results. Compile it with:
+<PRE>
+	sick -lObject http-get.si
+</PRE>
+	then run it with (for example)
+<PRE>
+	./http-get.io
+	google.com:80
+	/
+</PRE>
+	or provide your own input: a SERVER:PORT in the first line, and a path
+	within the server in the second line. Note that https is not supported and
+	many sites will just reply with a redirect, which won't be followed.
+	Implementing TLS is left as an exercise to the reader.
+	</P>
+
+	<P>
+	Here follows the source code for this example:
+<PRE>
+	PLEASE NOTE: READING SERVER:PORT
+	DO ,1 &lt;- #1024
+	DO WRITE IN ,1
+
+	PLEASE NOTE: READING PATH
+	DO ,2 &lt;- #1024
+	DO WRITE IN ,2
+
+	PLEASE NOTE: OPENING HTTP CONNECTION (OR SPLAT)
+	DO :1 &lt;- #117
+(666)	DO .1 &lt;- #6
+
+	PLEASE NOTE: SENDING HTTP REQUEST
+	PLEASE DO ;1 &lt;- #4
+	DO ;1 SUB #1 &lt;- #18
+	DO ;1 SUB #2 &lt;- #247
+	DO ;1 SUB #3 &lt;- #365
+	DO ;1 SUB #4 &lt;- #277
+	PLEASE DO ,3 &lt;- #14
+	DO ,3 SUB #1 &lt;- #91
+	DO ,3 SUB #2 &lt;- #95
+	DO ,3 SUB #3 &lt;- #68
+	DO ,3 SUB #4 &lt;- #84
+	DO ,3 SUB #5 &lt;- #80
+	DO ,3 SUB #6 &lt;- #80
+	DO ,3 SUB #7 &lt;- #86
+	PLEASE DO ,3 SUB #8 &lt;- #91
+	DO ,3 SUB #9 &lt;- #93
+	DO ,3 SUB #10 &lt;- #87
+	DO ,3 SUB #11 &lt;- #92
+	DO ,3 SUB #12 &lt;- #86
+	DO ,3 SUB #13 &lt;- #72
+	DO ,3 SUB #14 &lt;- #66
+(666)	DO .1 &lt;- #7
+	DO READ OUT @1 + ;1 + ,2 + ,3
+	PLEASE DO ,3 &lt;- #4
+	DO ,3 SUB #1 &lt;- #91
+	DO ,3 SUB #2 &lt;- #95
+	DO ,3 SUB #3 &lt;- #72
+	DO ,3 SUB #4 &lt;- #66
+	PLEASE DO ;1 &lt;- #6
+	DO ;1 SUB #1 &lt;- #29
+	DO ;1 SUB #2 &lt;- #1098
+	DO ;1 SUB #3 &lt;- #2574
+	DO ;1 SUB #4 &lt;- #692
+	DO ;1 SUB #5 &lt;- #105
+	DO ;1 SUB #6 &lt;- #213
+	DO READ OUT @1 + ;1 + ,1 + ,3
+	DO READ OUT @1 + ,3
+
+	PLEASE NOTE: GETTING RESULT AND PRINTING IT
+	PLEASE DO ;1 &lt;- #1024
+	PLEASE DO .1 &lt;- #0
+	DO COME FROM .1
+	DO WRITE IN @1 + ;1
+	DO READ OUT @2 + ;1
+(1)	DO .1 &lt;- ';1 SUB #1 ~ ;1 SUB #1' ~ #1
+	PLEASE GIVE UP
+</PRE>
+	</P>
+
+	<P>
+	The program is mostly self explanatory, but we'll explain it anyway. The
+	first few lines get the two lines you type; then system call #6 is
+	used to open a TCP socket; note that the last assignment is to .1, so
+	that the access mode is taken from :1 (#117 - reading out and writing in)
+	and the network address from ,1 (whatever you typed).
+	</P>
+	
+	<P>
+	The next block
+	creates the string &quot;GET&nbsp;&quot; in ;1 and &quot;&nbsp;HTTP/1.0\r\n&quot;
+	in ,3 (\r\n represents a carriage return, line feed sequence). A call to
+	system call #7 disables the automatic newline, which we must do because
+	network servers expect a carriage return, line feed instead. We are now
+	ready to send out ;1 + ,2 + ,3 or in other words &quot;GET <I>path</I> HTTP/1.0&quot;
+	to the server (note that @1 has been connected to the network socket).
+	</P>
+
+	<P>
+	Following, the carriage return, line feed sequence is stored in ,3 and
+	the string &quot;Host:&nbsp;&quot; is stored in ;1 - this means that
+	the next READ OUT sends &quot;Host: <I>server</I>:<I>port</I>&quot; to
+	the HTTP server, just as it expects to be able to resolve the virtual
+	host name, if necessary; the READ OUT ,3 just produces a blank line,
+	to indicate the end of the request.
+	</P>
+
+	<P>
+	The last block of the program writes the reply from the server in
+	and reads it out to the user; this is done by dimensioning ;1 to
+	hold 1024 characters (you can increase the buffer size, of course),
+	writing that in using the TCP socket filehandle, and reading it
+	out again using the standard read filehandle (@2); the runtime signals
+	that a block is less than 1024 characters by filling all unused elements
+	of ;1 with #0 - at end of file, no elements will be used, so ;1 SUB #1
+	will be #0 (the runtime guarantees that this element will be nonzero if
+	there has been any data received from the server). Therefore the
+	assignment to .1 results in the computed COME FROM a few lines earlier
+	to execute if there is more data, or to do nothing at end of file.
+	</P>
+
+	<P>
+	More system calls may be planned for future versions of CLC-INTERCAL,
+	but we aren't telling at the moment
+	</P>
+    </BODY>
+</HTML>
+

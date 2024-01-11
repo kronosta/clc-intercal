@@ -1,0 +1,21 @@
+CLC-INTERCAL 1.-94.-2.3 -- Line-oriented text interface
+
+This package extends the standard "batch mode" interface to CLC-INTERCAL
+with command-line editing, command history and command completion.
+At present, only the INTERCAL calculator, "intercalc", uses this interface,
+although a future release of "sick" will be able to use it as well.
+
+CLC-INTERCAL Base 1.-94.-2.3 or newer must be installed before this
+package.
+
+To install, run:
+
+    perl Makefile.PL
+    make
+    make test
+    make install
+
+Note that Term::ReadLine and Term::ReadLine::Gnu are required by this
+interface. Term::ReadLine::Perl is not supported at present. Makefile.PL
+will print a warning if it cannot find Term::ReadLine::Gnu.
+

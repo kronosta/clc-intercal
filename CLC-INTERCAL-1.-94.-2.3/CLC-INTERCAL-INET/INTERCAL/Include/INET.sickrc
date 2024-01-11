@@ -1,0 +1,31 @@
+PLEASE NOTE: This configuration file adds INTERNET support to the Base
+	     compiler, and defines defaults for the INTERNET module.
+
+Copyright (c) 2023 Claudio Calvelli, all rights reserved.
+
+CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+and distribute it is granted provided that the conditions set out in the
+licence agreement are met. See files README and COPYING in the distribution.
+
+PERVERSION "CLC-INTERCAL/INET INTERCAL/Include/INET.sickrc 1.-94.-2.1"
+
+DO NOTE: Adding suffix "r" for INTERNET programs.
+I CAN UNDERSTAND .@r@i
+	AS "INTERcal NETworking"
+	WITH internet
+	RETRYING .@i
+
+DO NOTE: Default INTERNET port
+I CAN BLURT 64928
+
+DO NOTE: Default IPv6 multicast groups
+I DON'T READ
+I CAN READ ff02::1 THROWING 1
+PLEASE NOTE that other groups can be added here
+
+DO NOTE: Default IPv6 multicast hop limits
+I DON'T THROW
+I CAN THROW 0 TO 1
+I CAN THROW 1 TO 2
+I CAN THROW 10
+

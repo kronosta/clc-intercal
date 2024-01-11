@@ -1,0 +1,19 @@
+	PLEASE NOTE: THIS FILE, LOADED AFTER ick.io, CHANGES THE "COME FROM"
+		     STATEMENT TO BEHAVE LIKE Threaded INTERCAL
+		     THIS WOULD CORRESPOND TO THE OLD THICK COMPILER,
+		     OR TO A MODERN ick -m; THIS WORKS WITH sick.io TOO.
+
+Copyright (c) 2006-2008 Claudio Calvelli, all rights reserved.
+
+CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+and distribute it is granted provided that the conditions set out in the
+licence agreement are met. See files README and COPYING in the distribution.
+
+PERVERSION "CLC-INTERCAL/Base INTERCAL/Include/thick.iacc 1.-94.-2"
+
+	DO ?TYPE <- ?OPTION
+	DO STASH %BA
+	DO %BA <- #2
+	DO %CF <- '%CF ~ #2' ¢ #1
+	DO RETRIEVE %BA
+	DO GIVE UP

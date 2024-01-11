@@ -1,0 +1,28 @@
+Changes from CLC-INTERCAL 1.-94.-2.2 to 1.-94.-2.3
+
+* Fixed a crash when data arrived before the program was ready to
+  received it. This could happen for example with a multiline paste.
+
+* Updated Makefile.PL for the build system changes
+
+Changes from CLC-INTERCAL 1.-94.-2.1 to 1.-94.-2.2
+
+* Updated test 00use.t to match changes in Base package
+
+Changes from CLC-INTERCAL 1.-94.-2 to 1.-94.-2.1
+
+* Added a test that ReadLine has initialised correctly and is not trying
+  to fall back to a dumb version, which is currently not supported and
+  would cause a runtime error later. Now the interface will refuse to
+  start and the caller (usually intercalc) can fall back to the next one
+  in the list.
+
+* Added a configuration file, UI-Line.sickrc, to register this interface
+  when it is installe.
+
+* Changed t/00use.t to use Language::INTERCAL::Distribute
+
+Changes from CLC-INTERCAL 1.-94.-3 to 1.-94.-2
+
+* Created a new package with the "Line" user interface.
+

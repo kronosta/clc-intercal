@@ -1,0 +1,116 @@
+CLC-INTERCAL 1.-94.-2.3 -- INTERNET
+
+This package provides INTERNET support for CLC-INTERCAL.
+
+To install this package, you must have CLC-INTERCAL 1.94.-2.3 or newer.
+Additionally, Socket6 and IO::Socket::INET6 are highly recommended,
+and necessary for IPv6 support.
+
+To check the configuration, run:
+
+    perl Makefile.PL
+
+if that emits a message about being unable to find a network interface
+detection module, you need to install Net::Interface version 1.0 or
+newer (if possible, the build system will try to build a different
+module which is included in the distribution).  See the end of this
+document for information.
+
+To build and install, run:
+
+    make
+    make install
+
+Optionally, run "make test" before "make install", but please note that some
+tests rely on a network connection being present and allowing DNS lookups;
+to skip these tests, create a file "t/.skip-network" before running
+"make test". Some other tests use a network connection to localhost and run
+even if that file exist, but if you create a file "t/.skip-localhost" these
+will be skipped too.  Delete the files again to re-enable these tests.
+
+If the Makefile.PL detects that it can build the XS-based module
+Getifnames.xs but then the build fails, please install Net::Interface
+(see the end of this document) and then retry with:
+
+    make realclean
+    perl Makefile.PL --avoid-xs
+    make
+
+and if the build now succeeds you might have found a system where the
+detection failed for some reason. Please report a bug including all
+relevant information like operating system, system architecture,
+name and version of the installed C compiler, version of Perl.  And
+of course the error messages produced by the failed build.
+
+
+Important notes
+--------- -----
+
+When this extension is loaded, the program will automatically start a
+theft server if one isn't found already running on the local computer.
+As there isn't yet an official port assignment for this, the port is
+stored in the file INET,sickrc, and should be changed when an official
+assignment is available. Look for the line:
+
+    I CAN BLURT 64928
+
+and change the number as appropriate. You may also want to run your
+INTERNET applications using a nonstandard port, but doing so will make
+locally running programs incompatible with programs running elsewhere,
+so stealing from remote systems will not succeed - unless of course one
+has agreed on a port number with the remote system's admin.
+
+To locate other INTERNET programs, the system uses IPv4 broadcasts and
+IPv6 multicasts. While the broadcasts can only reach local systems, the
+multicasts are not limited to that if you have working multicast routing.
+The default is to use the "all nodes" group with local scope, which
+essentially imitates an IPv4 broadcast in IPv5, but this can be changed
+for example to use non-local scopes and/or define your own "all
+INTERNET programs" group. The default is set in INET.sickrc by the line:
+
+    I CAN READ ff02::1
+
+and that can be changed or added to (multiple multicast groups are
+supported if the line is repeated).
+
+An unusual feature of the INTERNET is that one can steal filehandles and they
+will continue working. For example, if an INTERCAL program with the INTERNET
+extension runs on computer A and has standard write redirected from a file,
+then another program on computer B can steal that standard write filehandle
+and will be able to write in from that file, even if the file is not on a
+networked filesystem (because it's been stolen, however, the program which
+opened the file can no longer use it - smuggling, on the other hand will allow
+to share a file between computers). This feature has been used to create a
+network-wide clipboard in which a server (a simple INTERCAL program) just
+opens a file and then does nothing; clients then SMUGGLE the filehandle
+and store the clipboard contents on it - automagically sharing it over the
+network. Moreover, the server can be found using IPv4 broadcast or IPv6
+multicast, so there is never any need for the user to know where it is running.
+
+
+If the Makefile.PL cannot find a network interface module
+---------------------------------------------------------
+
+If the build system determines that the network interface module provided
+won't build on the target system, or if there is any other problem with
+that module, the fall-back is to use Net::Interface, version 1.0 or
+newer. This module can be found on CPAN, but there are some system-specific
+notes:
+
+On NetBSD, we found that neither Net::Interface nor IO::Interface actually
+worked as distributed but a simple patch fixed Net::Interface. The patch is
+available at:
+    https://uilebheist.srht.site/patches/NetBSD-Net-Interface.patch
+
+On other systems, if they provide a package for Net::Interface just
+use it. On Debian it is "libnet-interface-perl". If there is no
+package, it is easy to build it from sources; however if it gives
+an error when running Makefile.PL this can be fixed by thie patch:
+    https://uilebheist.srht.site/patches/Net-Interface-Makefile.patch
+
+We are looking into alternatives to avoid the above issues. However of
+all the available modules which could provide the same information,
+Net::Interface was the only one which worked on all our test systems.
+For example, IO::Interface and IO::Interface::Simple didn't work at all
+on many systems, and we couldn't see an easy way to fix them.
+

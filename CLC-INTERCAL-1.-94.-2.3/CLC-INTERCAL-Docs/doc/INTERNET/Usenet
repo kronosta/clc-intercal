@@ -1,0 +1,155 @@
+Newsgroups: alt.lang.intercal
+From: Claudio Calvelli <news@uilebheist.spamtrap.spamtrap>
+Subject: Networking proposal (Re: INTERCAL for the FUTURE)
+References: <1165445578.461743.50720@79g2000cws.googlegroups.com> <slrnenfnuu.5nm.news@intercal.dyn-o-saur.com> <1165616760.921117.82220@f1g2000cwa.googlegroups.com> <slrnenkteb.61u.news@intercal.dyn-o-saur.com> <slrnenkung.64n.news@intercal.dyn-o-saur.com> <1165744397.238197.97530@j72g2000cwa.googlegroups.com> <slrnennpd2.5oj.news@intercal.dyn-o-saur.com>
+Organization: No thanks
+Message-ID: <slrnenok5f.76i.news@intercal.dyn-o-saur.com>
+User-Agent: slrn/0.9.8.1 (Linux)
+NNTP-Posting-Host: 87.127.72.172
+Date: 10 Dec 2006 18:46:04 GMT
+
+I was discussing INTERcal NETworking with a friend and we came up with
+a proposal. I am going to implement that for CLC-INTERCAL, but of course
+I will welcome a C-INTERCAL implementation, compatible or otherwise.
+
+Note that the proposal is at present IPv4 only, but discussion on how to
+extend this to IPv6 is encouraged.
+
+1) STEAL (variable) ON (expression) FROM (expression)
+
+   This does a destructive copy of a variable from another process. The
+   process ID is specified by the first expression, the IP address by the
+   second expression. The first expression can be omitted (STEAL variable
+   FROM expression) to select a random PID, and both expressions can be
+   omitted (STEAL variable) to select a random IP adddress by broadcasting
+   on the LAN.
+
+   If a variable is IGNOREd it cannot be stolen. This is because stealing
+   the variable will change its value and this can't be done. However...
+
+2) SMUGGLE (variable) ON (expression) FROM (expression)
+
+   will copy (non-destructively) a variable, provided it is IGNOREd. If
+   the variable is not IGNOREd it cannot be smuggled.
+
+3) CASE (expression) IN (variable1) THEN (statement1)
+   OR (variable2) THEN (statement2) ... ESAC
+
+   This will look so familiar you'll think you know what it does. WRONG.
+   This is the replacement for broadcasting you've been waiting for, but
+   it also does other things. In any case, the effect of the statement
+   is first to assign numbers to all the variables, then execute all the
+   statements. Note that all the statements are always executed,
+   independently on what values are assigned to the variables or what
+   result is produced by the expression. This is likely to differ from
+   the way other languages implement CASE or similar statements.
+
+   The type and value of the expression determines what values are
+   assigned to the variables. If there are more values than variables,
+   some values are discarded; if there aren't enough values, some will
+   be duplicated. It is the programmer's responsibility to check for
+   this.
+
+   If any of the variables is an array, its elements will be assigned in
+   sequence.
+
+   3.1) CASE (array) IN (variable1) THEN (statement1)
+        OR (variable2) THEN (statement2) ... ESAC
+
+        This is a DNS query. The name to be looked up is obtained from
+        the array using the same conversion as READ OUT. The resulting
+        IP addresses will be assigned to variable1, variable2, etc. as
+        per the above description.
+
+   3.2) CASE (numeric-expression) IN (variable1) THEN (statement1)
+        OR (variable2) THEN (statement2) ... ESAC
+
+        The numeric expression can evaluate to an IP address, the broadcast
+        address of one of the local network interface, or INADDR_ANY
+        (0.0.0.0).  In each case, a list of numbers is stored in the
+        variables, using mechanism described, then all the statements are
+        executed. The three separate cases are discussed:
+
+        3.2.1) CASE (IP-address) IN (variable1) THEN (statement1)
+               OR (variable2) THEN (statement2) ... ESAC
+
+               The computer located at IP address provides a list of
+               process IDs from which one can STEAL (or SMUGGLE). The
+               list stored is the list of PIDs.
+
+        3.2.2) CASE (broadcast-address) IN (variable1) THEN (statement1)
+               OR (variable2) THEN (statement2) ... ESAC
+
+               A broadcast request on the specified network interface
+               determines which IP addresses can be used for STEALING or
+               SMUGGLING. These IP addresses are stored in the variables.
+   
+        3.2.3) CASE (INADDR_ANY) IN (variable1) THEN (statement1)
+               OR (variable2) THEN (statement2) ... ESAC
+
+               This produces a broadcast request on every available
+               interface, producing a list of IP addresses.
+
+4) ABSTAIN and REINSTATE
+
+   It will be possible to ABSTAIN FROM SMUGGLING + STEALING and the
+   corresponding REINSTATE. It is not possible to ABSTAIN FROM being
+   robbed or similar. But a careful use of IGNORE / REMEMBER will allow
+   to select whether a variable can be stolen or smuggled
+
+5) The theft server.
+
+   This is a process running on every computer where Networked INTERCAL
+   programs are running. It accepts connections from other computers to
+   allow the execution of STEAL, SMUGGLE and the IP-address version of
+   CASE. Additionally, it will listen to broadcast requests to assists
+   with the broadcast and INADDR_ANY version of CASE. There is not at
+   present an official port assignment for this service, but I see no
+   reason why I shouldn't apply to the IANA for one...
+
+   The server will listen for UDP packets on the "smuggle port" and
+   reply with a packet indicating that a server is active. This will
+   normally be used in conjunction with broadcast to implement the
+   broadcast version of CASE. Note that the contents of the packets is
+   ignored.
+
+   The server will also listen for TCP connections on the "smuggle port".
+   The protocol employed on this connection will be described elsewhere
+   (I intend to write a proper RFC, and watch the RFC editor having a
+   fit), however a short example will indicate what it would look like.
+   (C indicates lines sent by the Client to the Server, S indicates
+   replies from the Server to the Client):
+
+   C:   (opens connection on the smuggle port)
+   S:   200 INTERNET server running on intercal.domain.com
+   C:   STEAL .1 FROM 156
+   S:   512 No such process
+   C:   CASE
+   S:   220 OK, 2 processes running:
+   S:   9132
+   S:   1561
+   S:   .
+   C:   STEAL ,2 FROM 1561
+   S:   514 Cannot steal that. Try smuggling
+   C:   STEAL ,1 FROM 1561
+   S:   210 OK, here comes your array:
+   S:   ,1 <- #2 BY #3
+   S:   ,1 SUB #1 SUB #1 <- #12
+   S:   ,1 SUB #1 SUB #2 <- #2
+   S:   ,1 SUB #1 SUB #3 <- #72
+   S:   ,1 SUB #2 SUB #1 <- #91
+   S:   ,1 SUB #2 SUB #2 <- #55
+   S:   ,1 SUB #2 SUB #3 <- #7
+   S:   .
+   C:   STEAL :1 FROM 9131
+   S:   210 OK, here is the value:
+   S:   :1 <- #9872~#19276
+   S:   .
+   C:   THANKS
+   S:   241 You are welcome
+   (connection is closed)
+
+That's it for now. Discussion is welcome before I start implementing.
+
+C.
+

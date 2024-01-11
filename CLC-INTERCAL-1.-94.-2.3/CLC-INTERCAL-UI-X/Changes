@@ -1,0 +1,19 @@
+Changes from CLC-INTERCAL 1.-94.-2.2 to 1.-94.-2.3
+
+* Updated Makefile.PL for the build system changes
+
+Changes from CLC-INTERCAL 1.-94.-2.1 to 1.-94.-2.2
+
+* Updated test 00use.t to match changes in Base package
+
+Changes from CLC-INTERCAL 1.-94.-2 to 1.-94.-2.1
+
+* Added a configuration file, UI-X.sickrc, to register this interface
+  when it is installe.
+
+* Changed t/00use.t to use Language::INTERCAL::Distribute
+
+Changes from CLC-INTERCAL 1.-94.-3 to 1.-94.-2
+
+* Created a new package with the "X" user interface.
+

@@ -1,0 +1,154 @@
+# common code for all compiler tests - see t/*compiler-*.t
+
+# Copyright (c) 2006-2008, 2023 Claudio Calvelli, all rights reserved.
+
+# CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+# and distribute it is granted provided that the conditions set out in the
+# licence agreement are met. See files README and COPYING in the distribution.
+
+# PERVERSION: CLC-INTERCAL/Base t/compiler-test 1.-94.-2.2
+
+use Language::INTERCAL::GenericIO '1.-94.-2', qw($devnull);
+use Language::INTERCAL::Sick '1.-94.-2';
+use Language::INTERCAL::Rcfile '1.-94.-2';
+use Language::INTERCAL::RegTypes '1.-94.-2.2', qw(REG_spot REG_whp);
+use Language::INTERCAL::Interpreter '1.-94.-2.2', qw(IFLAG_initialise);
+
+our $rc = new Language::INTERCAL::Rcfile;
+our $cobj = new Language::INTERCAL::Sick($rc);
+our $iseq = sub { $_[0] == $_[1] };
+
+sub runlist {
+    my ($numptr, $language, $give_up, $tests) = @_;
+    my $numtests = 1;
+    for my $T (@$tests) {
+	defined $T->[4] and $numtests++;
+	$numtests += 2;
+    }
+    my $testnum = $$numptr + 1;
+    $$numptr += $numtests;
+    defined $language or return;
+    my $i_data = '';
+    my $i_fh = Language::INTERCAL::GenericIO->new('STRING', 'w', \$i_data);
+    my $o_data = '';
+    my $o_fh = Language::INTERCAL::GenericIO->new('STRING', 'w', \$o_data);
+    eval {
+	$cobj->reset();
+	$cobj->setoption('default_charset', 'ASCII');
+	$cobj->setoption('default_backend', 'Run');
+	$cobj->setoption('bug', 0);
+	$cobj->setoption('ubug', 0);
+	$cobj->clearoption('preload');
+	if (ref $language) {
+	    $cobj->setoption('preload', $_) for @$language;
+	} else {
+	    $cobj->setoption('preload', $language);
+	}
+	$cobj->setoption('trace', 0);
+	$cobj->source('null.iacc');
+	$cobj->load_objects();
+	$obj = $cobj->get_object('null.iacc')
+	    or die "Internal error: no compiler object\n";
+	$obj->object->setbug(0, 0);
+	$obj->setreg('@TRFH', $devnull, REG_whp);
+	$obj->setreg('@OWFH', $i_fh, REG_whp);
+	$obj->setreg('@OSFH', $o_fh, REG_whp);
+	$obj->setreg('@ORFH', $o_fh, REG_whp);
+    };
+    if ($@) {
+	# if we can't even load the compiler...
+	my $l = ref $language ? join(' ', @$language) : $language;
+	print STDERR "FAILED $l: $@";
+	print "not ok ", $testnum++, "\n" while $testnum <= $$numptr;
+	return;
+    }
+    print "ok ", $testnum++, "\n";
+    for my $T (@$tests) {
+	my ($name, $in, $out, $splat, $source) = @$T;
+	if (defined $source) {
+	    $source .= "\n$give_up\n";
+	    eval { $obj->compile($source, 1); };
+	    if ($@) {
+		print STDERR "Failed: compiling $name\n";
+		print "not ok ", $testnum++, "\n" for (1..3);
+		next;
+	    }
+	    print "ok ", $testnum++, "\n";
+	}
+	$i_data = ref $in ? $in->[0] : $in;
+	$i_fh->reset;
+	$o_data = '';
+	$o_fh->reset;
+	my @out_fail;
+	my $os;
+	eval {
+	    $obj->start(IFLAG_initialise);
+	    if (ref $in) {
+		for (my $n = 1; $n < @$in; $n++) {
+		    $obj->setreg($in->[$n][0], $in->[$n][1], REG_spot);
+		}
+	    }
+	    $obj->run();
+	    $os = $obj->splat;
+	    if (ref $out && ! defined $os) {
+		for (my $n = 1; $n < @$out; $n++) {
+		    my ($v) = $obj->getreg($out->[$n][0]);
+		    $iseq->($v, $out->[$n][1], $out->[$n][0], $name)
+			or push @out_fail, "$out->[$n][0]=$v!=$out->[$n][1]";
+		}
+	    }
+	    $obj->stop();
+	};
+	if ($@) {
+	    print STDERR "Failed: running $name\n";
+	    print "not ok ", $testnum++, "\n" for (2..3);
+	    next;
+	}
+	if (defined $os) {
+	    my $ok = defined $splat && ($splat eq '' || $os == $splat);
+	    print $ok ? "" : "not ", "ok ", $testnum++, "\n";
+	    $ok or print STDERR "Failed $name (*$os)\n";
+	} else {
+	    print defined $splat ? "not " : "", "ok ", $testnum++, "\n";
+	    print STDERR "Failed $name (no splat)\n" if defined $splat;
+	}
+	my ($E, $ok);
+	my $cmp = ref $out ? $out->[0] : $out;
+	if ($cmp =~ /\*(\d+(?:\|\d+)*)$/) {
+	    if (defined $os) {
+		my %nums = map { ($_ + 0, undef) } split(/\|/, $1);
+		$ok = exists $nums{$os + 0};
+	    }
+	    $E = "*$1";
+	} else {
+	    $ok = $o_data eq $cmp;
+	    $E = $cmp;
+	}
+	if ($ok && ! @out_fail) {
+	    print "ok ", $testnum++, "\n";
+	} else {
+	    my @F = ();
+	    if (! $ok) {
+		my $O = $o_data;
+		$O =~ s/\n/\\n/g;
+		$E =~ s/\n/\\n/g;
+		push @F, "invalid output $O, expected $E";
+	    }
+	    @out_fail and push @F, "invalid register values @out_fail";
+	    my $F = join(', ', @F);
+	    print STDERR "Failed $name: $F\n";
+	    print "not ok ", $testnum++, "\n";
+	}
+    }
+}
+
+sub runtest {
+    my ($language, $give_up, $tests) = @_;
+    my $numtests = 0;
+    runlist(\$numtests, undef, undef, $tests);
+    print "1..$numtests\n";
+    my $num = 0;
+    runlist(\$num, $language, $give_up, $tests);
+}
+
+1;

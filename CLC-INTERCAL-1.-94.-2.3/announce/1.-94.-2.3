@@ -1,0 +1,107 @@
+2023-10-05: ALERT: CLC-INTERCAL 1.-94.-2.3 escaped
+
+We had received an anonymous warning that CLC-INTERCAL was going to attempt
+escape this weekend, probably Saturday October 7th.  So we started preparing
+for this, reinforced all security, etc.
+
+Unfortunately... it escaped two days early!
+
+The escaped compiler can be found at:
+
+  https://uilebheist.srht.site/dist/CLC-INTERCAL-1.-94.-2.3/
+
+Changes since 1.-94.-2.2 are detailed in the Changes files which can be found
+all over the sources; or see the git log at:
+
+  https://git.sr.ht/~uilebheist/CLC-INTERCAL
+
+As a very short summary, in the order we typed them here:
+
+* A new "trickle down" structure allows values stored in registers to slowly
+  make their ways to other registers. Two new statement control this,
+  "TRICKLE DOWN" to set up the mechanism, and "TRUSS UP" to remove it.
+
+* A new "program listing" option uses information from the compiler to
+  provide an annotated listing. This currently only produces HTML, and the
+  annotation consist of CSS classes, but the mechanism is modular and
+  new output formats can be easily added. This replaces the hidden mechanism
+  which produced the online version of the example programs so that anybody
+  can get the same result if they so wish (probably adding a different CSS
+  to that though). The Docs package will also build this HTML-ised version
+  of the examples however it does not at present install it.
+
+* A new repository provides ebuilds for a Gentoo system to build all or
+  selected parts of CLC-INTERCAL. In addition to the standard installation,
+  they will also optionally install documentation and examples to
+  /usr/share/doc/clc-intercal-docs-* (these ebuilds are not official Gentoo
+  ebuilds, we are sure Gentoo don't even know about them and would be duly
+  horrified if they did). Information about these ebuilds is provided in the
+  install documentation.
+
+* Added options to show which backends (and listing modules) are installed.
+  Also added a new special backend which doesn't do anything: this could be
+  useful to compile a program and produce a source listing only by specifying
+  --backend=None together with the appropriate listing options.
+
+* Extended interpreter save/load functions include more of the state than
+  in older versions, and include a mechanism to save extra state (like the
+  new trickle down structure) without major changes. The calculator will
+  be able to load state saved using an older version, but it might not
+  be able to load state saved with a new version, if that includes
+  elements it does not know how to decode.
+
+* The INET module now uses the same save/load functions as the calculator
+  to export registers for stealing/smuggling and to import them into the
+  thief's state. This means that this extension will automatically pick
+  up any new things which might be added, in the same way as the
+  calculator does.
+
+* The build system now knows how to build XS extensions, and also how to
+  decide whether to build them or use a pure perl implementation. This
+  is currently used only for the item listed next:
+
+* The INET extension now includes its own network detection module, which
+  works on Linux and various *BSD flavours. If this module can be built,
+  it eliminates the need for Net::Interface.  A new option to Makefile.PL
+  disables the new module and always builds the old one, in case there
+  are problems with the new code. But we tested it on a large number of
+  systems including 4 different operating systems and 6 different processor
+  architectures.
+
+* Extensions can now specify their own updates to the build system. This
+  is currently used only for the item listed next:
+
+* All the Docs-specific bits of the build system have been removed from the
+  Base package; the Docs extension will update the build system as necessary.
+
+* Some quantum statements left the wrong bits entangled, this has been fixed.
+
+* Replaced some generic error messages with more specific ones.  This because
+  all other software seems to move towards the "An error occurred, but we'd
+  rather be shot than tell you what" so INTERCAL needs to be very precise
+  due to its design goal of "being different from other languages".
+
+* Improved the program tracing mechanism to provide better information.
+
+* Some more tests for things implemented in previous escapes, as well as
+  for new things implemented in this one.
+
+* We discovered that some arithmetic on 2-spot numbers failed if perl was
+  built without 64 bit integers (this only happens on 32 bit processors and
+  then only if perl wasn't asked to use 64 bit anyway). Which is bizarre as
+  2-spot numbers are 32 bits... anyway, new functions fix this issue.
+
+* Some perl constructs which have been deprecated in recent perl versions
+  have been "conditionally" removed, that is the compiler will use the
+  currently recommended replacements if available, falling back to the
+  older constructs if the version of perl is not recent enough.
+
+* Modules which are generated from data (such has Splats and ByteCode) will
+  now show the data version if it's more recent than the code, so that another
+  module can request that when importing. Before, it always showed the code
+  version and we had to artificially bump that when changing the data.
+
+* Updated documentation
+
+* Some bugs fixed, some new bugs added.
+

@@ -1,0 +1,19 @@
+CLC-INTERCAL 1.-94.-2.3 -- Full screen text interface
+
+This package installs a full-screen text user interface to CLC-INTERCAL.
+At present, only the INTERCAL calculator, "intercalc", uses this interface,
+although a future release of "sick" will be able to use it as well.
+
+CLC-INTERCAL Base 1.-94.-2.3 or newer must be installed before this
+package.
+
+To install, run:
+
+    perl Makefile.PL
+    make
+    make test
+    make install
+
+Note that Curses.pm must be installed for this interface to work. Makefile.PL
+will warn you if it cannot find a usable Curses.pm
+

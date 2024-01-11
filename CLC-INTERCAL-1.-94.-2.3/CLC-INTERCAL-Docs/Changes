@@ -1,0 +1,61 @@
+Changes from CLC-INTERCAL 1.-94.-2.2 to 1.-94.-2.3
+
+* Moved the Docs-specific build from the Base package, and added
+  new ones to convert the example programs to HTML.
+
+* Documentation and example programs for the new "trickle down"
+  structure and the corresponding statements.
+
+* Updated to show the new options to the "sick" command-line tool
+  to control program source listing.
+
+* Changed the install documentation now that Net::Interface is
+  no longer necessary in many situations.
+
+* The build process uses the new program listing option in "sick" to
+  produce annotated HTML versions of the example programs. These are
+  not installed, but they could be copied to a server manually.
+
+* Clarified what happens when one modifies constants, as much as this
+  subject can be clarified.
+
+* Updated Makefile.PL for the build system changes
+
+Changes from CLC-INTERCAL 1.-94.-2.1 to 1.-94.-2.2
+
+* Also added example programs and documentation for new features
+  being added to Base
+
+* Added two more example programs for the "system call" extension,
+  as I needed them to test the functions with the new Interpreter.
+
+* Clarified what happens when ABSTAIN FROM or REINSTATE specify a
+  list of gerunds, and CONVERT or SWAP could have changed what
+  that means. Also COME FROM gerund and NEXT FROM gerund.
+
+* The Interpreter rewrite also meant that the new extension mechanism
+  has seen some changes, so the documentation here has been updated
+  to reflect that; also added a note that this mechanism is not yet
+  fully defined and is subject to change, with the mechanism expected
+  to be stable by 1.-94.-1
+
+Changes from CLC-INTERCAL 1.-94.-2 to 1.-94.-2.1
+
+* Documented the sickrc file format and its extension mechanism.
+
+* Updated to document the new extension mechanism and other changes
+  in other parts of the distribution.
+
+* Moved the INTERNET-specific bytecode, spats and register to
+  internet.html, where it logically belongs.
+
+* Some examples updated, some new examples.
+
+* Some clarifications and updates on the INTERNET extension.
+
+Changes from CLC-INTERCAL 1.-94.-3 to 1.-94.-2
+
+* Created new package containing just the documentation, so
+  that it doesn't need to be distributed with every version
+  of CLC-INTERCAL.
+

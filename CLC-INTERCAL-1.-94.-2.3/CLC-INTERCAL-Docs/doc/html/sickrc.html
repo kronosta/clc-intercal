@@ -1,0 +1,888 @@
+<HTML>
+    <HEAD>
+	<TITLE>CLC-INTERCAL Reference</TITLE>
+    </HEAD>
+    <BODY>
+	<H1>CLC-INTERCAL Reference</H1>
+	<H2>... Configuration files</H2>
+
+	<P>
+	Table of contents:
+	<UL>
+	    <LI><A HREF="index.html">Parent directory</A>
+	    <LI><A HREF="#files">List of configuration files used by the system</A>
+	    <LI><A HREF="#syntax">Configuration file syntax</A>
+	    <LI><A HREF="#system">system.sickrc: base system configuration</A>
+	    <LI><A HREF="#inet">INET.sickrc: INTERNET configuration</A>
+	    <LI><A HREF="#icalc">ICALC.sickrc: calculator configuration</A>
+	    <LI><A HREF="#ui">UI-<i>Name</I>.sickrc: interface configuration</A>
+	    <LI><A HREF="#example">Local configuration example</A>
+	    <LI><A HREF="#extend">How an extension adds its own configuration</A>
+	</UL>
+	</P>
+
+	<P>
+	This document describes the CLC-INTERCAL configuration system for
+	escape 1.-94.-2.1 or newer. The file format used before was different
+	and was never documented: it is now considered obsolete. The format
+	described here has an extension mechanism which may be sufficient to
+	avoid any incompatible changes in the future, and if we think of
+	something so different it doesn't fit, perhaps we'll have a second
+	file format to use alongside this one. Meanwhile, the format described
+	here is considered stable.
+	</P>
+
+	<H2><A NAME="files">List of configuration files used by the system</A></H2>
+
+	<P>
+	Starting with CLC-INTERCAL 1.-94.-2.1, CLC-INTERCAL's configuration has
+	been split into several files, with each extension optionally installing
+	a file containing its defaults, and both the system administrator and
+	each user able to add their own changes to these defaults.
+	</P>
+
+	<P>
+	The package-installed files are found in the package installation
+	&quot;Include&quot; directory, which is the same directory as any
+	pre-compiled objects. The file name for all these files is
+	<I>NAME</I>,sickrc, where <I>NAME</I> is either &quot;system&quot;
+	for the main configuration file, or the name of an extension,
+	for example &quot;INET&quot; for the INTERNET extension.
+	The &quot;system&quot; file is always read first, followed by any
+	installed extension configuration.
+	</P>
+	
+	<P>
+	After reading the package-installed configuration, the system reads
+	all files in the directory &quot;/etc/sick&quot;, processing them in
+	lexycographic order (using the &quot;C&quot; locale). These files
+	can add to package-installed configuration, or they can replace it
+	with completely new items. Processing of these files can be blocked
+	by specifying the <B>--nosystemrc</B> option to <I>sick</I>,
+	<I>intercalc</I> or when running any generated object.
+	</P>
+
+	<P>
+	Finally, if a file &quot;.sickrc&quot; exists in the user's home
+	directory, that will be processed and can augment or replace settings
+	in the previously processed files.  Processing of the user's
+	&quot;.sickrc&quot; file can be blocked by specifying the
+	<B>--nouserrc</B> option to <I>sick</I>, <I>intercalc</I> or when
+	running any generated object.
+	</P>
+
+	<P>
+	An easy way to list all configuration files the system can find, and
+	to mark the ones it would actually read, is to type:
+<PRE>
+	sick [--nouserrc] [--nosystemrc] [-I<i>directory</i>]... --rclist
+</PRE>
+	This will show the files found, one per line, with a "splat" next to
+	the ones it would actually read, taking into account the other
+	options supplied. Note that if two files with the same name are
+	present in different directories, this will list both, but only
+	one of them will be marked by a splat.
+	</P>
+
+	<H2><A NAME="syntax">Configuration file syntax</A></H2>
+
+	<P>
+	Each configuration file has a simple and regular syntax, which can
+	contain comments, setting of scalar option values, deleting all values
+	from an array option or appending values to an array option: the last
+	two can be used to replace array contents.
+	</P>
+
+	<P>
+	Comments start like in INTERCAL with &quot;PLEASE NOT&quot; or &quot;DO NOT&quot;
+	followed by any text, and they extend until a valid configuration item starts.
+	</P>
+
+	<P>
+	Any configuration item, even comments, can be preceded by a conditional
+	with the generic syntax:
+<PRE>
+	WHEN I IMITATE <I>who</I>
+</PRE>
+	where <I>who</I> is one of "sick", "ick" or "1972": the item will be
+	ignored when the compiler is imitating somebody else.
+	</P>
+
+	<P>
+	Setting of a scalar value has the generic syntax:
+<PRE>
+	I CAN <I>VERB</I> <I>OBJECT</I>
+</PRE>
+	where <I>VERB</I> determines which value is being set, and <I>OBJECT</I>
+	determines how it is being set. The <I>VERB</I> must correspond to a
+	valid scalar option, which is defined by the INTERCAL system or by a
+	installed extension. For example, if the INTERNET extension is installed,
+	it uses the <I>VERB</I> &quot;BLURT&quot; to determine which TCP and UDP
+	port it will use, so the <I>OBJECT</I> supplied to &quot;BLURT&quot; must
+	be a valid port number, so:
+<PRE>
+	I CAN BLURT 64928
+</PRE>
+	means to use port 64928 for all INTERNET-related communications.
+	</P>
+
+	<P>
+	Appending a value to an array has exactly the same generic syntax as setting
+	a scalar value:
+<PRE>
+	I CAN <I>VERB</I> <I>OBJECT</I>
+</PRE>
+	the difference being that <I>VERB</I> must be defined as an array option
+	rather than a scalar. For arrays, a related statement removes all existing
+	elements:
+<PRE>
+	I DON'T <I>VERB</I>
+</PRE>
+	For example, looking again at the INTERNET extension, the list of IPv6
+	multicast groups is specified using the verb &quot;READ&quot; because
+	the server will READ OUT discovery packets to these groups, and so to
+	replace the array with just &quot;all nodes&quot; on the locally connected
+	networks, plus a global scope group, one could say:
+<PRE>
+	I DON'T READ
+	I CAN READ ff02::1
+	I CAN READ ff1e::42
+</PRE>
+	Omitting the first line would append two groups to any existing list.
+	</P>
+
+	<P>
+	Some arrays require each element to have an explicit priority expressed
+	as a number after the &quot;CAN&quot;: for example the base system contains
+	support for four character sets: to guess the one used by a source program,
+	they are tried in order of increasing priority. The default definition is:
+<PRE>
+	I DON'T WRITE
+	WHEN I IMITATE sick
+	I CAN #20 WRITE Baudot
+	I CAN #30 WRITE EBCDIC
+	I CAN #10 WRITE ASCII
+	I CAN #40 WRITE Hollerith
+</PRE>
+	which means that ASCII is preferred (lowest value actually means highest
+	priority), followed by Baudot, EBCDIC and finally Hollerith. Obviously
+	the verb &quot;WRITE&quot; is used for this as the compiler will be
+	WRITING IN programs. Additionally, the Baudot set will be skipped
+	when imitating "ick" or "1972".
+	</P>
+
+	<P>
+	For arrays, it is also possible to remove a single element by using
+	"I CAN'T"; this is most useful in user's configuration, to remove support
+	for something installed in the system. It is not an error to remove
+	something which wasn't there in the first place. For example, a
+	user who knows for a fact they'll never use punched cards or Baudot
+	terminals could remove support by having the lines:
+<PRE>
+	I CAN'T WRITE Hollerith
+	I CAN'T WRITE Baudot
+</PRE>
+	In their ".sickrc" file. Note that this does not specify a priority:
+	if "Hollerith" was in the list, it'll be removed, and the priority is
+	not important. In this example, this would be equivalent to having:
+<PRE>
+	I DON'T WRITE
+	I CAN #30 WRITE EBCDIC
+	I CAN #10 WRITE ASCII
+</PRE>
+	However if the system had more character sets the first version would
+	leave all the extra ones in, the second would remove them all and
+	keep just ASCII and EBCDIC.
+	</P>
+
+	<P>
+	The next few sections detail which <I>VERB</I>s are defined by the base
+	system and all extensions currently provided, together with the exact
+	syntax of their <I>OBJECT</I>s.
+	</P>
+
+	<H2><A NAME="system">system.sickrc: base system configuration</A></H2>
+
+	<P>
+	The base system defines a number of <I>VERB</I>s:
+	<UL>
+	<LI>WRITE<BR>
+	Array with priorities: Character set selection: the <I>OBJECT</I>s are
+	names of character sets as known to the Language::INTERCAL::Charset
+	module. The &quot;system.sickrc&quot; file lists all character sets
+	which have been included in CLC-INTERCAL since 0.01; new character
+	sets will be offered in future in the form of optional packages, and
+	these will include their own <I>module</I>.sickrc to add to this list so
+	that the new character sets can be recognised when the system is guessing.
+	<LI>SPEAK<BR>
+	Array with priorities: User interface selection: the <I>OBJECT</I>s are
+	names of interface modules as known to the Language::INTERCAL::Interface
+	module. &quot;None&quot; is part of the base system and always available,
+	and also automatically included by the &quot;system.sickrc&quot; file
+	provided: it corresponds to the batch mode of <I>sick</I> and
+	<I>intercalc</I>. Other interfaces are provided by optional packages,
+	each of which will also add its own sickrc file to register what it
+	provides.
+	<LI>UNDERSTAND<BR>
+	Array (without priorities): controls the compiler and option selection
+	based on suffix. See below.
+	<LI>SCAN<BR>
+	Array (without priorities) of directories where the compiler will search
+	for C-INTERCAL-style system libraries; each element can contain normal
+	shell glob characters.
+	<LI>GLUE<BR>
+	Array (without priorities) explaining to the compiler when to include
+	a C-INTERCAL-style system library; the elements are described later in
+	this section.
+	</UL>
+	</P>
+
+	<H3>UNDERSTAND</H3>
+
+	<P>
+	The &quot;UNDERSTAND&quot; <I>VERB</I> controls selection of compilers
+	and options based on the suffix. The general theory is that the <I>OBJECT</I>s
+	contain patterns and actions: the suffix is matched against each pattern
+	in turn, and if the match succeeds, the system performs the corresponding
+	actions. There are three types of actions: adding a compiler or option
+	to the list being constructed, making sure a compiler or option will not
+	be added by later processing, and restarting the matching.
+	</P>
+
+	<P>
+	The generic syntax for an <I>OBJECT</I> of &quot;UNDERSTAND&quot; is:
+<PRE>
+	I CAN UNDERSTAND <I>PATTERN</I> [+ <I>PATTERN</I>]...
+		AS <I>STRING</I>
+		WITH <I>OPTION</I> [+ <I>OPTION</I>]...
+		RETRYING <I>STRING</I>
+		IGNORING <I>OPTION</I> [+ <I>OPTION</I>]...
+</PRE>
+	where the items listed in the first two lines are always present,
+	each of the other three lines can be completely omitted. And of course
+	we split things in lines for clarity but a single long line or
+	splitting at random places will all do perfectly well.
+	</P>
+
+	<P>
+	Patterns are simple strings which may contain one or more whirlpool
+	(@) symbols: these act as wildcards, matching anything except the first
+	character of the whole string. Since the string usually starts with a
+	spot (.), this means that the whirlpool matches anything except a
+	spot, and this means that a name containing more than one spot will
+	only try matching against the last section, the spotless suffix.
+	For example, the following will match any suffix ending with
+	&quot;ci&quot; or &quot;ti&quot;
+<PRE>
+	I CAN UNDERSTAND .@ci + .@ti AS "CI or TI suffix"
+</PRE>
+	</P>
+
+	<P>
+	The &quot;AS&quot; and a string must always be provided. The compiler
+	doesn't do anything with them, but can print them out in verbose
+	mode, so it helps if the string describes what is going on.
+	</P>
+
+	<P>
+	The simplest action is &quot;RETRYING&quot;: this takes a string,
+	which can contain a single whirlpool, and causes the suffix matching
+	to restart, using the string as new suffix; if the string contains
+	a whirlpool, this will be replaced with everything matched by a
+	whirlpool in the pattern. Note that restarting does not clear the
+	list of options being constructed. For example, the following
+	would simply ignore a letter &quot;z&quot; anywhere in the suffix:
+<PRE>
+	I CAN UNDERSTAND .@z@i AS "NO z" RETRYING .@i
+</PRE>
+	the pattern matches any suffix containing a &quot;z&quot; and
+	ending with a &quot;i&quot;, then restart the processing with the
+	same suffix but omitting the &quot;z&quot;: if presented with
+	.abzcdei it will start the processing again with .abcdei
+	</P>
+
+	<P>
+	The &quot;WITH&quot; action, followed by a list of strings adds
+	each of these strings to the current list of options, unless they
+	have already been added or they are being ignored. For example:
+<PRE>
+	I CAN UNDERSTAND .@7@i AS "BASE 7" WITH 7 RETRYING .@i
+</PRE>
+	matches a suffix containing a 7, adds the option &quot;7&quot;
+	(which will load 7.io which in turn sets the base to 7) and
+	then restart processing after removing the 7 from the suffix.
+	</P>
+
+	<P>
+	The last action is &quot;IGNORING&quot; which does not make any
+	changes to the list already constructed, but asks that some options
+	will not be added in later processing. For example, the following
+	forces the compiler to be <I>sick</I> and makes sure that <i>ick</I>
+	is not added later:
+<PRE>
+	I CAN UNDERSTAND .@clc@i AS "CLC-INTERCAL"
+	WITH sick IGNORING ick RETRYING .@i
+</PRE>
+	Presented with a suffix .clcti it will set the compiler to &quot;sick&quot;
+	then restart processing with suffix .ti - this would normally set the
+	compiler to <I>ick</I> for compatibility with the &quot;thick&quot;
+	compiler, however the &quot;IGNORING&quot; makes sure that this does
+	not happen, so when the new suffix matches the rule:
+<PRE>
+	I CAN UNDERSTAND .@t@i AS "Threaded INTERCAL"
+	WITH ick + thick IGNORING sick RETRYING .@i
+</PRE>
+	it will add the <I>thick</I> option but won't add <I>ick</I> because
+	it's been IGNOREd. The &quot;IGNORING sick&quot; in this case does not
+	do anything as <I>sick</I> is already present in the list constructed
+	before; however it is there to make sure that only one compiler can
+	be selected by a combination of suffixes.
+	</P>
+
+	<H3>GLUE</H3>
+
+	<P>
+	The &quot;GLUE&quot; <I>VERB</I> controls selection of system libraries
+	in the style of C-INTERCAL: this is INTERCAL source code which is compiled
+	together with the program specified by the user, and which are included
+	automatically when certain conditions are met. Note that the mechanism
+	could in theory be used with any other compiler.
+	</P>
+
+	<P>
+	The generic syntax for an <I>OBJECT</I> of &quot;GLUE&quot; is:
+<PRE>
+	I CAN GLUE <I>FILENAME</I> [AND IF OPTIMISED <I>FILENAME</I>]
+	    TO THE END OF THE PROGRAM
+		WHEN <I>CONDITION</I>
+		[AND <I>CONDITION</I>]...
+</PRE>
+	One or more <I>CONDITION</I>s specify when this mechanism will be
+	used, and the first (or only) <I>FILENAME</I> is the name of the
+	library to glue to the program. If the optional "AND IF OPTIMISED"
+	and the second <I>FILENAME</I> is provided, the latter will be used
+	when looking for optimised objects; if not specified, and if the
+	user has asked for optimisation, the compiler will try to guess a
+	suitable optimised object by replacing the suffix with ".o.io",
+	see below for some examples.
+	</P>
+
+	<P>
+	The <I>CONDITION</I>s look like:
+<PRE>
+	COMPILER IS <I>name</I>
+	BASE IS <I>number</I>
+	BASE IS @
+	BASE IS NOT <I>number</I>
+	PROGRAM USES UNDEFINED LABEL <I>numbner</I>
+	PROGRAM USES UNDEFINED LABELS BETWEEN <I>numbner</I> AND <I>number</I>
+</PRE>
+	If more than a condition is specified, they must all be true or the
+	rule will be ignored; the value "@" for the base means "any base",
+	and any "@" in the <I>FILENAME</I> will be replaced by the actual
+	base.
+	</P>
+
+	<P>
+	For example:
+<PRE>
+	I CAN GLUE syslib.i TO THE END OF THE PROGRAM
+	      WHEN COMPILER IS ick
+	       AND BASE IS 2
+	       AND PROGRAM USES UNDEFINED LABELS BETWEEN 1000 AND 1999
+</PRE>
+	specifies that a program compiled with "ick" in base 2 which makes
+	a reference to a label between 1000 and 1999 but does not define
+	them will include "syslib.i". Since no optimised object has been
+	specified, when the user asks for optimisation the compiler will
+	try to locate a "syslib.o.io" pre-build object, and if found use
+	it, if not found it will include "syslib.i" as in the case when
+	no optimisation is required.
+	</P>
+
+	<P>
+	For a base other than 2, the library provided by C-INTERCAL contains
+	the base twice, like syslib3.3i, syslib4.4i etc. To find it, we
+	could say:
+<PRE>
+	I CAN GLUE syslib@.@i TO THE END OF THE PROGRAM
+	      WHEN COMPILER IS ick
+	       AND BASE IS @
+	       AND BASE IS NOT 2
+	       AND PROGRAM USES UNDEFINED LABELS BETWEEN 1000 AND 1999
+</PRE>
+	However the optimised syslib.o.io has been built to work in any base,
+	when necessary it looks up the current base; the compiler would not
+	find it, as it would be looking for syslib3.o.io etc. So we say:
+<PRE>
+	I CAN GLUE syslib@.@i AND IF OPTIMISED syslib.o.io
+	  TO THE END OF THE PROGRAM
+	      WHEN COMPILER IS ick
+	       AND BASE IS @
+	       AND BASE IS NOT 2
+	       AND PROGRAM USES UNDEFINED LABELS BETWEEN 1000 AND 1999
+</PRE>
+	</P>
+
+	<P>
+	The default system.sickrc provided includes the rules to find
+	syslib*.*i and syslib.o.io as described, and in addition has:
+<PRE>
+	I CAN GLUE floatlib.i TO THE END OF THE PROGRAM
+	      WHEN COMPILER IS ick
+	       AND BASE IS 2
+	       AND PROGRAM USES UNDEFINED LABELS BETWEEN 5000 AND 5999
+</PRE>
+	Together, all this configuration corresponds to the C-INTERCAL
+	algorithm to decide when to include various library files, with
+	two major differences: it is written in an easy-to-understand
+	configuration syntax rather than being obfuscated inside a C
+	program; and the programmer is responsible for obtaining these
+	files, which are at present not provided by CLC-INTERCAL.
+	To assist, the default system.sickrc also says:
+<PRE>
+	I CAN SCAN /usr/share/ick*
+	I CAN SCAN /usr/local/share/ick*
+</PRE>
+	These are the most likely places these libraries would be installed,
+	however the configuration can be modified in the usual way if the
+	administrator has installed things somewhere else.
+	</P>
+
+	<P>
+	Note that it is not necessary to obtain the C-INTERCAL's system
+	and floating-point libraries if the programmer accepts the use of
+	the optimiser: in this case, the program will link to a Perl module
+	provided by CLC-INTERCAL rather than build C-INTERCAL's libraries
+	from source.
+	</P>
+
+	<H2><A NAME="inet">INET.sickrc: INTERNET configuration</A></H2>
+
+	<P>
+	The INTERNET extension, when installed, defines three new <I>VERB</I>s,
+	&quot;BLURT&quot; to specify the TCP and UDP port, &quot;READ&quot; to
+	specify a list of IPv6 multicast groups to use when looking for other
+	programs, and &quot;THROW&quot; for the default multicast hop limits.
+	The included &quot;INET.sickrc&quot; contains:
+<PRE>
+	I CAN BLURT 64928
+	I DON'T READ
+	I CAN READ ff02::1 THROWING 1
+	I DON'T THROW
+	I CAN THROW 0 TO 1
+	I CAN THROW 1 TO 2
+	I CAN THROW 10
+</PRE>
+	And the rest of this section attempts to explain what that measn.
+	</P>
+
+	<P>
+	The &quot;BLURT&quot; <I>VERB</I> specifies the UDP and TCP port
+	numbers used for all network communications: this includes TCP
+	connections to a theft server, UDP broadcasts and multicasts for
+	node discovery, and UDP replies to node discovery requests.
+	The <I>OBJECT</I> is a simple number between 1 and 65535, without
+	the initial &quot;#&quot;.
+	</P>
+
+	<P>
+	The &quot;READ&quot; <I>VERB</I> specifies an array of multicast
+	groups used for node discovery: the program READs out to these groups
+	whenever it runs a CASE, STEAL or SMUGGLE statement which requires
+	to obtain a list of hosts. Additionally, the theft-server will join
+	all these groups and waits for packets on them.
+	</P>
+
+	<P>
+	The &quot;READ&quot; array does not have priorities: the program reads
+	out to all the groups listed, then waits for replies. The syntax of a
+	single element is an IPv6 multicast group address in normal
+	presentation format, optionally followed by the gerund
+	&quot;THROWING&quot; and a hop limit: this indicates how far the
+	program will try to throw the query: 0 means that it only stays on
+	the local host and will reach the local theft server; 1 means that
+	the packet will go out on locally-attached networks, but will not cross
+	gateways, even if they have working multicast routing set up; and a
+	number <I>n</I> greater than 1 means that they will attempt to cross
+	gateways but they stop when they encounter the <I>n</I>-th one, or in
+	other words they will cross at most <I>n-1</I> gateways.
+	</P>
+
+	<P>
+	The &quot;THROW&quot; array specifies default hop limits for any
+	multicast groups which do not provide one: this includes any elements
+	of the &quot;READ&quot; array without a &quot;THROWING&quot; gerund,
+	as well as any multicast addresses specified by the program using the
+	CASE, STEAL or SMUGGLE statement, since there is at present no way
+	to indicate a hop limit in an INTERCAL program. The syntax of each
+	element of the &quot;THROW&quot; array is the hop limit as a number
+	followed optionally by &quot;TO&quot; and a scope identifier: when
+	sending a packet to scope <I>S</I> the program will find the first
+	array element with &quot;TO <I>S</I>&quot; and uses the corresponding
+	hop limit: if no such element exists, it will locate the first one
+	which does not include the &quot;TO&quot;, and if none is found it
+	will use the system default.
+	</P>
+
+	<P>
+	Therefore the included &quot;INET.sickrc&quot; means: use UDP and TCP
+	port 64928; when searching for servers, use the &quot;all nodes&quot;
+	multicast group ff02::1, setting the hop limit to 1 (locally-attached
+	networks only); and when sending to a multicast group which does not
+	specify a hop limit, use limit 0 (local host only) for packets with
+	node-local scope, hop limit 1 (local networks only) for packets with
+	link-local scope, and hop limit 10 for any other scopes.
+	</P>
+
+	<H2><A NAME="icalc">ICALC.sickrc: calculator configuration</A></H2>
+
+	<P>
+	The calculator, <I>intercalc</I> adds two scalar <I>VERB</I>s to specify
+	the default operation mode and the default compiler and options to use.
+	The &quot;ICALC.sickrc&quot; provides system defaults:
+<PRE>
+	I CAN OPERATE full
+	I CAN CALCULATE sick + 2
+</PRE>
+	In general, the operation mode (&quot;OPERATE&quot;) can be one of
+	&quot;full&quot;, &quot;expr&quot; or &quot;oic&quot; and the
+	default compiler can be any installed compiler followed by any options
+	one would want to pass: the default specifies CLC-INTERCAL and base 2,
+	with no other options. Note that &quot;CALCULATE&quot; takes a list
+	of object names separated by intersections, and is not an array.
+	</P>
+
+	<P>
+	The &quot;Save settings&quot; menu item (or backspark-c in the line
+	mode interface) reads the current configuration out to the user's
+	&quot;.sickrc&quot; file; this will contain any values previously found
+	there, modified with the options selected while running the calculator.
+	Options which were not changed in the &quot;.sickrc&quot; file will not
+	be included, but can of course be added with a normal text editor if
+	so desired.
+	</P>
+
+	<P>
+	Because the desk calculator is currently the only thing which uses any
+	interfaces, the ICALC extension also adds a number of <I>VERB</I>s related
+	to displaying things. It is possible that this may move to the Base
+	package in the far future when <I>sick</I> also starts using interfaces.
+	Note that not all this configuration applies to all possible interfaces:
+	they will ignore what does not apply to them.
+	</P>
+
+	<P>
+	All the <I>VERB</I>s controlling output specify arrays: for each of
+	these <I>VERB</I>s, and for each type of item, the first applicable
+	entry will be used, and if there is no applicable entry the default
+	value will be used. Note that there are no explicit priorities, so
+	the order these things appear in the configuration is significant.
+	</P>
+
+	<P>
+	The "DRAW" <I>VERB</I> selects a font and size to use for drawing selected
+	elements; obviously this is ignored by interfaces like Curses which rely
+	on a terminal to display characters and have no control on what font this
+	will use. The general format of the <I>OBJECT</I> is:
+<PRE>
+	<CODE>I CAN DRAW</CODE> <I>list-of-items</I> <CODE>IN</CODE> <I>font-name</I>
+</PRE>
+	optionally followed by a size:
+<PRE>
+	<CODE>AT</CODE> <I>font-size</I>
+</PRE>
+	optionally followed by a list of interfaces this configuration applies:
+<PRE>
+	<CODE>WHEN USING</CODE> <I>list-of-interfaces</I>
+</PRE>
+	The <I>list-of-items</I> and <I>list-of-interfaces</I> are explained
+	below; the <I>font-name</I> is any font name recognised by the system
+	and <I>font-size</I> is a number.
+	</P>
+
+	<P>
+	A <I>list-of-items</I> is one or more of the following items, separated
+	by intersections:
+	<UL>
+	<LI>ENABLED KEYS<BR>
+	Use this configuration when displaying a key on the calculator keypad,
+	if it is currently meaningful to press that key.
+	<LI>DISABLED KEYS<BR>
+	Use this configuration when displaying a key on the calculator keypad,
+	if the key has currently no meaningful action; for example, after
+	typing a partial statement, any keys which cannot produce something
+	valid will be disabled, so often after pressing "P", "L", "E", "A"
+	and "S" all keys except "E" will be shown as disabled.
+	<LI>ENABLED MENUS<BR>
+	This configuration applies to any menu items which are currently enabled,
+	that is they can be selected and will have some meaningful action.
+	<LI>DISABLED MENUS<BR>
+	This configuration applies to any menu items which are currently disabled,
+	that is they cannot be selected and would not have a meaningful action
+	if they could be selected.
+	<LI>CURRENT ITEM<BR>
+	This is used to highlight the current menu entry, or for interfaces where
+	this makes sense, the current key; for example, after opening a menu, its
+	first enabled entry will use this configuration to display, and moving the
+	cursor to a different entry will revert it to ENABLED MENUS, and display
+	the next enabled one as CURRENT ITEM.
+	<LI>MESSAGES<BR>
+	Use this configuration for any other output not covered by any of the
+	previous items
+	<LI>FRAMES<BR>
+	We mention this here because it's a valid item type, but selecting a font
+	for it has no meaning: this is meant to be used with the "PAINT" <I>VERB</I>
+	described below.
+	</UL>
+	</P>
+
+	<P>
+	A <I>list-of-interfaces</I> is just a list of user interface modules which
+	this configuration will apply to. If omitted, it defaults to "all the
+	interfaces" which at the time of writing means "WHEN USING Curses + X".
+	Note that the interface names have to be written exactly or they won't
+	be recognised.
+	</P>
+
+	<P>
+	The "FRAME" <I>VERB</I> applies to interfaces which produce characters, as
+	opposed to pixels, currently this means the Curses interface. The <I>OBJECT</I>
+	is the word "WITH" followed by either "ASCII" or "LINE DRAWING", and then
+	the optional list of interfaces it applies to. For example:
+<PRE><CODE>
+	I CAN FRAME WITH LINE DRAWING
+</CODE></PRE>
+	this controls whether Unicode line drawing characters will be used, which
+	requires that they are supported by the terminal; if the terminal does not
+	support them, they will be displayed as blanks, but the following will
+	revert to the old behaviour (before 1.-94.-2.1) which used normal ASCII
+	characters to approximate things:
+<PRE><CODE>
+	I CAN FRAME WITH ASCII
+</CODE></PRE>
+	The list of interfaces could be useful for example if a future interface
+	provides a functionality similar to Curses but more powerful, let's
+	say we'll be calling that new interface Excursion:
+<PRE><CODE>
+	I CAN FRAME WITH ASCII WHEN USING Curses
+	I CAN FRAME WITH LINE DRAWIN WHEN USING Excursion
+</CODE></PRE>
+	</P>
+
+	<P>
+	The "POINT" <I>VERB</I> applies to interfaces in which the use of mouse
+	is optional: this currently means the Curses interface only. The
+	<I>OBJECT</I> is either "WITH THE MOUSE" or "WITHOUT THE MOUSE", and
+	determines whether the interface will grab the mouse and translate
+	mouse click events to button presses, or will leave it to its default
+	function in the environment it runs on. If the mouse is not supported,
+	this option will have no effect.
+	</P>
+
+	<P>
+	The "PAINT" <I>VERB</I> specifies a colour, and optionally a background,
+	for some items. The general form is:
+<PRE>
+	<CODE>I CAN PAINT</CODE> <I>list-of-items</I> <CODE>IN</CODE> <I>colour-name</I>
+</PRE>
+	optionally followed by a background colour:
+<PRE>
+	<CODE>ON</CODE> <I>colour-name</I>
+</PRE>
+	optionally followed by a list of interfaces this configuration applies:
+<PRE>
+	<CODE>WHEN USING</CODE> <I>list-of-interfaces</I>
+</PRE>
+	The <I>list-of-items</I> and <I>list-of-interfaces</I> are as above;
+	the <I>colour-name</I> is currently one of "black", "white", "red",
+	"green", "blue", "yellow", "magenta" or "cyan". Future versions will
+	support more colours, depending on the interface's capabilities.
+	</P>
+
+	<P>
+	The remaining <I>VERB</I>s all have the same format:
+<PRE>
+	<CODE>I CAN</CODE> <I>verb</I> <I>list-of-items</I>
+</PRE>
+	optionally followed by a list of interfaces this configuration applies:
+<PRE>
+	<CODE>WHEN USING</CODE> <I>list-of-interfaces</I>
+</PRE>
+	The <I>list-of-items</I> and <I>list-of-interfaces</I> are as above;
+	the <I>verb</I> is one of:
+	<UL>
+	<LI>EMBOLDEN<BR>
+	The items listed will be made to look more bold than the default
+	<LI>ITALICISE<BR>
+	The items listed will be italicised
+	<LI>UNDERLINE<BR>
+	The items listed will be underlined
+	<LI>REVERSE<BR>
+	THe items listed will be shown with colours reversed; this is not the
+	same as using "PAINT" and swapping the background and foreground
+	colours, because other system settings may have specified an alternative
+	meaning for this.
+	<LI>DIM<BR>
+	The items listed will be made less visible than the default
+	</UL>
+	</P>
+
+	<P>
+	It is often necessary to specify several <I>VERB</I>s for each type of
+	item, for example to make the current item display in 36 point Courier
+	bold italic and green on a red background (we make no promise that the
+	result is legible), and enabled keys the same but red on a black
+	background:
+<PRE><CODE>
+	I CAN PAINT CURRENT ITEM IN GREEN ON RED
+	I CAN PAINT ENABLED KEYS IN RED ON BLACK
+	I CAN DRAW CURRENT ITEM + ENABLED KEYS IN Courier AT 36
+	I CAN EMBOLDEN CURRENT ITEM + ENABLED KEYS
+	I CAN ITALICISE CURRENT ITEM + ENABLED KEYS
+</CODE></PRE>
+	</P>
+
+	<H2><A NAME="ui">UI-<i>Name</I>.sickrc: interface configuration</A></H2>
+
+	<P>
+	The base system defines the verb &quot;SPEAK&quot; to determine which user
+	interface will be preferred by the calculator (and, when it gets a proper
+	development environment, by the compiler itself). The array requires to
+	specify priorities, and the <I>OBJECT</I>s are just names of an interface
+	module. The base system just defined a single interface, &quot;None&quot;
+	which corresponds to the batch mode of <I>intercalc</I> and <I>sick</I>,
+	and has priority 65535:
+<PRE>
+	I DON'T SPEAK
+	I CAN #65535 SPEAK None
+</PRE>
+	Each user interface installed will add to this list indicating what
+	interfaces it supports and a priority; the files
+	&quot;UI-<I>Name</I>.sickrc&quot; all contain a single line adding
+	one interface; the combined effect of installing all three interface
+	modules will be:
+<PRE>
+	I CAN #100 SPEAK X
+	I CAN #200 SPEAK Curses
+	I CAN #300 SPEAK Line
+</PRE>
+	So X is the preferred one, if installed and running in a graphical
+	environment, after that Curses, if installed and the terminal
+	supports it, the Line if installed and the terminal supports it,
+	and finally None if nothing else works.
+	</P>
+
+	<H2><A NAME="example">Local configuration example</A></H2>
+
+	<P>
+	A system administrator may decide to install all available interface
+	modules, but because of a sadistic streak makes &quot;None&quot;
+	the preferred one. They install a file &quot;/etc/sick/ui&quot;
+	containing:
+<PRE>
+	I DON'T SPEAK
+	I CAN #1 SPEAK None
+	I CAN #5 SPEAK X
+	I CAN #4 SPEAK Curses
+	I CAN #2 SPEAK Line
+</PRE>
+	</P>
+
+	<P>
+	A user who has read this documentation undoes the change by
+	putting the following five lines in their &quot;.sickrc&quot; file:
+<PRE>
+	I DON'T SPEAK
+	I CAN #9 SPEAK None
+	I CAN #8 SPEAK X
+	I CAN #7 SPEAK Curses
+	I CAN #6 SPEAK Line
+</PRE>
+	</P>
+
+	<H2><A NAME="extend">How an extension adds its own configuration</A></H2>
+
+	<P>
+	An extension defines a module &quot;Language::INTERCAL::<I>NAME</I>::Extend&quot;
+	containing a subrouting &quot;add_rcdef&quot; to extend the syntax of the
+	configuration files. Note that most extensions will have such a module because
+	it can also add opcodes, registers and splats and most extensions will need
+	to do at least some of that.
+	</P>
+
+	<P>
+	The &quot;add_rcdef&quot; is called with three arguments: a code reference,
+	the name of the extension (usually <I>Name</I>) and the name of the module
+	processing this without the initial &quot;Language::INTERCAL::&quot; (this
+	will usually be Rcfile). The subroutine is expected to call the code
+	reference once for each <I>VERB</I> it wants to add, passing it six
+	arguments:
+	<UL>
+	<LI>VERB<BR>
+	The <I>VERB</I> to add. It must not clash with an existing one.
+	<LI>CHECK<BR>
+	A code reference which checks the <I>OBJECT</I>'s syntax and returns a
+	value to store: it receives three arguments, a reference to the configuration
+	object, the verb itself, and the value.
+	<LI>PRINT<BR>
+	An optional code reference which takes a stored <I>OBJECT</I> and converts
+	it to a string. If this is <I>undef</I> the value is printed as it is found.
+	<LI>ARRAY?<BR>
+	A true value specifies that the <I>VERB</I> takes an array, a false value
+	that it takes a scalar.
+	<LI>PRIORITY?<BR>
+	A true value requires that objects have an associated priority; a false
+	value requires that they don't have one; for scalar values, this must be false.
+	<LI>DESCRIPTION<BR>
+	Any string the extension wants to add as a comment when the configuration
+	is saved to file.
+	</UL>
+	</P>
+
+	<P>
+	For example, the INET extension adds a scalar <I>VERB</I> to specify the
+	TCP and UDP port, &quot;BLURT&quot; with a code like:
+<PRE>
+	$code-&gt;('BLURT', \&amp;_c_blurt, undef, 0, 0, 'Default INTERNET port');
+</PRE>
+	the &quot;_c_blurt&quot; function just checks if it has been passed a number
+	between 1 and 65535, and throws an exception if not; it returns the number
+	itself, therefore there is no special PRINT code. The comment is used when
+	saving the configuration which will look something like:
+<PRE>
+	PLEASE NOTE: Default INTERNET port
+	I CAN BLURT 4242
+</PRE>
+	</P>
+
+	<P>
+	For an example of arrays without priorities, the INET extension also defines
+	another <I>VERB</I>, &quot;READ&quot; with code like:
+<PRE>
+	$code-&gt;('READ', \&amp;_c_read, \&amp;_p_read, 1, 0, 'INTERNET multicast groups');
+</PRE>
+	In this case, &quot;_c_read&quot; parses an IPv6 address, checks that it
+	is a valid multicast group, and returns the 128-bit binary representation.
+	Therefore it needs a function to convert it back to a string, which is
+	provided by &quot;_p_read&quot;. A saved configuration may look like:
+<PRE>
+	PLEASE NOTE: INTERNET multicast groups
+	I DON'T READ
+	I CAN READ ff02::1
+	I CAN READ ff1e::42
+</PRE>
+	</P>
+
+	<P>
+	None of the extensions define a <I>VERB</I> which takes a prioritised array,
+	but the mechanism is similar, just set the 5th argument to 1 instead of 0.
+	The CHECK and PRINT functions do not deal with priorities but just with the
+	<I>OBJECT</I>: the compiler will take care of parsing priorities and using
+	them to sort the list. An example can be seen in the base system's source
+	for Language::INTERCAL::Rcfile.
+	</P>
+
+    </BODY>
+</HTML>
+

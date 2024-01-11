@@ -1,0 +1,270 @@
+<HTML>
+    <HEAD>
+	<TITLE>CLC-INTERCAL Reference</TITLE>
+    </HEAD>
+    <BODY>
+	<H1>CLC-INTERCAL Reference</H1>
+	<H2>... The INTERCAL calculator</H2>
+
+	<P>
+	Table of contents:
+	<UL>
+	    <LI><A HREF="index.html">Parent directory</A>
+	    <LI><A HREF="#intercalc">The INTERCAL calculator</A>
+	    <LI><A HREF="#command">Command-line options</A>
+	    <LI><A HREF="#using">Using the calculator</A>
+	</UL>
+	</P>
+
+	<H2><A NAME="intercalc">The INTERCAL calculator</A></H2>
+	<P>
+	Starting from CLC-INTERCAL 1.-94.-4, a new INTERCAL calculator is
+	included with the distribution. Apart from the obvious use as a luxury
+	desk calculator, the calculator is useful to quickly test fragments of
+	INTERCAL programs by just typing them in the calculator and seeing what
+	happens. Note that some statements are by necessity not supported,
+	for example COME FROMs have no real meaning as each statement is
+	executed as a separate program. ABSTAIN FROM and friends, however,
+	are supported: you can even say things line "DO ABSTAIN FROM (1)",
+	them write out the state to a file, exit the calculator, start it
+	up again, write the state back in, type "(1) DO .1 &lt;- #2" and the
+	statement will not be executed: the calculator remembers it's supposed
+	to be ABSTAINed FROM.
+	</P>
+
+	<P>
+	<I>intercalc</I> requires CLC-INTERCAL 1.-94.-4 and newer. It won't work with
+	older versions.
+	</P>
+
+	<P>
+	Starting with CLC-INTERCAL 1.-94.-2, <I>intercalc</I> is provided as a
+	separate package, CLC-INTERCAL-ICALC. The various User Interfaces are
+	also probided as separate packages, so you can install just the ones
+	you use.
+	</P>
+
+	<P>
+	By default, if started without instructions to the contrary, <I>intercalc</I>
+	uses the configuration to decide what kind of user interface to use; the
+	default depends on which CLC-INTERCAL extensions are installed, but it will
+	try things in the following order until one works.
+	<UL>
+	<LI>X<BR>
+	Available if the UI-X extension is installed. It works when the calculator
+	runns on a system supporting either Gtk3 or Gtk2, and requires the corresponding
+	perl module installed (Gtk3 or Gtk2). If both perl modules are installed,
+	Gtk3 is preferred.
+	<LI>Curses<BR>
+	Available if the UI-Curses extension and the Curses perl module are both
+	installed; it requires a terminal with sufficient capabilities, like an
+	xterm, a Linux, FreeBSD, NetBSD or OpenBSD console, a serial terminal like
+	a VT-220, in fact almost anything except a line printer.
+	<LI>Line<BR>
+	Available if the UI-Line extension and the Term::ReadLine::Gnu perl module
+	are both installed; other Term::ReadLine perl modules are currently not
+	supported but will probably be in future; it requires a terminal with sufficient
+	capabilities, like anything mentioned in the previous item and maybe a few
+	more. It may even work on a line printer, although this is untested.
+	<LI>Batch<BR>
+	Always available as long as your program has something connected to standard
+	input, for example a keyboard, a card reader, or redirection from a file.
+	This mode is also referred to as &quot;None&quot; because it's implemented
+	by a tiny &quot;interface&quot; called UI-None which is included in the
+	Base package.
+	</UL>
+	The default can be changed as described in <a href="sickrc.html">the sickrc
+	specification</a>.
+	</P>
+
+	<P>
+	In the remainder of this chapter, we speak of &quot;interactive&quot;
+	interface to mean &quot;anything except batch mode&quot; and of
+	&quot;windowed&quot; interface to mean X or Curses, as opposed to
+	Line or Batch.
+	</P>
+
+	<P>
+	The arguments on the command line are either options (in the form
+	<I>--name</I><CODE>=</CODE><I>value</I> or <I>-xvalue</I>), or filenames.
+	If a filename is encountered, it must be a file previously created by
+	<I>intercalc</I> using the Read As or Read Out option. Specifiying a file is
+	equivalent to selecting Write In first thing after the calculator starts up.
+	</P>
+
+	<H2><A NAME="command">Command-line options</A></H2>
+	<P>
+	There is a number of command-line options, which are grouped
+	by type for easy reference.
+	</P>
+
+	<H3>User interface options</H3>
+
+	<P>
+	If the automatic user interface selection does not give the required
+	result, the following options can be used to control what happens:
+	</P>
+
+	<TABLE>
+	    <TR><TH ALIGN="left">Long option</TH><TH ALIGN="left">Short</TH><TH ALIGN="left">Meaning</TH></TR>
+	    <TR><TD ALIGN="left">--graphic</TD><TD ALIGN="left">-X</TD><TD ALIGN="left">GTK-based graphical interface</TD></TR>
+	    <TR><TD ALIGN="left">--curses</TD><TD ALIGN="left">-c</TD><TD ALIGN="left">Curses-based text interface</TD></TR>
+	    <TR><TD ALIGN="left">--line</TD><TD ALIGN="left"></TD><TD ALIGN="left">ReadLine-based text interface</TD></TR>
+	    <TR><TD ALIGN="left">--batch</TD><TD ALIGN="left"></TD><TD ALIGN="left">Batch mode, no user interface</TD></TR>
+	    <TR><TD ALIGN="left">--interface=<I>NAME</I></TD><TD ALIGN="left">-i<I>NAME</I></TD><TD ALIGN="left">Load the specified interface</TD></TR>
+	</TABLE>
+
+	<P>
+	The --interface option can be used to load third-party interface modules which
+	<i>intercalc</I> would not otherwise know about: it will look for them in the
+	standard perl include path. Note however that any interface modules using the
+	recommended extension mechanism will add itself to the list of interfaces
+	<i>intercalc</i> tries if not told otherwise, so it may just work without
+	having to say anything on the command line.
+	</P>
+
+	<H3>Compiler options and operating mode</H3>
+
+	<P>
+	These are either the name of the compiler to use, and any extensions
+	which you wish to load initially, or other options which control how
+	the compiler behaves.
+	</P>
+
+	<TABLE>
+	    <TR><TH ALIGN="left">Long option</TH><TH ALIGN="left">Short</TH><TH ALIGN="left">Meaning</TH></TR>
+	    <TR><TD ALIGN="left">--include=<I>DIR</I></TD ALIGN="left"><TD>-I<I>D ALIGN="left"IR</I></TD><TD>Add directory to search path for compiler objects</TD></TR>
+	    <TR><TD ALIGN="left">--language=<I>NAME</I></TD><TD ALIGN="left">-l<I>NAME</I></TD><TD ALIGN="left">Selects the compiler (default: sick)</TD></TR>
+	    <TR><TD ALIGN="left">--option=<I>NAME</I></TD><TD ALIGN="left">-o<I>NAME</I></TD><TD ALIGN="left">Selects a compiler option, may be repeated (default: none)</TD></TR>
+	    <TR><TD ALIGN="left">--mode=<I>NAME</I></TD><TD ALIGN="left">-m<I>NAME</I></TD><TD ALIGN="left">Selects operating mode (default: full)</TD></TR>
+	    <TR><TD ALIGN="left">--bug=<I>NUMBER</I></TD><TD ALIGN="left"></TD><TD ALIGN="left">Change the probability of the compiler bug</TD></TR>
+	    <TR><TD ALIGN="left">--ubug=<I>NUMBER</I></TD><TD ALIGN="left"></TD><TD ALIGN="left">Change the probability of the unexplainable compiler bug</TD></TR>
+	</TABLE>
+
+	<P>
+	The calculator currently defines three operating modes: <I>full</I> (the default), <I>expr</I> and <I>oic</I>.
+	</P>
+
+	<P>
+	In <I>full</I> mode, the full power of the selected compiler and extensions is available. One types
+	INTERCAL statements and watches them execute. Additionally, for convenience, one can type an
+	expression and this will be evaluated and its result displayed. It is internally implemented by
+	pretending you typed &quot;DO READ OUT <I>expression</I>&quot;.
+	</P>
+
+	<P>
+	<I>expr</I> mode is a restricted form of full mode, where you can only execute assignments and evaluate
+	expressions; other statements are disallowed. Assignments are specified without the initial DO and/or PLEASE.
+	Expressions can of course contain overloading and other side-effects, which will be remembered and will
+	come back to cause unexpected results later. This mode is suitable for a desk calculator.
+	</P>
+
+	<P>
+	<I>oic</I> mode is a silly &quot;One Instruction&quot; desk calculator which is there because we can.
+	This mode is currently undocumented.
+	</P>
+
+	<H3>Misc options</H3>
+
+	<P>
+	The following options control the way <I>intercalc</I> operates:
+	</P>
+
+	<TABLE>
+	    <TR><TH ALIGN="left">Long option</TH><TH ALIGN="left">Short</TH><TH ALIGN="left">Meaning</TH></TR>
+	    <TR><TD ALIGN="left">--nouserrc</TD><TD ALIGN="left"></TD><TD ALIGN="left">Ignore <I>.sickrc</I> files</I> found</TD></TR>
+	    <TR><TD ALIGN="left">--nosystemrrc</TD><TD ALIGN="left"></TD><TD ALIGN="left">Ignore any files in <I>/etc/sick</I></TD></TR>
+	    <TR><TD ALIGN="left">--rcfile=<I>NAME</I></TD><TD ALIGN="left">-r<I>NAME</I></TD><TD ALIGN="left">Uses specified file instead of searching for files</TD></TR>
+	    <TR><TD ALIGN="left">--rcskip=<I>NAME</I></TD><TD ALIGN="left">-R<I>NAME</I></TD><TD ALIGN="left">Ignores <I>VERB</I> when processing sickrc files</TD></TR>
+	    <TR><TD ALIGN="left">--interpreter=<I>NAME</I></TD><TD ALIGN="left"></TD><TD ALIGN="left">Uses an alternative CLC-INTERCAL Interpreter</TD></TR>
+	</TABLE>
+
+	<H2><A NAME="using">Using the calculator</A></H2>
+
+	<P>
+	Once the calculator has started, it will display its window (in windowed
+	mode), print its prompt (in Line mode), or simply wait for input (in
+	batch mode). In any case, you enter statements or expressions and
+	watch them execute.
+	</P>
+
+	<P>
+	Some menus are available in windowed mode to change the current compiler,
+	base and operating mode. These should be self-explanatory in the X
+	interface; for the Curses interface, see below. For non-windowed interfaces,
+	there is an alternative mechanism to access the functionality provided
+	by menus in windowed mode, see below.
+	</P>
+
+	<P>
+	In X mode you can provide input by clicking on a key or by pressing the
+	corresponding key on the keyboard if there is one (some symbols may not
+	be available on all keyboards). The menus work in the obvious way. There
+	is at present no keyboard shortcut for the menus, but it may be added
+	in future.
+	</P>
+
+	<P>
+	In Curses mode you can press the key if it exists on the keyboard, or use
+	the cursor keys (up, down, left, right) to highlight one of the buttons on
+	the screen, then press Enter to activate it. Note that Enter does not
+	terminate the line in Curses mode: to do that, press F5 (Do It) or
+	&quot;=&quot; key, or navigate to the F5 button and press Enter. This may
+	work different from other systems. To open a menu with a label starting
+	with <I>X</I>, press Alt-<I>X</I>, for example Alt-L will open the
+	Language menu. If the keyboard cannot produce this, the Escape and backspark
+	(&quot;`&quot;) keys will highlight the first menu, then the left and
+	right cursor keys can move between menus, and Enter or down will open the
+	menu. Another Escape or backspark will return to the main keypad. If you
+	wanted a normal user interface, presumably you wouldn't be using an
+	INTERCAL calculator.
+	</P>
+
+	<P>
+	If the system's curses library and the terminal both support it, the
+	Curses module can also use the mouse. Add the statement:
+<PRE><CODE>
+	I CAN POINT WITH THE MOUSE
+</CODE></PRE>
+	To a configuration file to enable it. Clicking the first mouse button
+	while the cursor is on any enabled key or menu will do the corresponding
+	action and make that key or menu the current item.
+	</P>
+
+	<P>
+	In line and batch mode, access to menu functions can be achieved by starting
+	a line with a backspark (<CODE>`</CODE>) and a letter. In Line mode you can
+	see what letters make sense by pressing Tab twice after the backspark, which
+	will give you a list. In any case, the following backsparks are available:
+	</P>
+
+	<TABLE>
+	    <TR><TH ALIGN="left">Backspark</TH><TH ALIGN="left">Meaning</TH></TR>
+	    <TR><TD ALIGN="left">`a</TD><TD ALIGN="left">Show the &quot;About intercalc&quot; text</TD></TR>
+	    <TR><TD ALIGN="left">`b<I>BASE</I></TD><TD ALIGN="left">Change base</TD></TR>
+	    <TR><TD ALIGN="left">`c</TD><TD ALIGN="left">Save settings to <I>.sickrc</I></TD></TR>
+	    <TR><TD ALIGN="left">`g</TD><TD ALIGN="left">Give up (exit calculator) - you'll need to do it twice to confirm</TD></TR>
+	    <TR><TD ALIGN="left">`h</TD><TD ALIGN="left">Show command history</TD></TR>
+	    <TR><TD ALIGN="left">`h<I>NUM</I></TD><TD ALIGN="left">Show command history, limiting to last <I>NUM</I> commands</TD></TR>
+	    <TR><TD ALIGN="left">`l<I>LANGUAGE</I></TD><TD ALIGN="left">Load a different compiler (1972, ick or sick)</TD></TR>
+	    <TR><TD ALIGN="left">`m<I>MODE</I></TD ALIGN="left"><TD>Change operating mode (full, expr or oic)</TD></TR>
+	    <TR><TD ALIGN="left">`o<I>OPTION</I></TD><TD ALIGN="left">Toggle compiler option</TD></TR>
+	    <TR><TD ALIGN="left">`r<I>FILE</I></TD><TD ALIGN="left">Read Out: saves calculator state to file</TD></TR>
+	    <TR><TD ALIGN="left">`r</TD><TD ALIGN="left">Like `r<I>FILE</I> but uses last filename given to `r or `w</TD></TR>
+	    <TR><TD ALIGN="left">`t</TD><TD ALIGN="left">Show program trace, if enabled with `otrace</TD></TR>
+	    <TR><TD ALIGN="left">`t<I>NUM</I></TD><TD ALIGN="left">Same as `t, limiting to trace produced by last <I>NUM</I> commands</TD></TR>
+	    <TR><TD ALIGN="left">`w<I>FILE</I></TD><TD ALIGN="left">Write In: loads calculator state from file</TD></TR>
+	    <TR><TD ALIGN="left">`?</TD><TD ALIGN="left">Help: displays the help text</TD></TR>
+	</TABLE>
+
+	<P>
+	If you do not provide an argument to `b, `l, `m or `o, they will show
+	a list. Currently selected base, language, mode or options (respectively)
+	will be marked with a splat. The Line interface will also show all
+	possible completions if you press Tab twice, so "`l Tab Tab" shows all
+	available languages and so on.
+	</P>
+
+    </BODY>
+</HTML>
+

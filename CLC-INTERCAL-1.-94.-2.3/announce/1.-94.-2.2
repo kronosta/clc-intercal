@@ -1,0 +1,129 @@
+2023-09-14: ALERT: CLC-INTERCAL 1.-94.-2.2 escaped
+
+CLC-INTERCAL has a new control structure, generalising both ABSTAIN FROM
+and COME FROM!  This is called "Roadworks".  It allows to declare a section
+of a program "Closed for roadworks", which makes it impossible to execute
+it.  Any attempts to do so will result in the program taking a "Diversion"
+via a different segment.  This new feature can also be referred to as
+"Closure", which is particularly appropriate when one wants to confuse
+programmers familiar with a different meaning of that word.
+
+Unfortunately, in the process of testing this new feature, the secure
+containment facility which prevents CLC-INTERCAL from heading out into the
+world was temporarily closed off and the source code diverted via the
+download server.  In other words, it escaped again.
+
+The escaped compiler can be found at:
+
+  https://uilebheist.srht.site/dist/CLC-INTERCAL-1.-94.-2.2/
+
+Changes since 1.-94.-2.1 are detailed in the Changes files which can be found
+all over the sources; or see the git log at:
+
+  https://git.sr.ht/~uilebheist/CLC-INTERCAL
+
+As a very short summary, in alphabetic order:
+
+* A microscopic change to sick.iacc results in an improved compiler
+  performance with no changes in the language accepted: for example,
+  the hello.i program (which is nothing short of cruelty to compilers)
+  now compiles approximately 15 times faster than before. Also, building
+  the whole compiler from sources takes a much shorter time.
+
+* C-INTERCAL's ONCE and AGAIN statement modifiers are now supported; in
+  addition, they have a quantum version (ONCE AND AGAIN) which does not
+  exist in C-INTERCAL.
+
+* Embedded INTERCAL in Perl sources. This used to be possible with 0.05 but
+  the functionality was temporarily removed in 1.-94.-8; it's now back,
+  so it's possible to have programs written partially in Perl and partially
+  in INTERCAL. Moreover, it is possible to specify different preloads in
+  the same source, so the INTERCAL parts could be a mix of CLC-INTERCAL,
+  C-INTERCAL or the original 1972. The possibilities for obfuscation are
+  endless.
+
+* Implemented a mechanism by which a compiler (IACC source) can save
+  information about statements; this is used to implement the ONCE / AGAIN
+  feature, but also to count the ratio of statements containing PLEASE and
+  will eventually be used to produce an appropriate error for insufficient
+  or excessive use of PLEASE.
+
+* Improved assignment to unary operators for bases > 4; it now works in a
+  lot more cases.
+
+* Improved compatibility with C-INTERCAL's ABSTAIN FROM implementation:
+  when ABSTAINing FROM (or REINSTATing) a label, CLC-INTERCAL will check
+  if the corresponding statement is a GIVE UP and will transform the
+  ABSTAIN FROM / REINSTATE into a no-op if that's the case. C-INTERCAL
+  on the other hand executes it. This corresponds to two different
+  interpretations of the 1972 manual: both interpretations are valid.
+  When running in "imitate ick" mode, CLC-INTERCAL will now use the
+  C-INTERCAL interpretation, in all other modes it will use its own
+  interpretation, as documented since escape 0.01.
+
+* Improved compatibility with C-INTERCAL's "select" binary operator. In
+  INTERCAL-72, the size of a number was determined at runtime, so that
+  the result of a select could be 16 or 32 bits depending on the actual
+  numbers it operated on.  C-INTERCAL changed that to determine all sizes
+  at compile time, so that the size of a select is the size of its second
+  operand. CLC-INTERCAL kept the original "dynamic" specification. This
+  can produce different results if the select itself is the operand to an
+  unary operator. Starting from this escape, the size is determined at
+  runtime in most cases, but when compatibility with C-INTERCAL is desired
+  it is determined using the same compile time mechanism as they use.
+
+* Improved compiler backend for object listing, which now includes more
+  information (see also the new backend below). Also permitted multiple
+  backends from the same session, for example ListObject,Run,DumpRegisters
+  would produce an object listing, then run the program, and finally
+  print the contents of all registers as they were at the end of execution.
+
+* Made a start on a new optimiser, which for now does very little, but it's
+  a very effective little.
+
+* Major Interpreter rewrite to remove "multi-function" entry points and
+  make them separate; this results in much easier to read code, AND
+  a slight performance improvement too!
+
+* Modified some of the INET tests so that they work without a network.
+
+* New compiler backend which dumps all register contents; it can be
+  called immediately after running a program to inspect the final state;
+  it will provide the information even if the program splatted, so that
+  could be used to try to figure out what happened.
+
+* New test programs, both for the new features and additional tests for
+  existing features.
+
+* Optimised version of ick's standard library and floating-point library:
+  this is bug-for-bug compatible with the INTERCAL sources, tested by
+  running a large number of library calls with random inputs and comparing
+  the outputs, but much faster.  Unlike C-INTECAL's optimised library,
+  the "syslib" works in all supported arithmetic bases (floating-point
+  only work in base 2, like C-INTERCAL).
+
+* Removed some obsolete opcodes which were reserved for the optimiser but
+  never used (the new optimiser works rather differently); also some other
+  opcodes which were undocumented and used internally have now disappeared,
+  but the new extension mechanism provides a documented way to do the same.
+
+* Road closures / diversions, as mentioned above.
+
+* Some bugs fixed, and to keep things balanced, new bugs added.
+
+* Some statements and iasm (INTERCAL Assembler) opcodes have been renamed
+  to remove potentially offensive terms.  The old names and syntax will
+  still work for compatibility with existing programs; however the
+  documentation will always prefer the new names.
+
+* Support for C-INTERCAL's standard and floating-point library using the
+  same mechanism: if a program refers to labels belonging to these libraries
+  but does not define these labels, the compiler will try to include the
+  library.  We do not distribute the library as there are questions about
+  its licensing.  However we use it if it's available.  Also, if the program
+  selects optimisations, it will be able to use the optimised version of
+  these libraries, (see above) which is distributed under the same licence
+  as CLC-INTERCAL itself and included in the distribution.
+
+* Updated documentation, some of which even resembles reality.
+

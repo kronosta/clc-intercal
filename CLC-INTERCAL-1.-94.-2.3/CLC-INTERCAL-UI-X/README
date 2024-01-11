@@ -1,0 +1,23 @@
+CLC-INTERCAL 1.-94.-2.3 -- Graphical interface
+
+This package installs a graphical user interface to CLC-INTERCAL.
+At present, only the INTERCAL calculator, "intercalc", uses this interface,
+although a future release of "sick" will be able to use it as well.
+
+CLC-INTERCAL Base 1.-94.-2.3 or newer must be installed before this
+package.
+
+To install, run:
+
+    perl Makefile.PL
+    make
+    make test
+    make install
+
+Note that this interface has a runtime dependency on either the Gtk3
+or the Gtk2 perl module, if neither is found it will not run (if both
+are found, it will prefer Gtk3).
+
+Makefile.PL will print a warning if it cannot find a suitable Gtk module
+to use.
+

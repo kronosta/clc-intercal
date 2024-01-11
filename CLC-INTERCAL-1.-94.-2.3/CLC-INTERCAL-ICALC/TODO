@@ -1,0 +1,7 @@
+* t/01intercalc-oic.t - more tests
+* t/02intercalc-1972.t - more tests
+* t/03intercalc-ick.t - more tests
+* t/04intercalc-sick.t - more tests
+* t/06intercalc-state.t -- test saving/restoring of registers, constants, events,
+  abstains/reinstates, grammar changes, new opcodes, history
+

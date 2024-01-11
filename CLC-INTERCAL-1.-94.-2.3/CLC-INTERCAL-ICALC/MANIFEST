@@ -1,0 +1,17 @@
+Makefile.PL                              1.-94.-2.3
+MANIFEST
+README
+COPYING
+Changes
+TODO
+bin/intercalc                            1.-94.-2.3
+INTERCAL/ICALC/Extend.pm                 1.-94.-2.1
+INTERCAL/Include/ICALC.sickrc            1.-94.-2.1
+t/00use.t                                1.-94.-2.2
+t/01intercalc-oic.t                      1.-94.-2.2
+t/02intercalc-1972.t                     1.-94.-2.2
+t/03intercalc-ick.t                      1.-94.-2.2
+t/04intercalc-sick.t                     1.-94.-2.2
+t/05intercalc-options.t                  1.-94.-2.2
+t/06intercalc-state.t                    1.-94.-2.3
+t/run-calculator                         1.-94.-2.1

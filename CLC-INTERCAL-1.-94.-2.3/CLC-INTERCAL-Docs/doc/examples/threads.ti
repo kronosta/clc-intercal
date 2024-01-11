@@ -1,0 +1,29 @@
+	PLEASE NOTE: This program demonstrates "Threaded INTERCAL" style
+		     threads, where multiple "COME FROM"s are allowed
+		     corresponding to each label, and each "COME FROM"
+		     proceeds as a separate thread.
+
+Copyright (c) 2006 Claudio Calvelli, all rights reserved.
+
+CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+and distribute it is granted provided that the conditions set out in the
+licence agreement are met. See files README and COPYING in the distribution.
+
+(1)	DON'T GIVE UP
+
+	PLEASE COME FROM (1)
+	DO .1 <- #1
+	DO READ OUT .1               DO NOTE THAT THIS READS "I"
+	DO .1 <- .1 ¢ .1
+	DO READ OUT .1               DO NOTE THAT THIS READS "III"
+	PLEASE GIVE UP
+
+	DO COME FROM (1)
+	DO .2 <- #2
+	DO READ OUT .2               DO NOTE THAT THIS READS "II"
+	DO .2 <- .2 ¢ .2
+	DO READ OUT .2               DO NOTE THAT THIS READS "XII"
+	PLEASE GIVE UP
+
+	PLEASE NOTE: THE OUTPUT IS I, III INTERLEAVED WITH II, XII
+

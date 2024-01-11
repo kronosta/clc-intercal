@@ -1,0 +1,146 @@
+<HTML>
+    <HEAD>
+	<TITLE>CLC-INTERCAL Reference</TITLE>
+    </HEAD>
+    <BODY>
+	<H1>CLC-INTERCAL Reference</H1>
+	<H2>... Belongs TO</H2>
+
+	<P>
+	Table of contents:
+	<UL>
+	    <LI><A HREF="index.html">Parent directory</A>
+	    <LI><A HREF="#belongs">Belongs TO</A>
+	</UL>
+	</P>
+
+	<H2><A NAME="belongs">Belongs To</A></H2>
+
+	<P>
+	CLC-INTERCAL introduces an unique infrastructure over the registers. We
+	shall explain it with an example.
+	</P>
+
+	<P>
+	Imagine building a tree structure in other languages. You have a root, and
+	there are pointers from the root to other nodes, which in turn have pointers
+	to other nodes, until you get to the leaves.
+	</P>
+
+	<P>
+	This all sounds simple, but it has several drawbacks. The most important,
+	is that each node can have an arbitrary number of children, so you need to
+	start using messy techniques like variable-length lists. Also, if the
+	nodes need to contain values as well as pointers, you need to remember
+	reserving the extra space.
+	</P>
+
+	<P>
+	CLC-INTERCAL does not suffer from these problems. By simply reversing the
+	pointers, you can easily see that any leaf or node has exactly one parent.
+	We call this a BELONGS TO relation. Because the relation is an infrastructure
+	built on top of the registers, you can still use them for something else:
+	a popular choice of "something else" is to store values in them.
+	</P>
+
+	<P>
+	As an example, consider the following binary tree in LISP notation:
+	((1, (2, 3)), (4, ((5, 6), 7))). It looks awfully complicated for a seven
+	leaves data structure. To write that in CLC-INTERCAL one could do:
+<PRE>
+        PLEASE DO .1 &lt;- #1
+        DO MAKE .1 BELONG TO .3
+        DO .2 &lt;- #2
+        DO MAKE .2 BELONG TO .4
+        PLEASE .5 &lt;- #3
+        DO MAKE .5 BELONG TO .4
+        DO MAKE .4 BELONG TO .3
+        DO MAKE .3 BELONG TO .6
+        PLEASE .7 &lt;- #4
+        DO MAKE .7 BELONG TO .8
+        DO .9 &lt;- #5
+        DO MAKE .9 BELONG TO .10
+        PLEASE .11 &lt;- #6
+        DO MAKE .11 BELONG TO .10
+        DO MAKE .10 BELONG TO .12
+        DO .13 &lt;- #7
+        PLEASE MAKE .13 BELONG TO .12
+        DO MAKE .12 BELONG TO .8
+        DO MAKE .8 BELONG TO .6
+</PRE>
+	</P>
+
+	<P>
+	The root of the tree is <CODE>.6</CODE>. Its two subtrees are <CODE>.3</CODE>
+	and <CODE>.8</CODE>. Down the left subtree, we note that both <CODE>.1</CODE>
+	and <CODE>.4</CODE> BELONG TO it. And so on, just as simple as the rest of
+	INTERCAL.
+	</P>
+
+	<P>
+	Since we have removed the need to use variable-length lists to represent
+	trees, we can reintroduce them to represent more complicated data structures.
+	This means that a register can be made to belong to more than one other register.
+	</P>
+
+	<P>
+	If you know that a register belongs to another one you can get the name of
+	the latter by prefixing the former with a big-money symbol (<CODE>$</CODE>).
+	If a register happens to BELONG TO more than one register, the big-money
+	symbol is the one it was most recently made to belong to. The previous one
+	is accessed with the prefix 2 (two), and the one before it with the prefix 3
+	(three). Therefore up to nine different registers can be accessed that way,
+	if it belongs to that many. For example, after:
+<PRE>
+	PLEASE .1 &lt;- #2
+	DO .2 &lt;- #5
+	DO .3 &lt;- #8
+	DO MAKE .3 BELONG TO .2
+	DO MAKE .3 BELONG TO .1
+	DO MAKE .3 BELONG TO .3
+</PRE>
+	The register <CODE>$.3</CODE> would be itself, while <CODE>2.3</CODE> would
+	be <CODE>.1</CODE> and <CODE>3.3</CODE> would be <CODE>.2</CODE>.
+	</P>
+
+	<P>
+	The prefix can be repeated as necesary: if a register .1 belongs to .2 which
+	in turn belongs to .3, then $$.1 is .3 etcetera. There is no limit. If prefixes
+	are repeated, they are executed from left to right.
+	Thus, in the above example, <CODE>$$2.3</CODE> would be the same as
+	<CODE>2.3</CODE> aka <CODE>.1</CODE> (because <CODE>$.3</CODE> is the same
+	as <CODE>.3</CODE>). On the other hand, <CODE>2$$.3</CODE> is an error,
+	because <CODE>2.3</CODE> is <CODE>.1</CODE>, which does not belong to
+	anything. Note that this order of evaluation of prefixes differs from the
+	way other languages do that.
+	</P>
+
+	<P>
+	If you were wondering why CLC-INTERCAL has registers which cannot hold any
+	value (whirlpool, <CODE>@</CODE>), here's is why. They can be made to belong
+	and in turn oteher registers can be made to belong to them. So you can use
+	them as indirect references to other registers. In fact, this is what the
+	lecture system does. See <A HREF="lectures.html">the chapter on Classes
+	and Lectures</A>.
+	</P>
+
+	<P>
+	This documentation occasionally refers to a register as a "group" if
+	another register BELONGs TO it.
+	</P>
+
+	<P>
+	One more note. When a register is STASHed, any information about which groups
+	it belongs to is saved in the STASH. When it is retrieved, the belonging
+	information comes back from the STASH. Also, if you MAKE a register BELONG
+	while it's ignored, nothing happens, and similarly when you MAKE it NO LONGER BELONG.
+	</P>
+
+	<P>
+	If you think to use this mechanism as pointers, you'll find out that you
+	very quickly run into problems. We won't tell you how, as it would spoil
+	the fun.
+	</P>
+
+</BODY>
+</HTML>

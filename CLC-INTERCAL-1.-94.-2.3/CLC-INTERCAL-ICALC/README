@@ -1,0 +1,28 @@
+CLC-INTERCAL 1.-94.-2.3 -- INTERCAL calculator
+
+This package installs a batch-mode INTERCAL calculator. You must install
+CLC-INTERCAL Base 1.-94.-2.3 or newer before installing this package.
+
+To install, run:
+
+    perl Makefile.PL
+    make
+    make test
+    make install
+
+This installs a single program, "intercalc", which reads INTERCAL statements
+and expressions from standard input and does things with them. Documentation
+is provided in the CLC-INTERCAL-Docs package, under doc/html/intercalc.html
+and online at:
+
+    https://uilebheist.srht.site/docs/intercalc.html
+
+It is recommended that you install at least one of the available user
+interfaces:
+
+    UI-Line   - adds readline support and command-line editing to intercalc
+    UI-Curses - adds a full-screen text interface
+    UI-X      - provides a graphical interface to intercalc
+
+These are provided by package CLC-INTERCAL-UI-<name>.
+

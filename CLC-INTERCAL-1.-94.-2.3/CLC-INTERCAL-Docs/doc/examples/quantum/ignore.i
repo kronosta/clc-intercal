@@ -1,0 +1,67 @@
+	PLEASE NOTE: this program demonstrates quantum ignore, but it could
+	just as easily demonstrate quantum remember: uncomment the commented
+	out quantum remember, and comment out the quantum ignore, to produce
+	an identical program.
+
+	Requires CLC-INTERCAL 1.-94 or newer.
+
+Copyright (c) 2006 Claudio Calvelli, all rights reserved.
+
+CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+and distribute it is granted provided that the conditions set out in the
+licence agreement are met. See files README and COPYING in the distribution.
+
+	DO .5 <- #5
+	DO .1 <- #1
+	DO .2 <- #2
+	PLEASE IGNORE .1 WHILE REMEMBERING IT
+	DO NOT REMEMBER .1 WHILE IGNORING IT
+(1)	DO .1 <- #0
+	DO COME FROM (4)
+(5)	PLEASE COME FROM .5
+	DO .5 <- #5
+	DO WRITE IN .3
+(8)	DO .4 <- #2 ¢ "'.3 ~ .3' ~ #1"
+(4)	DO .2 <- #0
+
+	PLEASE COME FROM (3)
+	DO .2 <- #2
+	PLEASE COME FROM .1
+	DO .5 <- #0
+(2)	DO COME FROM .2
+
+	DON'T WORRY THAT I'M REPEATING A LABEL - YOU CAN NOW QUITE
+	GET AWAY WITH IT AS LONG AS YOU ARE VERY CAREFUL ABOUT WHAT
+	EVIDENCE YOU LEAVE AROUND. SO, WITHOUT FURTHER DELAY, HERE
+	FOLLOWS THE REPEATED LABEL:
+(8)	PLEASE DO NOT PRODUCE AN ERROR
+
+(3)	DO READ OUT .3
+
+	DO NOT DESPAIR TO UNDERSTAND THE ABOVE
+	IT'S ALL REALLY REALLY SIMPLE
+	THERE ARE TWO STATES (QUANTUM, SUPERPOSED)
+	AND IN THESE TWO STATES
+	THE VALUES OF REGISTER .1
+	DO NOT QUITE CORRESPOND,
+	BEING THEY ONE AND ZERO
+	AT THE SAME TIME
+	AND THERE IS SOMEWHERE
+	A COMPUTED "COME FROM .1", WHICH, SURPRISE!
+	WILL WORK IN ONE STATE BUT NOT IN THE OTHER.
+	THE TWO STATES WILL THEN QUITE DIFFER FROM EACH OTHER
+	ONE BEING WRITING NUMBERS
+	AND THE OTHER READING THEM IN THE SAME ORDER
+	BUT NOT NECESSARILY IMMEDIATELY
+	AND THAT'S ALL I'M GOING TO SAY
+	BUT DO NOT THINK FOR A SECOND
+	THAT IT'S ALL THERE IS TO SEE.
+
+	BUT WAIT! THERE'S MORE:
+
+	PLEASE COME FROM .4
+	DO .2 <- #0
+	DO GIVE UP NOW - I'M TIRED OF THIS
+
+	THE END
+

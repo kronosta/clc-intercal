@@ -1,0 +1,888 @@
+<HTML>
+    <HEAD>
+	<TITLE>CLC-INTERCAL Reference</TITLE>
+    </HEAD>
+    <BODY>
+	<H1>CLC-INTERCAL Reference</H1>
+	<H2>... INTERcal NETworking</H2>
+
+	<P>
+	Table of contents:
+	<UL>
+	    <LI><A HREF="index.html">Parent directory</A>
+	    <LI><A HREF="#compiling">Compiling a program with INTERNET
+		support</A>
+	    <LI><A HREF="#using">Using INTERNET</A>
+	    <LI><A HREF="#extensions">Compiler extensions added by the INTERNET</A>
+	    <LI><A HREF="#internals">Internals - or how you can interface
+		to INTERNET enabled INTERCAL programs from other languages</A>
+	</UL>
+	</P>
+
+	<H2><A NAME="compiling">Compiling a program with INTERNET support</A></H2>
+
+	<P>
+	Starting with CLC-INTERCAL 1.-94.-2, INTERNET is provided as a
+	separate package, CLC-INTERCAL-INET. The rest of this chapter
+	assumes that you have installed that package.
+	</P>
+
+	<P>
+	INTERNET is a standard compiler extension, so programs must include the
+	appropriate compile option to use it.
+	</P>
+	
+	<P>
+	The command-line compiler tool,
+	<I>sick</I>, automatically enables the INTERNET extension if the program
+	suffix includes the letter &quot;r&quot; (for remote - the letter &quot;i&quot;
+	was already used to indicate that the program is an INTERCAL program).
+	Alternatively, if you are not relying on <I>sick</I>'s guesses and
+	are specifying a list of preloads yourself, just add <I>-pinternet</I>
+	to your command line.
+	</P>
+
+	<P>
+	Using the INTERCAL Calculator, INTERCALC, you can easily add INTERNET
+	support by selecting &quot;internet&quot; from the Options menu or by
+	adding <I>-ointernet</I> to the command line.
+	</P>
+
+	<P>
+	The <I>internet</I> compiler object, which implements this extension,
+	extends the compiler's syntax to include the STEAL, SMUGGLE and CASE
+	statements; it also informs the runtime that the program should be
+	listening for theft requests, and start a theft server if required:
+	this is described below in the <A HREF="#internals">internals</A>
+	section.
+	</P>
+
+	<H2><A NAME="using">Using INTERNET</A></H2>
+
+	<P>
+	Once you've enabled INTERNET support, using it is a simple matter of
+	using STEAL, SMUGGLE or CASE statements as required; in this context,
+	IGNORE and REMEMBER are also useful to allow/disallow access to
+	your registers from other programs using STEAL and SMUGGLE. Details
+	on these statements can be found in <A HREF="statements.html">the
+	chapter about statements</A>.
+	</P>
+
+	<P>
+	Here is a simple example of an INTERNET program acting as a server:
+<PRE><CODE>
+	DO IGNORE @1
+    (1) PLEASE COME FROM (1)
+</CODE></PRE>
+	It may seem rather pointless, but in fact this program will wait
+	for network connections to SMUGGLE its standard write filehandle
+	(normally stored in register @1). The filehandle can not be stolen,
+	because it is ignored. The second statement is automatically caught
+	by the runtime, which recognises an infinite loop when it sees one,
+	and replaced with whatever is internally necessary to wait for a
+	network connection: in other words, the busy wait specified by the
+	COME FROM statement is replaced by an operating system specific
+	wait for network connections, which does not consume any CPU until
+	you try to SMUGGLE the standard write.
+	</P>
+
+	<P>
+	A client could do the following, after initialising the .1 register
+	to contain the server's process ID, and the :1 register to contain
+	the server's IP address:
+<PRE><CODE>
+	DO SMUGGLE @1 ON .1 FROM :1
+	DO WRITE IN .2
+</CODE></PRE>
+	what happens here is that one line of input is obtained from the
+	<I>server</I>'s standard write, and used in the <I>client</I> to
+	assign a value to .2. The server and the client could be in completely
+	different networks.
+	</P>
+	
+	<P>
+	Note that this example would still work, once,
+	if the server did not IGNORE @1 and the client used STEAL instead
+	of SMUGGLE, however this would prevent a second client from using
+	the same mechanism, because the server would no longer have the
+	standard write filehandle available after the first client stole it.
+	</P>
+
+	<P>
+	We can develop this example a bit further. The server could use the
+	system call interface to open a temporary file somewhere on the
+	server, and make it available for smuggling to give other INTERCAL
+	programs a chance to access the same file - even if they don't have
+	access to the computer where the server runs. This program should
+	be compiled with both the <I>internet</I> and <I>syscall</I>
+	extensions, perhaps by giving it suffix <I>.rsi</I>:
+<PRE><CODE>
+	PLEASE ,10 &lt;- #18
+	DO ,10 SUB  #1 &lt;- #95
+	DO ,10 SUB  #2 &lt;- #91
+	DO ,10 SUB  #3 &lt;- #93
+	PLEASE ,10 SUB  #4 &lt;- #95
+	DO ,10 SUB  #5 &lt;- #95
+	DO ,10 SUB  #6 &lt;- #80
+	DO ,10 SUB  #7 &lt;- #92
+	PLEASE ,10 SUB  #8 &lt;- #86
+	DO ,10 SUB  #9 &lt;- #91
+	DO ,10 SUB #10 &lt;- #93
+	DO ,10 SUB #11 &lt;- #95
+	PLEASE ,10 SUB #12 &lt;- #95
+	DO ,10 SUB #13 &lt;- #69
+	DO ,10 SUB #14 &lt;- #65
+	DO ,10 SUB #15 &lt;- #74
+	PLEASE ,10 SUB #16 &lt;- #94
+	DO ,10 SUB #17 &lt;- #65
+	DO ,10 SUB #18 &lt;- #74
+	DO :10 &lt;- #117
+  (666) PLEASE .10 &lt;- #3
+	DO IGNORE @10
+    (1) DO COME FROM (1)
+</CODE></PRE>
+	The first part, from the start to the line with label (666),
+	opens a file <CODE>/tmp/server</CODE> for reading and writing;
+	the file name is stored in ,10 and the required access mode
+	in :10, then system call #3 does the rest. The file will be
+	associated with class variable @10. All the server has to do
+	at this point is IGNORE @10 and wait for it to be smuggled.
+	</P>
+
+	<P>
+	A client could SMUGGLE @10 and just do normal file operations
+	on it (using READ OUT, WRITE IN, and system call #4 and #5
+	to perform seeks). Any changes made to the underlying file
+	will be visible to other clients, as well as any user on the
+	server computer who has access to the underlying file.
+	The implementation of the client is left as an exercise to
+	the reader.
+	</P>
+
+	<H2><A NAME="#extensions">Compiler extensions added by the INTERNET</A>
+
+	<P>
+	The INTERNET extension, when loaded, adds three bytecode opcodes, two
+	splats, a register and some run callbacks to the compiler.
+	</P>
+
+	<P>
+	The following opcodes are added:
+	<UL>
+	    <LI>CSE - CaSE<BR>
+	    Followed by an expression, a count and <I>count</I> pairs of (expression,
+	    statement), defines a CASE statement.
+	    <LI>SMU - SMUggle<BR>
+	    Takes the same arguments as <I>STE</I>, but defines a SMUGGLE statement.
+	    <LI>STE - STEal<BR>
+	    Followed by a count, <I>count</I> expressions, a second count, the
+	    corresponding number of expressions, a third count and the
+	    corresponding number of registers, defines a STEAL statement;
+	    the first two counts should be #0 or #1, representing the presence
+	    or absence of ON and FROM, respectively.
+	</UL>
+	</P>
+
+	<P>
+	The following new splats are defined by these extensions:
+	<UL>
+	    <LI>*900 Implicit or explicit CASE failed: <I>reason</I><BR>
+	    A problem was encountered while looking for other INTERCAL systems
+	    <LI>*901 IPv6 Address Translation Problem: <I>error</I><BR>
+	    The IPv6 Address Translation Table is full, or something
+	    unexpected happened during the translation.
+	</UL>
+
+	<P>
+	The following special register is added:
+	<UL>
+	    <LI>%TH - THeft<BR>
+	    This register is used internally to determine if INTERNET support
+	    is enabled; if this register is #0 the program is not permitted to
+	    use STEAL, SMUGGLE or CASE; if the register is #1, the program has
+	    full network access to the limit defined by its running environment.
+	</UL>
+	</P>
+
+	<P>
+	The following run callbacks are added:
+	<UL>
+	<LI>Object creation callback: if there is already a theft server connection,
+	stores a reference to it in the object, otherwise sets this to undef
+	<LI>Object run callback: if the object does not have a theft server connection,
+	starts a theft server if required, then opens a connection to the server and
+	stores a reference to it in the object
+	</UL>
+	</P>
+
+	<H2><A NAME="internals">Internals</A></H2>
+
+	<P>
+	This section will document the underlying protocol used to
+	STEAL and SMUGGLE variables, as well as executing CASE statements;
+	it will also show how programs written in other languages can
+	communicate with INTERCAL programs using the INTERNET.
+	</P>
+
+	<H3>Representation of IP addresses</H3>
+
+	<P>
+	IPv4 addresses are represented in the obvious way, as 32 bit numbers.
+	The address is always stored in local byte order, so for example 127.0.0.1
+	is always #2130706433 (which of course must be written as #28672 &cent; #61441).
+	Some IPv4 addresses cannot be represented: addresses where the first octet
+	is 224 or higher, corresponding to the multicast range, and addresses where
+	the first octet is 127 and at least one of the second or third is nonzero.
+	Storing the corresponding numbers in a register may have unexpected results,
+	depending on what one was expecting.
+	</P>
+
+	<P>
+	IPv6 addresses are also represented as 32 bit numbers. Since these addresses
+	are 128 bit long, a rather large hammer is required to make them fit in the
+	smaller size. The system remembers all the IPv6 addresses it has seen and
+	maps them to a fake IPv4 address in one of the two &quot;non-representable&quot;
+	ranges:
+	</P>
+
+	<P>
+	IPv6 unicast addresses are mapped to IPv4 multicast addresses, which have
+	the first octet 224 or higher. The localhost address ::1 is always mapped
+	to 224.0.0.0 (which must be written as #49152 &cent; #32768); other addresses
+	are assigned a mapping as needed, for example when storing the results of
+	a DNS lookup or the replies to a multicast query for other computers running
+	INTERCAL programs. Note that even multicast queries return unicast addresses,
+	as the response to a multicast query is to send back a unicast packet, and
+	that will of course have a source IPv6 address identifying the other computer.
+	</P>
+
+	<P>
+	Link-local addresses are represented in exactly the same way as other unicast
+	addresses, but the system remembers which interface they were seen on: this
+	means that if two identical link-local addresses are seen on different interfaces,
+	they are considered different IPv6 addresses and given different fake IPv4
+	addresses: this is necessary because sending to one of these addresses is
+	only possible by using the correct interface.
+	</P>
+
+	<P>
+	IPv6 multicast addresses are mapped to IPv4 addresses in the &quot;localnet&quot;
+	range, with the constraint that at least one of the second or third octet is
+	nonzero. The fourth octet of such addresses is the interface index, which is
+	necessary to determine which interface a multicast packet must use.
+	When converting a fake IPv4 address in this range back to an IPv6 multicast
+	address, the fourth octet is ignored, so 127.x.y.n results in a look up of
+	x.y in an internal table: the result is either a splat if no entry is found,
+	or a multicast group address; when sending packets to this group, the fourth
+	octet of the original fake IPv4 address provides the interface index.
+	This will probably not work for systems with more than 255 interfaces.
+	</P>
+
+	<P>
+	To store an IPv6 multicast address, the system first checks if it has already
+	seen this address, in which case it just stores 127.x.y.n as appropriate; if
+	the interface index was not specified, n will be 0. If the address is not found,
+	a new x.y value is generated and remembered. The &quot;all nodes on link&quot;
+	address ff02::1 is always mapped to 127.0.1.n, so that leaves space in the
+	representation for 65534 further IPv6 multicast groups.  Any multicast groups
+	specified by configuration will be automatically mapped starting at 127.0.2.n
+	when the program loads the INTERNET extension. A DNS lookup of the printable
+	representation of a multicast group will return its numeric representation
+	and assign them a 32 bit number if required.
+	</P>
+
+	<P>
+	The documentation package, CLC-INTERCAL-Docs, contains an example program
+	&quot;dns.ri&quot; which will WRITE a name IN, perform a DNS lookup, and
+	READ OUT the corresponding 32 bit number: running this will show how addresses
+	are stored. Note that at present only the first address returned will be
+	READ OUT by this program.
+	</P>
+
+	<H3><A NAME="callback">Theft callback</A></H3>
+	
+	<P>
+	The INTERNET extension can call a single code reference when a register
+	is stolen or smuggled; unlike <A HREF="parsers.html#callbacks">Interpreter
+	callbacks</A>, there can be at most one callback for each Interpreter object,
+	so if trying to install two of them the second one replaces the first one
+	rather than adding to it. The way the callback is executed is also different.
+	</P>
+
+	<P>
+	To install the callback, a program first needs to request the function
+	<I>theft_callback</I> which is not exported by default:
+<PRE><CODE>
+	use Language::INTERCAL::INET::Extend qw(theft_callback);
+</CODE></PRE>
+	then install a callback by passing a reference to the Interpreter object
+	and a code reference:
+<PRE><CODE>
+	theft_callback($obj, \&amp;code_to_run);
+</CODE></PRE>
+	where <CODE>$obj</CODE> is an Interpreter object.
+	</P>
+
+	<P>
+	The <I>theft_callback</I> function returns the previous callback, if there
+	was one, or <I>undef</I> if there wasn't one: the caller could use this
+	information to make sure that the previous callback is also called.
+	The second argument is actually optional, so calling <I>theft_callback</I>
+	with just one argument returns any existing callback without making any
+	changes. A callback can be explicitely deleted by passing <I>undef</I> as
+	second argument to <I>theft_callback</I>.
+	</P>
+
+	<P>
+	Once a theft callback is installed in an Interpreter object, the program
+	runs as normal, but if one of its registers gets either stolen or
+	smuggled the Interpreter will arrange for the theft callback to run
+	with 3 arguments: a reference to the Interpreter object, what heppened
+	(&quot;STEAL&quot; or &quot;SMUGGLE&quot;), and the name of the register,
+	for example if register :2 is stolen this could call:
+<PRE><CODE>
+	code_to_run(INTERPRETER, 'STEAL', ':2');
+</CODE></PRE>
+	The <A HREF="intercalc.html"><I>intercalc</I> desk calculator</A> has
+	an example of using this callback to inform the user when a register
+	is stolen or smuggled (and also an example of how to only do this if
+	the INTERNET module is installed).
+	</P>
+
+	<H3>Theft server protocol</H3>
+
+	<P>
+	A theft server runs alongside any INTERNET-enabled INTERCAL programs and
+	provides information about where to find these programs; when a program
+	starts it tries to connect to a theft server on localhost, and if
+	necessary will start one; if it is unable to start a theft server or to
+	connect to a running one, it will refuse to enable INTERNET functions.
+	When a theft server is started automatically, it will also monitor
+	programs running on localhost and terminate automatically if they
+	all stop: this means that the theft server will not be left running
+	longer than necessary; it can however be started manually and this
+	gives the option to leave it running permanently. See the theft server's
+	own documentation.
+	</P>
+
+	<P>
+	A theft server listens for TCP connections on the INTERNET port specified
+	by configuration. Other programs can connect to this for two separate
+	functions: to inform the test server that they are running, and to
+	find out what is running. The former function is normally only used when
+	connecting to localhost, the latter can be used when connecting to a
+	theft server anywhere.
+	</P>
+
+	<P>
+	The theft server obeys common conventions: it sends messages starting
+	with a status code, uses carriage-return line-feed sequences to terminate
+	lines and all the normal stuff. Even though this is INTERCAL we still
+	need to do things somewhat normally when using the network.
+	</P>
+
+	<P>
+	On accepting connection, the theft server sends a message with status
+	code 200 and some information about itself, The message could look like:
+<PRE><CODE>
+	200 INTERNET on ::1 (CLC-INTERCAL 1.-94.-2.1)
+</CODE></PRE>
+	where the <CODE>::1</CODE> will be the address used by the client to reach
+	this theft server, and the number at the end is the server's version.
+	There is at present no other possible status: either the server is there
+	and accepting connections, or it won't be able to send a reply.
+	</P>
+
+	<P>
+	Once connected to the theft server on localhost, a program is expected
+	to declare how it can be reached directly: it will be listening on
+	some other port which was otherwise unused and of course it will have
+	its own PID. The message to inform the theft server is:
+<PRE>
+	<CODE>VICTIM </CODE><I>pid</I><CODE> ON PORT </CODE><I>port</I>
+</PRE>
+	The theft server will validate the information and reply with an appropriate
+	status code; error replies will look like one of:
+<PRE><CODE>
+	530 You have already issued a VICTIM command
+	531 That was an invalid PID
+	532 I already know about that PID
+	533 That was an invalid PORT
+	534 I already know about that PORT
+</CODE></PRE>
+	If on the other hand all goes well the theft server replies with a status
+	230 and a message looking like:
+<PRE><CODE>
+	230 Welcome 1234:4242!
+</CODE></PRE>
+	From this point until the TCP connection is closed, the theft server will
+	assume that the program is running; when the program terminates, it will
+	automatically close connection and the theft server will then know it's
+	no longer running.
+	</P>
+
+	<P>
+	Once a client has finished, it could just close connection, but it's
+	polite to send:
+<PRE><CODE>
+	THANKS
+</CODE></PRE>
+	To which the theft server will reply with status 240 and maybe a message like:
+<PRE><CODE>
+	240 You are welcome
+</CODE></PRE>
+	then it will close connection.
+	</P>
+
+	<P>
+	The above messages are meant for a program running on the same node as the
+	theft server, and allow the theft server to maintain a list of who is where.
+	The following commands can be used by anybody. local or not, to get this
+	information.
+	</P>
+
+	<P>
+	To find out which process IDs are known to the theft server, issue:
+<PRE><CODE>
+	CASE PID
+</CODE></PRE>
+	This always succeeds with status 210. After the status message, the theft
+	server sends a list of PIDs and their port, followed by a spot (".") on a
+	line by itself; note that the list returned could be empty if the theft
+	server has been started manually with instruction not to terminate after
+	all local programs exit. The reply line may contain the count of items
+	in the line, but it may not: the client is supposed to check for the
+	terminating spot rather than rely on the message. An example of reply
+	to CASE PID is:
+<PRE><CODE>
+	210 We have 2 processes running
+	4321 ON PORT 2424
+	1234 ON PORT 4242
+	.
+</CODE></PRE>
+	Older theft servers just indicated the PIDs without the PORTs, so would
+	have said:
+<PRE><CODE>
+	210 We have 2 processes running
+	4321
+	1234
+	.
+</CODE></PRE>
+	The client must be prepared to accept either type of list.
+	</P>
+
+	<P>
+	If a program knows a PID but not its own PORT, it can ask the theft server:
+<PRE>
+	<CODE>CASE PORT </CODE><I>port</I>
+</PRE>
+	for example:
+<PRE><CODE>
+	CASE PORT 1234
+</CODE></PRE>
+	The server will look for the PID and return a status 220 followed by the
+	PORT if it can find it, otherwise status 520. Examples of such messages are:
+<PRE><CODE>
+	220 4242 is the port you need
+	520 No such PID
+</CODE></PRE>
+	</P>
+
+	<P>
+	The theft server also listens for IPv4 broadcasts and IPv6 multicasts on
+	the INTERNET port (for IPv6 it will join all multicast groups specified
+	in the configuration). This permits to find all theft servers running
+	on the local network or, if a global scope multicast group is specified
+	by the configuration, all theft servers running anywhere and having the
+	same multicast group in their configuration.
+	</P>
+
+	<P>
+	If the message starts with a number, it is assumed to be somebody
+	looking for a node running a program with that PID: the theft server
+	will ignore messages which mention a PID it does not know about.
+	If it knows the PID, it will reply by sending the message, with a
+	space and the corresponding PORT appended, back to sender.
+	</P>
+
+	<P>
+	If the message does not start with a number, it is assumed to be
+	somebody looking for any INTERCAL program. If there is nothing
+	running on this node, the theft server will ignore the message;
+	if there is something running, it will pick a random one, and
+	send back the message, with the PID and the corresponding PORT
+	appended, back to sender.
+	</P>
+
+	<H3>STEAL and SMUGGLE protocol</H3>
+
+	<P>
+	Once an INTERCAL program has found out where to STEAL or SMUGGLE
+	from, by connecting to a theft server or in some other way, it
+	will open a connection directly to the victim using the victim's
+	IP address and the appropriate port, and the protocol described
+	in this section.
+	</P>
+
+	<P>
+	The potential victim accepts connection requests and produces a
+	message with status 201 and showing the CLC-INTERCAL version
+	number at the end, for example:
+<PRE><CODE>
+	201 2001:db8::8:42 Example victim (CLC-INTERCAL 1.-94.-2.1)
+</CODE></PRE>
+	After that te victim waits for commands and replies until the
+	potential thief either disconnects or issues the THANKS command:
+<PRE><CODE>
+	THANKS
+</CODE></PRE>
+	To which the VICTIM replies with status 251 and disconnects,
+	for example:
+<PRE><CODE>
+	251 You are welcome
+</CODE></PRE>
+	</P>
+
+	<P>
+	The only two commands accepted are STEAL and SMUGGLE, which
+	are both followed by a register name, for example:
+<PRE><CODE>
+	STEAL .1
+	SMUGGLE :2
+	STEAL @3
+</CODE></PRE>
+	If the operation is permitted, the victim replies with a status
+	250 followed by the current value of the register, described below;
+	if the operation fails it replies with a 55x status depending on
+	the reason:
+	<UL>
+	<LI>551 - The register does not start with a spot, two spot, tail,
+	hybrid or whirlpool
+	<LI>552 - The register does not exist, maybe it has already been stolen
+	<LI>553 - The operation was STEAL and the register is IGNOREd
+	<LI>554 - The operation was SMUGGLE and the register is not IGNOREd
+	<LI>555 - Other reasons prevent the operation from completing
+	</UL>
+	Example messages include:
+<PRE><CODE>
+	551 I've never seen a register called $42
+	552 Register @5 is not a valid class or filehandle
+	553 I'm ignoring :2 so it cannot be stolen
+	554 I remember @1 so it cannot be smuggled
+	555 A timeout occurred, maybe a 555 chip is faulty
+</CODE></PRE>
+	</P>
+
+	<P>
+	When the reply is a status 250 it is followed by a list of values
+	terminated by a line containing a spot (".") all by itself.
+	The contents of the list depend on the type of register being
+	stolen or smuggled.
+	</P>
+
+	<P>
+	For a spot or two-spot register the list contains just one element,
+	the value of the register. If this fits in 16 bits, it is sent as
+	it is, otherwise as an interleave of two values.  This interleave
+	is always binary, independently of the current base of either the
+	thief or the victim. For example, a reply to STEAL :1 where :1
+	contains #32768 could be:
+<PRE><CODE>
+	250 Here is :1
+	#32768
+	.
+</CODE></PRE>
+	However a reply to SMUGGLE :2 where :2 contains 805306371 would say:
+<PRE><CODE>
+	250 Here is :2
+	#16385 &cent; #16385
+	.
+</CODE></PRE>
+	Note that the choice of simple number or an interleave depends on
+	the actual value returned, not on the type of the register which
+	contains that value.
+	</P>
+
+	<P>
+	For a tail or hybrid register the list will contain a number of
+	calculations which would reconstruct the register, starting with
+	dimensioning it and then assigning to all its subscripts. For
+	example if ,1 is a 2 by 2 matrix an answer to STEAL ,1 could be:
+<PRE><CODE>
+	250 Here is ,1
+	,1 &lt;- #2 BY #2
+	,1 SUB #1 SUB #1 &lt;- #8
+	,1 SUB #1 SUB #2 &lt;- #1
+	,1 SUB #2 SUB #2 &lt;- #42
+	.
+</CODE></PRE>
+	Note that one element (SUB #2 SUB #1) has not been sent because it
+	was zero, and it is not necessary to assign that explicitely.
+	For a hybrid register the result is similar, but a value may need
+	to be expressed as an interleave (always in base 2), for example
+	after SMUGGLE :2 the victim could say:
+<PRE><CODE>
+	250 Here is ;2
+	;2 &lt;- #4
+	;2 SUB #1 &lt;- #8191 &cent; #8191
+	;2 SUB #3 &lt;- #42
+	.
+</CODE></PRE>
+	</P>
+
+	<P>
+	Whirlpool registers can contain classes, filehandles or both. The
+	answer therefore can contain one or both of the following elements:
+	an exported filehandle and a list of subjects.
+	</P>
+
+	<P>
+	An exported filehandle is just a single line in the reply and
+	looks like an array dimensioning, except that it specifies
+	the TCP port, the filehandle's read character set, the write
+	character set and the access mode, respectively, For example
+	stealing the standard input (with STEAL @1) could reply:
+<PRE><CODE>
+	250 Here is @1
+	@1 &lt;- #37851 BY ?ASCII BY ?ASCII BY ?w
+	.
+</CODE></PRE>
+	This means that the victim is listening on TCP port 37851 for operations
+	on the filehandle (see next subsection), both character sets are ASCII
+	and the mode is "w", for "write", meaning of course that it can only
+	do input (WRITE IN).
+	</P>
+
+	<P>
+	When the filehandle has also been used as a class, it will have one
+	or more subjects: these are listed one per line as a calculation
+	in which the filehandle is treated as an array, the subscript is the
+	subject and the value is the label where the lecture happens, for
+	example if the victim had executed:
+<PRE><CODE>
+	DO STUDY #1 AT (1200) IN CLASS @4
+	PLEASE STUDY #8 AT (1500) IN CLASS @4
+	DO IGNORE @4
+	.
+</CODE></PRE>
+	The reply to a "SMUGGLE @4" could be:
+<PRE><CODE>
+	250 Here is @4
+	@4 SUB #1 &lt;- #1200
+	@4 SUB #8 &lt;- #1500
+	.
+</CODE></PRE>
+	As an aside, using "@4 SUB #1" in any calculation will return #1200
+	because a class can be used as an array to see its subjects, and
+	"@4 SUB #2" would splat with "*254 Invalid subject: #2"; assigning
+	to these expression is equivalent to executing a STUDY statement,
+	so the above reply could be executed exactly by the thief to
+	reconstruct the class. Note that the lectures will be executed in
+	the context of the thief, not the victim: unlike filehandles,
+	classes are not exported.
+	</P>
+
+	<P>
+	Of course a whirlpool register can have both, so after the victim
+	has executed:
+<PRE><CODE>
+	DO STUDY #1 AT (1000) IN CLASS @3
+</CODE></PRE>
+	A thief can STEAL @3 and this will get both the subject taught in
+	the class and the victim's standard splat. The victim's reply
+	could be:
+<PRE><CODE>
+	250 Here is @3
+	@3 &lt;- #36851 BY ?ASCII BY ?ASCII BY ?r
+	@3 SUB #1 &lt;- #1000
+	.
+</CODE></PRE>
+	And if the thief now splats, the error message will be displayed
+	in the victim's standard splat. So the thief does:
+<PRE><CODE>
+	DO STEAL @3 ON ....
+	PLEASE READ OUT @3 SUB #1
+	DO READ OUT @3 SUB #2
+</CODE></PRE>
+	This will produce "M" on the thief's standard read filehandle
+	and "*254 Invalid subject: #2" on the victim's standard splat.
+	</P>
+
+	<H3>Stolen filehandle protocol</H3>
+
+	<P>
+	After an INTERCAL program STEALs or SMUGGLEs a filehandle from
+	another program, it can use this filehandle like any normal
+	filehandle, and the effects will happen in the victim's environment.
+	The victim will indicate a TCP port for the stolen or smuggle
+	filehandle, and the thief will connect to it using the protocol
+	described in this section.
+	</P>
+
+	<P>
+	The victim will select a TCP port the filehandle and inform the
+	thief of it during the execution of the STEAL or SMUGGLE statement
+	which resulted in the filehandle being transferred. Since an
+	IGNOREd filehandle can be SMUGGLEd by several programs, the
+	victim will provide the same TCP port to all the thiefs, and will
+	coordinate access to the real filehandle on their behalf.
+	</P>
+
+	<P>
+	On accepting connection the victim will reply with a 202 status;
+	the message will include the version number, for example:
+<PRE><CODE>
+	202 2001:db8::42 Example filenandle (CLC-INTERCAL 1.-94.-2.1)
+</CODE></PRE>
+	The thief can then issue various file operations and conclude with
+	either disconnecting or sending the <CODE>THANKS</CODE> command,
+	to which the filehandle will reply with a 284 status, for example:
+<PRE><CODE>
+	284 You are welcome
+</CODE></PRE>
+	</P>
+
+	<P>
+	If the filehandle corresponds to a seekable file, there are two
+	commands to get and set the file position:
+<PRE>
+	<CODE>SEEK </CODE><I>position</I> <I>whence</I>
+	<CODE>TELL</CODE>
+</PRE>
+	The first sets the file position to <I>position</I> calculated with
+	respect to <I>whence</I>: the former is an integer value with an
+	optional sign and the latter is one of "SET", "CUR" or "END",
+	indicating that the position is relative to the start of the file,
+	the current position or the end of file, respectively: these are
+	the same parameters one would pass to the <I>lseek</I> system call
+	when the filehandle corresponds to a real file. The reply to
+	<CODE>SEEK</CODE> could look like:
+<PRE><CODE>
+	281 </CODE><I>newpos</I><CODE> is the new file position
+	581 Not seekable
+	582 Invalid file position
+	583 Cannot use SEEK_END on this filehandle
+</CODE></PRE>
+	In the first case, <I>newpos</I> will be the <I>position</I> added to
+	the file offset specified by <I>whence</I>. If the command returns a
+	failure status the file position does not change.
+	</P>
+
+	<P>
+	Note that if the filehandle has been smuggled by more than one thief,
+	each of them will maintain a separate idea of the file position.
+	</P>
+
+	<P>
+	To send data to the filehandle (for example to execute a READ OUT
+	statement), issue the READ command:
+<PRE>
+	<CODE>READ </CODE><I>length</I>
+</PRE>
+	where <I>length</I> is the number of bytes the thief wants to send.
+	The filehandle will consider if it can cope with that much data and
+	reply with either a 383 status to indicate it's waiting for the data,
+	or a 583 status to indicate that something went wrong; the messages
+	could look like:
+<PRE><CODE>
+	383 OK, send the data
+	583 Not enough buffer space
+</CODE></PRE>
+	If the filehandle is willing to accept the data, send it immediately
+	and it will try to read it out, giving either a 283 status if all went
+	well, or a 58x status to indicate an error, for example:
+<PRE><CODE>
+	283 OK, we punched 42 cards with that data
+	585 Data size mismatch
+	586 I/O error: alien invasion interrupted the operation
+</CODE></PRE>
+	The 585 reply can only happen if the thief closes the sending half of
+	the network socket before sending the required data, or in consequence
+	of a network error. Other errors will result in a 586 reply. After a
+	283 status, the file position will be advanced by <I>length</I>; after
+	a 58x status, the file position remains unchanged.
+	</P>
+
+	<P>
+	To get data from the filehandle, there are two operations, depending
+	on whether the thief wants a fixed block of data or a line, defined
+	as everything from the current file position to the first newline
+	character.
+	</P>
+
+	<P>
+	To get a fixed block of data, for example to handle a binary WRITE IN
+	statement, issue thw WRITE command:
+<PRE>
+	<CODE>WRITE </CODE><I>length</I>
+</PRE>
+	where <I>length</I> is the number of bytes the thief wants to get.
+	The filehandle will try to write that much data in and return either
+	a 282 status indicating how much data it could actually write, followed
+	immediately by the data itself, or a 584 to indicate an error. Note that
+	the number of bytes returned could be less than requested, for example
+	if an end of file was encountered before all the data was written in.
+	The result messages could look like:
+<PRE><CODE>
+	282 420 bytes follow; you asked for 512 but we couldn't find that many
+	584 The card reader is offline
+</CODE></PRE>
+	Note that the 282 status line terminates with a carriage-return, line-feed
+	sequence like all network messages: the data follows immediately after
+	the line-feed, and is not terminated by anything special.
+	</P>
+
+	<P>
+	To get a line of text, issue the WRITE TEXT command:
+<PRE>
+	<CODE>WRITE TEXT /</CODE><I>newline</I><CODE>/</CODE>
+</PRE>
+	where <I>newline</I> is either an empty string to indicate the default
+	newline for the system where the filehandle really is (which could be
+	anywhere if it has been stolen from somebody who stole it from somebody
+	else), or a string indicating the thief's idea of a newline, in which a
+	sequence of s bang ("!") followed by three digits gets replaced with the
+	character whose code in decimal is given by the three digits. For example,
+	to write a line terminated by carriage-return, line-feed sequence:
+<PRE><CODE>
+	WRITE TEXT /!013|010/
+</CODE></PRE>
+	and to write a line terminated by the string "Fubar":
+<PRE><CODE>
+	WRITE TEXT /Fubar/
+</CODE></PRE>
+	The result is similar to the WRITE command, either a 282 status indicating
+	how much data was written, followed immediately by the data, or a 584
+	status to indicate an error. For example:
+<PRE><CODE>
+	282 80 bytes
+	584 I/O error
+</CODE></PRE>
+	</P>
+
+	<P>
+	If it's necessary or even just useful to know whether the stolen
+	filehandle corresponds to a terminal somewhere, issue the ISTERM
+	command:
+<PRE><CODE>
+	ISTERM
+</CODE></PRE>
+	This has two different status returns depending on the answer: 285
+	means that the filehandle is a terminal, and 286 that it isn't. If
+	the information is not available, it returns 587. Example messages:
+<PRE><CODE>
+	285 This filehandle is connected to a VT-220 in a computer museum
+	286 It appears that this is a (non INTERCAL) network socket
+	587 This is the Babbage Difference Engine and has no concept of terminal
+</CODE></PRE>
+	The filehandle itself might have been stolen and then stolen from the
+	thief, then stolen again, so any operation on it will be a sequence of
+	network connections; ultimately, however, it will be a real filehandle;
+	if this is running on a system with a library function resembling
+	<I>isatty</I>, and calling that function returns a valid result, this
+	determines whether you get a 285 or a 286; anything else, you get a 587.
+	</P>
+
+    </BODY>
+</HTML>
+

@@ -1,0 +1,15 @@
+Syntax files for vim
+
+To use these files just do something like:
+
+mkdir -p ~/.vim ~/.vim/ftdetect ~/.vim/syntax
+cp bonus/vim/ftdetect/* ~/.vim/ftdetect/
+cp bonus/vim/syntax/* ~/.vim/syntax/
+
+For example, opening the hello.i example program produces something like:
+
+     https://uilebheist.srht.site/img/syntax.jpg
+
+(assuming your terminal is set to dark background; for light background it
+will look different).
+

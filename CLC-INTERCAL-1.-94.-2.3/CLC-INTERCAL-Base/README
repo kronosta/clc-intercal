@@ -1,0 +1,288 @@
+CLC-INTERCAL 1.-94.-2.3 - Base package
+
+		"human beings are given free will in order to choose between
+		 insanity on the one hand and lunacy on the other"
+								Aldous Huxley
+
+-- - --------
+-2 - Contents
+-- - --------
+
+   -2 - Contents
+   -1 - Foreword
+    0 - Introduction to CLC-INTERCAL pre-pre-escape 1.-94.-2.3
+    1 - What has changed since CLC-INTERCAL 0.05
+    2 - How to install this escape
+    3 - How to modify the compiler(s)
+    4 - Licence
+
+
+-- - --------
+-1 - Foreword
+-- - --------
+
+A few years ago, I had, for several reasons, decided to completely GIVE UP
+working on INTERCAL or, if you prefer, ABSTAIN FROM developing CLC-INTERCAL
+any farther.
+
+Somehow, somebody managed to run the corresponding REINSTATE statement,
+so here we go again.
+
+
+- - ------------ -- ------------ -------------- ----------
+0 - Introduction to CLC-INTERCAL pre-pre-escape 1.-94.-2.3
+- - ------------ -- ------------ -------------- ----------
+
+It has been decided during the development of CLC-INTERCAL 0.06 that there
+would be no further releases of CLC-INTERCAL. However, the compiler has
+been left unattended on an FTP server, and appears to have escaped. For this
+reason, we refer to this as an "escape" rather than a "release".
+
+Additionally, development of CLC-INTERCAL version 0 has effectively stopped
+before the escape of 0.06; a new versioning scheme has been introduced for
+CLC-INTERCAL version 1. The main points to note are:
+
+  * The term "version" has been replaced by "perversion" for correctness
+  * The perversion number consists of a floating-point number with
+    independent signs for the integer and fractional part. Negative
+    fractions indicate pre-escapes (so 1.-94 means "94 pre-escapes to
+    go before 1.00". Or you can just add the numbers together and get
+    0.06, which is entirely a coincidence since 0.06 is not being
+    developed)
+  * The fractional part of a perversion number can be integer or floating
+    point, with a similar meaning for the parts. The current pre-escape is
+    1.-94.-2.3 which means "3 pre-pre-pre-escape after 2 pre-pre-escapes
+    to go before pre-escape 1.-94".
+
+The fact that the compiler has escaped does not allow you to use without
+reference to its licence: see the end of this document or the file COPYING.
+
+Since this is a pre-pre-escape, there are parts which are unimplemented
+or partially implemented. The file "MISSING" describes what is missing.
+There might also parts which are implemented but are intended to be left
+implemented: these will be removed from the final escapes.
+
+
+- - ---- --- ------- ----- ------------ ----
+1 - What has changed since CLC-INTERCAL 0.05
+- - ---- --- ------- ----- ------------ ----
+
+Just about everything. See the file "Changes" for a complete list, or see
+the following executive summary.
+
+The code is a complete rewrite. The "CREATE" statement which was documented
+but not implemented has now been implemented (in a different form) and even
+fully documented. This means that the compiler only needs to know about one
+statement, "CREATE", and everything else can be created on-the-fly. This is
+why the compiler itself and the various compatibility modules now include
+INTERCAL source code consisting almost exclusively of "CREATE" statements.
+
+This made it a lot easier to extend the language by specifying new features
+in INTERCAL instead of Perl. Most statements have been modified to allow
+creation of quantum bits. For example, it is possible to create 16 quantum
+bits in one operation by assigning to a register while not assigning to it.
+It goes without saying that the practice is not recommended if you don't
+actually possess a quantum computer.
+
+A new statement, "NEXT FROM", combines all the advantages of "COME FROM" and
+"NEXT". It has been implemented essentially to provide a system call
+interface, where the operating system is supposed to have a "NEXT FROM"
+lurking in its darkest corner. See the documentation for a complete
+description of the system call interface. Since this is INTERCAL, the
+syscall interface is entirely system independent. System dependent system
+calls are not supported.
+
+All old programs should work unchanged (modulo the unimplemented parts, but
+this is due to change as the perversion number progresses towards 1.00).
+Programs intended for different compilers can also be compiled by selecting
+a different compiler object (for example, "ick.iacc" provides compatibility
+with the C-INTERCAL compiler "ick", and "1972.iacc" with the original
+Princeton compiler). All these compiler objects must be first compiled using
+"iacc.iacc", the INTERCAL Astonishing Compiler Compiler, which is also used to
+compile itself before compiling other compilers. A special bootstrap mechanism
+compiles a minimal iacc in Perl so that it can then compile the full thing.
+
+The command-line compiler "oo, ick" and the inline module "Language::INTERCAL"
+are not currently provided. They have been replaced by the compiler "sick"
+and the module "Language::INTERCAL::Sick" respectively, which have a rather
+different usage. A compatibility "oo, ick" and "Language::INTERCAL" is
+intended to appear in a future pre-escape, and certainly before the escape.
+
+The former "on-line reference", has been included in the distribution as the
+CLC-INTERCAL-Docs subpackage: it has been adapted for CLC-INTERCAL 1.-94;
+however some new features might be still undocumented or underdocumented.
+Some of the HTML documents are included as templates: the actual documentation
+will be produced in blib/htmldoc
+
+
+- - --- -- ------- ---- ------
+2 - How to install this escape
+- - --- -- ------- ---- ------
+
+These instructions refer to how you install the Base package only; other
+packages have their own separate instructions. Also, if you plan to
+install the bundle, refer to its own instructions instead.
+
+To unpack the distribution you need the following:
+
+    * A command interpreter compatible with the Bourne shell
+    * the "dd" program
+    * optionally, gzip and/or bzip2
+
+If you have obained a tarball, you can unpack it in the usual way, but remember
+that this is equivalent to using wimp mode when running an INTERCAL program.
+
+If necessary, uncompress the distribution:
+
+    gzip -d CLC-INTERCAL-Base-1.-94.-2.3.ddsh.gz
+
+or:
+
+    bzip2 -d CLC-INTERCAL-Base-1.-94.-2.3.ddsh.bz2
+
+Unpack the distribution:
+
+    sh CLC-INTERCAL-Base-1.-94.-2.3.ddsh
+
+Create the Makefile:
+
+    cd CLC-INTERCAL-Base-1.-94.-2.3
+    perl Makefile.PL
+
+Build the compilers:
+
+    make
+
+See if everything works:
+
+    make test
+
+This will skip two sets of tests by default, with t/18syslib.i.t and
+t/20floatlib.i.t printing "skipped: see the documentation to run this test"
+instead of running. These are the same sets of tests as the previous ones,
+t/17syslib.o.t and t/19floatlib.o.t respectively, with a few important
+differences: 1. they use a lot of memory, and 2. they requires INTERCAL
+sources which are distributed with C-INTERCAL but which have a rather
+dubious licensing status, so we can use them if somebody else has copied
+them, but we won't include them in the distribution: these INTERCAL
+sources are syslib.i, floatlib.i and syslib3.3i to syslib7.7i.
+
+To enable these extra tests, which check not only compatibility with
+C-INTERCAL but also a lot of the working of CLC-INTERCAL's runtime,
+you need a copy of these files, and then need to set environment variable
+$ICK_SYSLIB_DIR to point at a directory containing all of them. After
+installing C-INTERCAL these would be naturally available, and a command
+similar to the following will run the extra tests (sh-like shells):
+
+    ICK_SYSLIB_DIR=/usr/share/ick-0.31 make test
+
+
+If all the tests pass, or if you decide to interrupt the syslib or
+floatlib test because life is too short, the package can then be installed:
+
+    make install
+
+(probably as root or sudo).
+
+It is possible that, by the time you read this, we have provided two
+alternative versions of some modules: pure Perl and Perl-with-C. The latter
+is likely to be better in some way (speed, size), otherwise we would not
+provide it. If Makefile.PL finds that alternative versions are available,
+it will ask which one you want to install. In general, the pure Perl versions
+will work as long as your Perl installation works; the Perl-with-C should
+work but might break because your C compiler is not the same as mine, or
+simply because it's C and it's more self-obfuscating than INTERCAL. If it
+does not work, install the pure Perl version. If that does not work either,
+you have found an unimplemented feature. Congratulations.
+
+The "make" and "make test" will take some time: "make" will run IACC (the
+INTERCAL Astonishing Compiler Compiler) to build itself and all the other
+compilers, and this is not quite a quick job. The "make test" will test
+all parts of the compiler, including the Virual Machine, the Quantum
+Emulator and the Just-Too-Late compiler. Have a coffee break, or read the
+source code and try to figure out how it works. If you can figure out how
+it works, please tell me, because I cannot.
+
+
+- - --- -- ------ --- -----------
+3 - How to modify the compiler(s)
+- - --- -- ------ --- -----------
+
+The compiler and the compiler compiler are currently underdocumented. If you
+feel the urge to modify the compiler itself, ignore the Perl runtime library
+and edit the file "sick.iacc", which would have been installed somewhere
+system dependent. If you have write permission to this system dependent
+location and your command interpreter is compatible with the Bourne Shell,
+you can locate the file and edit it by simply typing (all in one line, we
+show it in separate lines for readability):
+
+    sh -c '${EDITOR-vi} `sick -vo/dev/null sick.iacc 2>&1 |
+    head -1 | sed -e "s/\.\.\.  *\[.*$//"`'
+
+If you would rather not type the above, or you have no write permission to
+the appropriate place (or if you have an inferior command interpreter), try:
+
+    sick -vo/dev/null sick.iacc
+
+The complete path will appear in the first line of the output, so you can copy
+or edit it. You do want to copy it in case you break it:
+
+    sh -c 'cp `sick -vo/dev/null sick.iacc 2>&1 |\
+    head -1 | sed -e "s/\.\.\.  *\[.*$//"` sick.iacc.SAFE'
+
+When you have edited the file, rebuild the compiler object with:
+
+    sick sick.iacc
+
+If you have edited a copy, type that from the directory where you left the
+edited copy, or "sick" won't find it (but see the "-I" command line option)
+
+A similar consideration applies to rebuilding IACC (the INTERCAL Astonishing
+Compiler Compiler). However, in this case you need to make a copy of "iacc.io"
+as well as "iacc.iacc":
+
+    sh -c 'cp `sick -vo/dev/null iacc.iacc 2>&1 |\
+    head -1 | sed -e "s/\.\.\.  *\[.*$//"` iacc.io.SAFE'
+    sh -c 'cp `sick -vo/dev/null iacc.io 2>&1 |\
+    head -1 | sed -e "s/\.\.\.  *\[.*$//"` iacc.io.SAFE'
+    sh -c '${EDITOR-vi} `sick -vo/dev/null iacc.iacc 2>&1 |\
+    head -1 | sed -e "s/\.\.\.  *\[.*$//"`'
+    sick iacc.iacc
+
+If you break "iacc.io" you won't be able to recompile "iacc" unless you
+re-install CLC-INTERCAL or use the copy you just made.
+
+
+- - -------
+4 - Licence
+- - -------
+
+Copyright (c) 2006-2008, 2023 Claudio Calvelli <compiler (whirlpool) intercal.org.uk>
+(Please include the word INTERLEAVING in the subject when emailing that
+address, or the email may be ignored)
+
+In addition to the above, permission is hereby granted to use, misuse,
+modify, distribute, break, fix again, etcetera CLC-INTERCAL-1.-94.-2.3
+provided that the following conditions are met:
+
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in the
+       documentation and/or other materials provided with the distribution.
+    3. Neither the name of the Author nor the names of its contributors
+       may be used to endorse or promote products derived from this software
+       without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+    ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+    ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+    FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+    DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+    OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+    HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+    OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+    SUCH DAMAGE.
+

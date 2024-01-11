@@ -1,0 +1,19 @@
+* sick should use a standard (for INTERCAL values of "standard") grammar
+  to parse its (mis)configuration file, say "sickrc.io"
+* the (mis)configuration data for optional modules should be installed
+  with the modules; at the moment, it's installed by the Base package
+* The Bytecode and Splats data contain values which are only used if
+  optional modules are installed; it should be possible to remove these
+  from the Base package, and update Bytecode and Splats when installing
+  options
+* regular grimaces (INTERCAL's answer to regular expressions); currently,
+  support for regular grimaces is included in the compiler, but the
+  module is only partially written. To do pattern matching, one would use
+  a regular grimace in a CREATE statement, then try to execute a comment
+  to trigger the new grammar production; this is probably quite unlike what
+  other languages do. It should be added that it is already possible to do
+  pattern matching using pseudo context-free grammars by using the CREATE
+  statement without regular grimaces. You didn't really want to know that,
+  did you?
+* C backend which generates C code to be compiled with your normal C compiler.
+

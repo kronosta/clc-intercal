@@ -1,0 +1,858 @@
+#!/usr/bin/perl -w
+
+# Compiler/user interface/whatnot for CLC-INTERCAL
+
+# This file is part of CLC-INTERCAL
+
+# Copyright (c) 2006-2008, 2023 Claudio Calvelli, all rights reserved.
+
+# CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+# and distribute it is granted provided that the conditions set out in the
+# licence agreement are met. See files README and COPYING in the distribution.
+
+require 5.005;
+
+my $initial_times;
+BEGIN { $initial_times = [time, times] }
+
+use strict;
+use Getopt::Long;
+
+use vars qw($VERSION $PERVERSION);
+($VERSION) = ($PERVERSION = "CLC-INTERCAL/Base bin/sick 1.-94.-2.3") =~ /\s(\S+)$/;
+
+use Language::INTERCAL::Sick '1.-94.-2.3';
+use Language::INTERCAL::GenericIO '1.-94.-2.1', qw($stdsplat);
+use Language::INTERCAL::Rcfile '1.-94.-2.1';
+use Language::INTERCAL::Extensions '1.-94.-2.1', qw(load_extension);
+use Language::INTERCAL::Interface '1.-94.-2';
+
+$| = 1;
+
+my $user_interface = '';
+my $rclist = 0;
+my $timehandle = 0;
+my $rcfile = new Language::INTERCAL::Rcfile;
+my $compiler = new Language::INTERCAL::Sick($rcfile);
+
+if (defined &Getopt::Long::Configure) {
+    Getopt::Long::Configure qw(no_ignore_case auto_abbrev permute bundling);
+} else {
+    $Getopt::Long::ignorecase = 0;
+    $Getopt::Long::autoabbrev = 1;
+    $Getopt::Long::order = $Getopt::Long::PERMUTE;
+    $Getopt::Long::bundling = 1;
+}
+
+my $setoption = sub { $compiler->setoption(@_) };
+
+GetOptions(
+    # User Interface Options
+    'graphic|X'         => sub { $user_interface = 'X' },
+    'curses|c'          => sub { $user_interface = 'Curses' },
+    'line'              => sub { $user_interface = 'Line' },
+    'batch'             => sub { $user_interface = 'None' },
+    'interface|i=s'     => \$user_interface,
+    # source character set options
+    'ascii|a'           => sub { $compiler->setoption('charset', 'ASCII') },
+    'baudot|b'          => sub { $compiler->setoption('charset', 'Baudot') },
+    'ebcdic|e'          => sub { $compiler->setoption('charset', 'EBCDIC') },
+    'hollerith|h'       => sub { $compiler->setoption('charset', 'Hollerith') },
+    'guess|g'           => sub { $compiler->setoption('charset', '') },
+    'charset=s'         => $setoption,
+    # code generation options
+    'optimise|O'        => $setoption,
+    'nooptimise'        => sub { $compiler->setoption('optimise', 0) },
+    'backend|l=s'       => $setoption,
+    'bug=i'             => $setoption,
+    'ubug=i'            => $setoption,
+    'output|o=s'        => $setoption,
+    'directory|d=s'     => $setoption,
+    'name|n=s'          => $setoption,
+    'listing|L=s'       => $setoption,
+    'include|I=s'       => sub { $rcfile->setoption(@_) },
+    'postinclude=s'     => sub { $rcfile->setoption(@_) },
+    'postpre=s'         => sub { $rcfile->setoption(@_) },
+    'preload|p=s'       => $setoption,
+    'add-preloads|A'    => sub { $compiler->setoption('add_preloads', 1) },
+    'nopreload'         => sub { $compiler->clearoption('preload') },
+    'suffix=s'          => $setoption,
+    'imitate=s'         => sub { $rcfile->imitate($_[1]) },
+    'clc-intercal'      => sub { $rcfile->imitate('sick') },
+    'c-intercal'        => sub { $rcfile->imitate('ick') },
+    'intercal-72'       => sub { $rcfile->imitate('1972') },
+    'intercal-1972'     => sub { $rcfile->imitate('1972') },
+    # misc options
+    'build'             => sub { $rcfile->setoption('build', 1) },
+    'nouserrc'          => sub { $rcfile->setoption('nouserrc', 1) },
+    'nosystemrc'        => sub { $rcfile->setoption('nosystemrc', 1) },
+    'rcfile|r=s'        => sub { $rcfile->setoption(@_) },
+    'rcskip|R=s'        => sub { $rcfile->setoption(@_) },
+    'extension=s'       => sub { load_extension($_[1]) },
+    'stdverb=s'         => sub {
+			       my ($opt, $file) = @_;
+			       my $mode = $file =~ s/^([ra]),// ? lc($1) : 'r';
+			       my $vh =
+				   new Language::INTERCAL::GenericIO
+				       ('FILE', $mode, $file);
+			       $compiler->setoption('verbose', $vh);
+			   },
+    'verbose|v'         => sub { $compiler->setoption('verbose', $stdsplat) },
+    'quiet|q'           => sub { $compiler->setoption('verbose', 0) },
+    'rclist'            => \$rclist,
+    'times'             => sub { $timehandle = $stdsplat },
+    'notimes'           => sub { $timehandle = 0 },
+    'stdtrace=s'        => sub {
+			       my ($opt, $file) = @_;
+			       my $mode = $file =~ s/^([ra]),//i ? lc($1) : 'r';
+			       my $th =
+				   new Language::INTERCAL::GenericIO('FILE',
+								     $mode,
+								     $file);
+			       $compiler->setoption('trace_fh', $th);
+			       $compiler->setoption('trace', 1);
+			   },
+    'trace'             => sub { $compiler->setoption('trace', 1) },
+    'notrace'           => sub { $compiler->setoption('trace', 0) },
+    'stdgrammar-profile=s'=> sub {
+			       my ($opt, $file) = @_;
+			       my $mode = $file =~ s/^([ra]),//i ? lc($1) : 'r';
+			       my $th =
+				   new Language::INTERCAL::GenericIO('FILE',
+								     $mode,
+								     $file);
+			       $compiler->setoption('grammar_profile_fh', $th);
+			       $compiler->setoption('grammar_profile', 1);
+			   },
+    'grammar-profile'   => sub { $compiler->setoption('grammar_profile', 1) },
+    'nogrammar-profile' => sub { $compiler->setoption('grammar_profile', 0) },
+    'grammar-profile-max=i' => $setoption,
+    'grammar-profile-count=i' => $setoption,
+    'grammar-profile-cost=i' => $setoption,
+    'interpreter=s'     => sub { $compiler->interpreter($_[1]) },
+    # compile program
+    '<>'                => sub { $compiler->source($_[0]); },
+) or usage();
+
+set_options();
+my $server = Language::INTERCAL::Server->new();
+$compiler->server($server);
+my $now = printtimes($initial_times, "Time to start up");
+$compiler->load_objects();
+$now = printtimes($now, "Time to load objects");
+
+if ($rclist) {
+    $compiler->save_objects(0);
+    printtimes($now, "Time to save objects");
+    printtimes($initial_times, "Total execution time");
+    print map { ($_->[0] ? '*' : ' ') . " $_->[1]\n" } @{$rcfile->getoption('rclist')};
+    exit 0;
+}
+
+# XXX sick has not yet been updated to work with interactive interfaces
+#my $ui_obj = Language::INTERCAL::Interface->new($server,
+#						$user_interface,
+#						$rcfile->getitem('SPEAK'));
+my $ui_obj = Language::INTERCAL::Interface->new(undef, 'None');
+if (! $ui_obj->has_window) {
+    $compiler->save_objects(0);
+    printtimes($now, "Time to save objects");
+    printtimes($initial_times, "Total execution time");
+    exit 0;
+}
+
+$rcfile->run($ui_obj);
+printtimes($now, "Time to set up rcfiles");
+
+$ui_obj->run($compiler);
+printtimes($initial_times, "Total execution time");
+
+sub set_options {
+    $rcfile->load;
+    my $db = $rcfile->getitem('PRODUCE');
+    $compiler->setoption('default_backend', $db) if $db ne '';
+    $compiler->setoption('default_charset', $_)
+	for $rcfile->getitem('WRITE');
+    $compiler->setoption('default_suffix', $_)
+	for $rcfile->getitem('UNDERSTAND');
+    $compiler->setoption('library_search', $_)
+	for $rcfile->getitem('SCAN');
+    $compiler->setoption('library_rule', $_)
+	for $rcfile->getitem('GLUE');
+}
+
+sub usage {
+    (my $p = $0) =~ s#^.*/##;
+    die "Usage: $p [-alphabet] files...\n";
+}
+
+sub printtimes {
+    return 0 unless $timehandle;
+    my ($prev, $title) = @_;
+    my @now = (time, times);
+    my $wall = $now[0] - $prev->[0];
+    my $user = $now[1] - $prev->[1];
+    my $system = $now[2] - $prev->[2];
+    for ($wall, $user, $system) {
+	if ($_ > 60) {
+	    $_ = sprintf "%d:%05.2f", int($_ / 60), $_ - 60 * int($_ / 60)
+	} else {
+	    $_ = sprintf "%.2f", $_;
+	}
+    }
+    $wall =~ s/\.00$//;
+    $timehandle->read_text("$title\: $wall (${user}u ${system}s)\n");
+    \@now;
+}
+__END__
+
+=pod
+
+=head1 NAME
+
+sick - Compiler for CLC-INTERCAL
+
+=head1 SYNOPSIS
+
+B<sick> [options] B<files>...
+
+=head1 DESCRIPTION
+
+B<sick> is the main development environment for CLC-INTERCAL. If
+files are specified, they will be loaded into the compiler: if they
+are not objects, they are considered to be program sources and
+compiled using the options in effect at the point where they appear
+on the command line: the object produced by the compilation is then
+kept in memory.
+
+After all the things found on the command line have been processed in
+some way, the program will then pass all the objects to one or more
+I<backend>s to do things with; the default backend just saves the
+objects to file, but other options exist, for example run the objects
+or produce program listings. Note that the action to be performed can
+be changed with command line options, and may be different for each
+object: the options in force at the time the object was loaded will
+be used to save or execute it.
+
+A future version of I<sick> will also include an interactive mode in
+which these objects can be inspected, ran, single-stepped, debugged
+or simply left alone in memory while you do something more productive.
+
+Each non-object file will be compiled using a compiler selected using command
+line options; if nothing is selected, the compiler depends on the file
+suffix; the compiler considers a suffix anything from the last spot
+in the name (including the spot), and the suffix usually ends with B<i>,
+for example B<program1.i> has suffix B<.i> and B<program2.test.case.42.mublei>
+has suffix B<.mumblei>.
+
+The suffix selection rules are actually defined in the various sickrc
+files: the description below corresponds to the defaults set by the
+F<system.sickrc> file included with the compiler but your local
+installation may have changed that.
+
+=over 4
+
+=item CLC-INTERCAL program source
+
+These files must have a suffix ending in B<i>; if the suffix also contains
+B<clc> as a substring, this makes sure the source will be considered a
+CLC-INTERCAL program, otherwise the interaction of the many suffix rules
+may end up selecting a different compiler. These files will be prefixed
+with the compiler object I<sick.io>.
+
+=item CLC-INTERCAL compiler source
+
+These files must have suffix B<.iacc>. These will be prefixed, by default,
+with the compiler object I<iacc.io> and produce a compiler object (which
+can be executed as a program, but will do nothing - it's only useful as a
+preload before compiling from source).
+
+=item C-INTERCAL program source
+
+These files must have a suffix ending in B<i> and containing a B<c>
+or a B<t> somewhere, but not contain B<clc> as substring: for example,
+B<prog1.cli> and B<prog2.ti> are understood as a C-INTERCAL source, but
+B<prog3.clci> and B<prog4.tclci> are not (they are CLC-INTERCAL sources).
+These files will be prefixed with the compiler object I<ick.io>.
+
+=item CLC-INTERCAL assembler source
+
+These have suffix B<.iasm> and will be prefixed with the compiler object
+I<asm.io>.
+
+=item Traditional INTERCAL program source
+
+These will have suffix B<.1972> or B<.1972i> and will be prefixed with the
+compiler object I<1972.io>
+
+=item Compiler extensions
+
+Any other letters in the suffix can be used to select compiler extensions,
+Note that when a suffix is shown exactly in the above list, for example
+B<.1972> or B<.iacc>, there is no space for extra letters and there are
+no other extensions: if this is reqlly required, the language guessing
+mechanism can be bypassed as described later in this document.
+
+=item Personality
+
+By default, I<sick> operates imitating itself. However it can imitate
+other compilers too by selecting a different personality. At present,
+imitating another compiler just means that different suffix rules apply.
+The main effect of the rules is that the default compiler changes from
+"sick" to "ick" or "1972" according to the personality; more information
+can be found in the online documentation or the CLC-INTERCAL-Docs package.
+
+=over 8
+
+=item Base
+
+Numbers between B<2> and B<7> change the default base by loading compiler
+objects B<2.io> to B<7.io>. If more than one number is present, the
+largest one wins, so B<.32i> is a CLC-INTERCAL program in base 3. Also
+note that the suffixes B<.1972> and B<.1972i> do not take options, and
+the B<7> and B<2> in these suffixes do not select a base; all
+INTERCAL-72 programs operate in base 2 only. These options can be
+used with I<sick> or I<ick> and can be added to I<iasm> by specifying
+them as additional preloads, e.g. B<-Ap5>
+
+=item Bitwise Divide
+
+Letter B<d> in the suffix adds the compiler object I<bitwise-divide.io>,
+which changes the normal unary divide operation to use bitwise, rather
+than arithmetic, shifts. It can be used with I<sick> but not with I<ick>.
+It can also be used with I<iasm> by specifying the compiler object as an
+additional preload.
+
+=item COME FROM gerund
+
+Letter B<g> in the suffix adds the compiler object I<come-from-gerund.io>,
+which enables the COME FROM gerund statements; since I<ick> does not parse
+such statements, this letter can only be used with I<sick>, or with I<iasm>
+by specifying it as an additional preload.
+
+=item Computed labels
+
+Letter B<l> (ell, not upper-case i) in the suffix adds the compiler object
+I<computed-labels.io>, which adds grammar rules to parse computed statement
+labels; this can be used only with I<sick>; I<ick> would not be able to
+use this, and I<iasm> can just put computed labels in the object where
+it wants them.
+
+=item NEXT
+
+Letter B<n> in the suffix adds the compiler object I<next.io>,
+which enables the NEXT statement in I<sick>; since I<ick> enables this
+by default, and I<iasm> programs can just put the NEXT instruction in
+the object, this letter can only be used with I<sick>.
+
+=item INTERcal NETworking
+
+Letter B<r> in the suffix adds the compiler object I<internet.io>,
+which adds syntax for the I<STEAL>, I<SMUGGLE> and I<CASE> statements;
+it can be used with I<ick> or I<sick>. It requires the INET extension
+to be installed. An I<iasm> program may be able to take advantage of
+this by specifying it as an additional preload.
+
+=item System call
+
+Letter B<s> in the suffix adds the compiler object I<syscall.io>, which hides
+a "PLEASE NEXT FROM (666)" in a dark corner of your operating system.
+Works with any compiler, even INTERCAL-72, but for I<iasm> and I<1972>
+it needs to be specified as an additional preload.
+
+=item Threaded program
+
+Letter B<t> in the suffix selects threaded mode by loading compiler object
+I<thick.io>. This also changes the default compiler to I<ick> if the suffix
+is B<.i>: to use I<sick> one would use something like B<.tclci>. It also
+works with I<iasm> and I<1972> if specified as an additional preload.
+
+=item Wimp mode
+
+Letter B<w> in the suffix adds the compiler object I<wimp.io>, which causes
+the program to start in wimp mode when it is executed. An equivalent result
+can be obtained by passing the B<--wimp> option to the executable program.
+To use this option with I<iasm> or I<1972> specify it as an additional preload.
+
+=back
+
+=back
+
+The actual list of suffixes recognised is specified by the file F<system.sickrc>
+and can be modified by a system-wide file in F</etc/sick> (any file name
+in that directory as long as it does not start with a spot) or by a per-user
+F<.sickrc> file in a user's home directory. See the "Misc options" below for
+a discussion on how and where B<sick> finds these files, and the online
+documentation for description of the file format.
+
+If a preload file is specified on the command line, the defaults derived
+from the suffix are not used. It is also possible to use default preloads
+from a different file suffix by explicitly saying B<--suffix>=I<.S> - in
+this case, the compiler acts as if the file had name I<name.S>; it is also
+possible to use the B<--add-preloads> option to always request the
+suffix-based guess, and in addition to that also load any preload file
+specified.
+
+In addition, compiler objects are always recognised, with whatever suffix.
+These bypass the first compiler pass and jump directly to the runtime
+(just-too-late) compiler. However, if the optimiser has been selected
+when these objects were compiled, and there are no postprocessor statements,
+the just-too-late compiler will be automatically replaced by a more
+traditional "compile-time" compiler. If this is confusing, wait until
+you see the rest.
+
+If a file is specified without suffix, and there is a compiler object in the
+include path with the same name and suffix B<.io>, the suffix is automatically
+added, whether you wanted it or now.
+
+As soon as each program is written into B<sick>, a pre-compiler will
+produce an internal compiler object.
+
+It is possible to ask the compiler to produce a program listing; this
+may make the compiler run slower, for example because it'll have to
+remember a lot more information, depending on the type of listing
+selected.
+
+If B<sick> enters interactive mode, these objects will be available
+in memory for single-stepping, running, or just ignoring completely
+and getting on with the real work (note that the interactive mode
+has been talked about repeatedly, but so far, not implemented).
+
+If B<sick> loads all the required programs and objects successfully, but
+does not enter interactive mode, it will pass all the objects to the
+appropriate backends and then terminates. In the absence of a B<--backend>
+option this means the single backend "Object", which reads the object back
+to disk using the file name specified by B<--output>, or if that wasn't
+specified, using the original file name but replacing its suffix with B<.io>;
+this behaviour can be modified using the options described below.
+
+The compiler accepts more several options, some of which are documented here.
+Options and files can be mixed in any order, each file is loaded and
+compiled using whatever options precedes it on the command line. For
+example:
+
+    sick --verbose --optimise prog1.i --quiet prog2.i --batch
+
+will tell you everything about compiling I<prog1.i> but not about I<prog2.i>.
+Both programs will be optimised. On the other hand:
+
+    sick --optimise prog1.i --nooptimise prog2.i --batch
+
+will optimise I<prog1.i> but not I<prog2.i>.
+
+All options can be "undone" (sometimes it's even clear how) except
+B<--include> which applies to all objects loaded after it, and
+B<--rcfile> which applies to all objects, even the ones loaded before
+it (just to be different). In fact, B<--rcfile> works so differently
+from other options that we aren't sure what happens if it appears
+after any non-object file in the command line, so for simplicity
+always specify it first.
+
+=head2 User Interface Options
+
+At present, I<sick> does not use any user interfaces and always runs in
+batch mode; however there are user interface selection options in case
+one day we add support for them. The available interfaces depend on
+which optional interface modules are installed, and the operating
+environment decides which ones can actually be used.
+
+=over 4
+
+=item B<-X> / B<--graphic>
+
+Enters X-based graphical user interface. Requires the optional UI-X
+package and its dependencies, and it will only work if running in
+a suitable environment, for example X windows.
+
+=item B<-c> / B<--curses>
+
+Enters full screen, curses-based interface. Requires the optional UI-Curses
+package and its dependencies, and it will only work if running on a
+suitable terminal. These days, that means anything except a line printer.
+
+=item B<--line>
+
+Enters the line-mode user interface. Requires the optional UI-Line package
+and its dependencies, and it will only work if running on a terminal which
+supports it. These days, that means almost anything.
+
+=item B<--batch>
+
+Avoids entering interactive mode. This is the default if the standard
+input and output are not connected to a terminal and the X based interface
+cannot be started. It is also the default until we actually implement
+interactive mode.
+
+=item B<-i>I<type> / B<--interface>=I<type>
+
+Selects the user interface I<type>. Currently, only I<X>, I<Curses>,
+I<Line> and I<None> are defined, but more can be installed as compiler
+plug-ins. If the interface selected is I<None>, B<sick> will work in
+batch mode. In addition, an empty string will reinstate the default
+behaviour.
+
+=back
+
+=head2 Source Character Set Options
+
+=over 4
+
+=item B<-a> / B<--ascii>
+
+Assumes that program source is in ASCII.
+
+=item B<-b> / B<--baudot>
+
+Assumes that program source is in Baudot.
+
+=item B<-e> / B<--ebcdic>
+
+Assumes that program source is in EBCDIC.
+
+=item B<-h> / B<--hollerith>
+
+Assumes that program source is in Hollerith.
+
+=item B<-g> / B<--guess>
+
+Does not make assumptions about the source character set. If the character
+set cannot be guessed, will produce an error. This is the default.
+
+=item B<--charset>=I<name>
+
+Assumes that program source is in the given character sets. Valid values are
+currently I<ASCII>, I<Baudot>, I<EBCDIC>, I<Hollerith> but others could be
+installed as compiler plug-ins; an empty I<name> is equivalent to specifying
+option B<--guess>).
+
+=back
+
+=head2 Code Generation Options
+
+=over 4
+
+=item B<-O> / B<--optimise>
+
+Invokes the optimiser. This is an upper case letter O, not a zero. This will
+cause the extra object I<optimise.io> to be prefixed after the last compiler
+and before the real program. The program is then executed: when the optimiser
+takes control, it will force compilation of the rest of the program (thereby
+executing the compiler at compile-time, instead of runtime as it normally
+does), and the resulting object is checkpointed, so the next time it will
+automatically skip the initialisation and compilation stages. In addition,
+the "optimise" register is set, instructing the compiler to invoke the
+optimiser when it runs.
+
+If you specify both B<-O> and B<-poptimise> (see below), you are asking for
+trouble, so don't do that.
+
+=item B<--nooptimise>
+
+Disables automatic preloading and execution of I<optimise.io>.
+
+=item B<-o>I<name> / B<--output>=I<name>
+
+Selects a name for the output file. Some character sequences are recognised
+inside I<name>: I<%p> will be replaced by the source program's filename
+with the suffix removed; I<%s> will be replaced by the appropriate suffix
+for the selected backend, without the initial spot; I<%o> will provide the
+original file name specified on the command line, without suffix (this can
+differ from I<%p> because I<%p> can be prefixed with a directory from the
+search path); finally I<%%> will produce a single I<%>.
+
+The default is I<%p.%s>, which produces the object name described at the
+beginning of this document. A suffix is not automatically added if the
+output name does not contain I<%s>; this might be useful in conjunction
+with the I<Perl> backend to produce a file without a suffix, for example:
+
+    sick --output=%p --backend=Perl sourcefile.i
+
+will compile I<sourcefile.i> and produce perl script I<sourcefile>.
+
+The special backend "help" produces a list of all known backend names,
+and does not change the current list.
+
+If the output file is specified as an empty string, the code generation step
+will never be done.
+
+=item B<-L>I<types> / B<--listing>=I<types>
+
+Asks the compiler to produce a program listing; I<types> is a comma-separated
+list, each element directs the compiler to produce a different program listing;
+at present, only "html" is supported which generates a syntax-highlighted
+version intended to be combined with a stylesheet. Use B<-L>none to disable
+source listing from the next object, and B<-L>help to show a list of supported
+listing modules (this does not change what will run, just produces a list
+on standard output). It is possible to specify a single argument to a listing
+module by appending "=" and the argument to the name, for example the "html"
+module can be asked to load a stylesheet with something like
+"B<-L>html=clc-intercal.css"
+
+=item B<-n>I<name> / B<--name>=I<name>
+
+Sets the program's I<name>, if the code generator requires it (currently,
+no backends use a name, but some of the future ones will). The default is
+I<%o>. The same %-escapes as defined for the output file name are defined.
+
+=item -B<-d>I<directory> / B<--directory>=I<directory>
+
+Forces all outputs to be produced in I<directory>. This works by generating
+an output name as described above, then replacing the directory part.
+
+=item B<-l>I<names> / B<--backend>=I<names>
+
+Selects one or more compiler back ends; the short option is a lower case
+"L", not an upper case "I". The default is I<Object>, which
+produces a compiler object (suffix I<.io>). The distribution also includes
+a I<Perl> backend, which produces an executable Perl program (suffix I<.pl>).
+In addition, the pseudo backend I<Run> will run the program instead of
+producing any object. In this case, the output file name is ignored. Note
+that the program will only run if the compiler is in batch mode.
+Other back ends can be provided as compiler plug ins. The distribution
+also contains a I<ListObject> backend, which does not produce executables
+but object listings. A future version might offer the option to "uncompile" the
+output of the I<ListObject> back end, but this is currently impossible because
+not all the internal state of the object is provided, only the part which is
+likely to be useful to a human reader. For example:
+
+    sick prog1.i -lObject,ListObject prog2.i -lRun,Object prog3.i
+
+will compile I<prog1.i> to I<prog1.io> (default backend), then compile
+I<prog2.i> to I<prog2.io> and also produce a program listing in I<prog2.iasm>,
+and finally compile I<prog3.i>, run the object immediately but also save
+it to I<prog3.io>.
+
+=item B<--bug>=I<number>
+
+Selects a different probability for the compiler bug. The compiler bug is
+implemented by initialising the compiler's state with the required probability:
+when a statement is compiled (usually at runtime), a "BUG" instruction is
+emitted with the required probability. The default is 1%.
+
+=item B<--ubug>=I<number>
+
+Selects a probability for the unexplainable compiler bug. This is the compiler
+bug which occurs when the probability of a (explainable) compiler bug is zero.
+Only wimps would use this option. The default is 0.01%.
+
+=item B<-p>I<name> / B<--preload>=I<name>
+
+Selects a compiler object to prefix to the program. If this option is
+specified, the compiler won't automatically prefix objects as suggested by
+the suffix. The program B<'oo, ick'> included in previous version of
+CLC-INTERCAL used option B<-p> to select a parser. Since the main use of
+preloads is to select an alternative (runtime) compiler, it is felt that
+it is appropriate to keep the same letter for this option.
+
+The file name specified does not include the suffix F<.io>, which is
+always added. The file must be a compiler object, not source code.
+
+The special object I<optimise> should always loaded via B<-O>. Using
+B<-poptimise> will not necessarily put the object in the correct place,
+and will not instruct the precompiler to do whatever magic it needs to
+do to bootstrap the optimiser.
+
+To completely disable preloading (this is only done when compiling the
+optimiser, which is used to compile itself) use an empty string.
+
+=item B<--nopreload>
+
+Resets the default behaviour of selecting preloads based on suffixes.
+
+=item B<-A> / B<--add-preloads>
+
+Asks to do the normal suffix-based guess of preloads, then add to that
+the ones specified with B<--preload>. This can be used for example to
+add a single preload to a pre-defined list.
+
+=item B<--suffix>=I<suffix>
+
+Specifies a suffix to use when selecting preloads. If this option is
+not specified, the suffix is taken from the file name to be compiled.
+
+=item B<--imitate>=I<whom>
+
+Specifies that different suffix rules apply by "imitating" another compiler;
+this functionality is still experimental. The value I<whom> can be one of
+"sick", "ick" or "1972".
+
+=item B<--clc-intercal>
+
+Alias for B<--imitate>=I<sick>
+
+=item B<--c-intercal>
+
+Alias for B<--imitate>=I<ick>
+
+=item B<--intercal-72> / B<--intercal-1972>
+
+Alias for B<--imitate>=I<1972>
+
+=item B<-I>I<path> / B<--include>=I<path>
+
+Adds a directory before the standard search path for compiler objects
+and source code. If a file is accessible from the current directory,
+it is never searched in any include path.
+
+If this option is repeated, the given paths will be searched in the
+order given, followed by the standard paths.
+
+=back
+
+=head2 Misc Options
+
+In the absence of orders to the contrary, I<sick> starts by looking
+for configuration files. First the system search path is scanned to
+find any files of the form F<*.sickrc>; if two files with the same
+name are found in different directory, only the first one is considered.
+If this search reveals a file called F<system.sickrc> this will be
+executed first: any other files found will be executed next in an
+implementation-defined order.
+
+After searching the system directories, I<sick> considers the directory
+F</etc/sick>: any files found there, where the first character is
+not a spot, will be executed in an implementation-defined order.
+
+The process concludes by looking for file F<.sickrc> in the user's
+home directory: if found, it will be executed too.
+
+=over 4
+
+=item B<-r>I<name> / B<--rcfile>=I<name>
+
+Gets configuration from file I<name> before doing anything else. This
+option can be repeated, in which case these files will be exectuted
+in the order specified. If this option is specified it also disables
+the search for configuration files described above, so only the files
+specified on the command line will be executed. Note that we use
+the terms "get configuration" and "execute a file" interchangeably
+because a configuration file is just a special program with an unusual
+syntax.
+
+=item B<--nouserrc>
+
+Prevents loading a user rcfile (F<.sickrc>). This option is normally
+used during installation, to prevent interference from previous
+versions of CLC-INTERCAL.
+
+=item B<--nosystemrc>
+
+Prevents loading system rcfiles (usually in F</etc/sick>) if any exist.
+This option is normally only used during installation, to prevent
+interference from previous versions of CLC-INTERCAL. Also, it will
+limit the search for files to the current "build" directory if there
+is one, meaning that any installed F<*.sickrc> files will be ignored.
+
+=item B<-R>I<verb> / -B<--rcskip>=I<verb>
+
+Makes the program ignore the I<verb> in a sickrc file. This could be
+used, for example, to disable the automatic loading of libraries when
+it looks like the program needs them, using -B<-RGLUE>.
+
+=item B<--extension>=I<name>
+
+Ask the program to make sure to load extension I<name>. This is normally
+unnecessary as finding an extension's own sickrc file will load the
+extension; however during installation I<sick> will not yet know about
+this sort of things so the build system adds this option to make sure.
+
+=item B<-v> / B<--verbose>
+
+Tells everything it's doing (on Standard Error).
+
+=item B<--stdverb>=I<file>
+
+Sends verbose output to I<file>.
+
+=item B<--trace>
+
+Enables tracing; if compiling from source, the compiler is also
+traced; to trace a program, compile it to an object and then run
+it with B<--trace>.
+
+=item B<--stdtrace>=I<file>
+
+Enables tracing and selects an output file for the trace information.
+
+=item B<--notrace>
+
+Disables tracing; preloading I<trace.io> has priority over this option.
+
+=item B<--grammar-profile>
+
+Enables grammar profiling: this will produce a summary of how the compiler's
+grammar was used when compiling programs; it is mostly useful for either
+debugging new compilers or analysing the parser's performance. The information
+is sent to standard error, unless a previous B<--stdgrammar-profile> option
+(see next option) has selected something different.
+
+=item B<--stdgrammar-profile>=I<file>
+
+Enables grammar profiling and sends the output to I<file>.
+
+=item B<--nostdgrammar-profile>
+
+Disables grammar profiling (default).
+
+=item B<--grammar-profile-max>=I<number>
+
+If grammar profiling is enabled, only produce the first I<number> lines
+of output: the output is sorted by decreasing count, so these will be
+the I<number> most "interesting" productions from the point of view of
+performance analysis.
+
+=item B<--grammar-profile-count>=I<number>
+
+If grammar profiling is enabled, only produces output lines where the
+usage count is at least I<number>.
+
+=item B<--grammar-profile-cost>=I<number>
+
+If grammar profiling is enabled, only produces output lines where the
+estimated cost is at least I<number>.
+
+=item B<-q> / B<--quiet>
+
+Stop talking to Standard Error.
+
+=item B<--times>
+
+Prints a summary of the time take for each major action. This setting is
+independent of B<--verbose> or B<--quiet>.
+
+=item B<--notimes>
+
+Does not print execution times: this is the default.
+
+=item B<--rclist>
+
+Prints the names of all rcfiles found; It prevents starting interactive mode.
+The names will be prefixed with a "splat" symbol ("*") if they would be
+executed according to other command-line options like B<--nouserrc> and
+B<--nosystemrc>, and without one if they would not be executed. For example,
+to edit all the files which would actually be executed, and to edit them
+in the order they would be executed, run something like:
+
+   sh -c '"${EDITOR:-teco}" `sick --rclist | awk '"'"'$1 == "*" { print $2 }'"'"'`'
+
+These weird sequences of sparks and rabbit ears are obviously there to cope
+with the quoting mechanisms of different shells.
+
+=item B<--interpreter>=I<module>
+
+Uses an alternative CLC-INTERCAL Interpreter.  The default is whichever
+Interpreter is considered the best at the time the program is distributed.
+
+=back
+
+=head1 BUGS
+
+There are more options than ls(1). This is construed to be a feature. Some
+of the options are not documented here but are documented in the Docs package;
+some are documented here but not there.
+
+=head1 SEE ALSO
+
+The INTERCAL on-line documentation, or the contents of the Docs package.
+If necessary, see a qualified psychiatrist.
+

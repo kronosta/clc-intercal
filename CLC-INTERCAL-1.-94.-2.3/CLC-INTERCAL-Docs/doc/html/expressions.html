@@ -1,0 +1,518 @@
+<HTML>
+    <HEAD>
+	<TITLE>CLC-INTERCAL Reference</TITLE>
+    </HEAD>
+    <BODY>
+	<H1>CLC-INTERCAL Reference</H1>
+	<H2>... Expressions</H2>
+
+	<P>
+	Table of contents:
+	<UL>
+	    <LI><A HREF="index.html">Parent directory</A>
+	    <LI><A HREF="#constants">Constants</A>
+	    <LI><A HREF="#variables">Variables</A>
+	    <LI><A HREF="#indirect">Indirect Variables</A>
+	    <LI><A HREF="#unary">Unary Operators</A>
+	    <LI><A HREF="#binary">Binary Operators</A>
+	    <LI><A HREF="#overloading">Operand Overloading</A>
+	    <LI><A HREF="#grouping">Grouping</A>
+	    <LI><A HREF="#examples">Examples</A>
+	</UL>
+	</P>
+
+	<H2><A NAME="constants">Constants</A></H2>
+
+	<P>
+	Constants are simply the symbol <CODE>#</CODE> (mesh) followed by an integer
+	between 0 and 65535. For example <CODE>#1</CODE>, <CODE>#65535</CODE>.
+	</P>
+
+	<P>
+	To create 32 bit constants, use the interleave operator
+	(see <A HREF="#binary">binary operators</A> below).
+	For example, <CODE>#256&#162;#0</CODE> has value 65536, and
+	<CODE>#65535&#162;#65535</CODE> has value 4294967295.
+	</P>
+
+	<H2><A NAME="variables">Variables</A></H2>
+
+	<P>
+	Variables are represented by up to four pieces of information:
+	<UL>
+	    <LI>The belonging path. This part is optional.
+	    <LI>The variable identifier, as described below.
+	    <LI>The variable number, an integer between 1 and 65535.
+	    <LI>Subscripts. This part must not be included if the variable is not an
+	    array. If you are trying to extract a value, this part must be present
+	    when the variable is an array register. If you just want to name a
+	    register, always leave it out.
+	</UL>
+	</P>
+
+	<P>
+	The belonging path is a simple way to follow the BELONGS TO relationship
+	between registers. Prefixing a register with big-money (<CODE>$</CODE>)
+	will take you to the register this one belongs to. Prefixing with a digit
+	from 2 to 9 will take you to the corresponding secondary belonging. For
+	more information, see <A HREF="belongs.html">the chapter on Belongs TO</A>.
+	Note that belonging paths cannot be used if the compiler is <I>ick</I>,
+	as the big-money is used for interleave.
+	</P>
+
+	<P>
+	The variable identifier defines the variable type. There are six types:
+	<UL>
+	    <LI>One spot (<CODE>.</CODE>) - these can contain 16 bit values.
+	    <LI>Two spots (<CODE>:</CODE>) - these can contain 32 bit values.
+	    <LI>Tail (<CODE>,</CODE>) - arrays of 16 bit values.
+	    <LI>Hybrid (<CODE>;</CODE>) - arrays of 32 bit values.
+	    <LI>Whirlpool (<CODE>@</CODE>) - special values, see below
+	    <LI>Crawling Horror (<CODE>_</CODE>) - these contain compilers.
+	</UL>
+	</P>
+
+	<P>
+	Subscripts, if present, are introduced by the word "SUB" and an expression.
+	Multidimensional arrays will require many subscripts, for example
+	<CODE>,1 SUB #1 SUB #2</CODE> or <CODE>,1 SUB #1 #2</CODE> (the "SUB" to
+	separate subscripts is optional in CLC-INTERCAL and must be omitted in
+	C-INTERCAL or INTERCAL-72).
+
+	<P>
+	For example, the following are all valid variable names without belonging
+	path:
+	<PRE><CODE>
+	,12 SUB .1 #2 :3
+	.1
+	.0001</CODE>           (<I>this is the same as </I><CODE>.1</CODE>)<CODE>
+	:18 SUB #2
+	@21
+	;1
+	@65535
+	</CODE></PRE>
+	</P>
+
+	<P>
+	The following are not valid for some reason:
+	<PRE>
+	<CODE>,12</CODE>              <I>requires a subscript (unlsss ,12 is overloaded)</I>
+	<CODE>.0</CODE>               <I>variable number cannot be zero</I>
+	<CODE>1E-3</CODE>             <I>you might think this is the same as</I> <CODE>.0001</CODE> <I>but isn't</I>
+	<CODE>.18 SUB #2</CODE>       <I>this cannot have subscripts (unless .18 is overloaded)</I>
+	<CODE>@65536</CODE>           <I>variable number too big</I>
+	</PRE>
+	</P>
+
+	<P>
+	When a belonging path is specified, the variable type need not be the
+	one specified. For this reason, the following can be valid in some cases
+	and invalid in other, depending on whether the result of following the
+	belonging chain is an array or not:
+	<PRE><CODE>
+	$,12 SUB .1 SUB #2 SUB :3
+	2.01
+	$49.99
+	$:1 SUB $49.99
+	$$21$$21$$21$$21@21 SUB 1$$21$$21$$21$$21@21 SUB 2$$21$$21$$21$$21@21
+	1;1
+	1_1
+	65535$65535@65535
+	</CODE></PRE>
+	</P>
+
+	<P>
+	Whirlpool registers contain filehandles and information about classes.
+	For classes, see <A HREF="lectures.html">the chapter about classes and
+	lectures</A>. For filehandles, see <A HREF="input_output.html">the
+	chapter about input/output</A>. Register @0 also has special meaning
+	during overloading: see <A HREF="#overloading">Operand Overloading</A>
+	below.
+	</P>
+
+	<P>
+	The "crawling horror" registers do not currently enjoy full rights
+	and cannot contain any value (the compilers are stored in them, but there
+	is no direct access to them). They can, however, be subject to overloading
+	and the Belongs TO relation. Please note, however, that at present there
+	are only two crawling horrors, <CODE>_1</CODE> and <CODE>_2</CODE>.
+	</P>
+
+	<P>
+	CLC-INTERCAL 0.05 introduces a new "variable", "*" (splat). For a long time
+	it wass not possible to assign a value to it, but it contained the code of
+	the last error (hence the name). It is an error to get the value of this
+	variable if the program did not encounter an error. Since all runtime errors
+	are fatal, it is usually an error to read this variable, and it should be
+	avoided. However, a quantum program might have encountered an error and at
+	the same time avoided it, therefore it is meaningful to use "splat" in quantum
+	programs. Also, if used inside an <A HREF="statements.html#while">event</A>,
+	it makes perfect sense to refer to the splat.
+	</P>
+
+	<P>
+	At some point CLC-INTERCAL declared that every expression can be assigned
+	to, at which point it became possible to assign a value to the "*" (splat)
+	variable. The effect of doing so is to cause an immediate fatal error, and
+	the value being assigned to "*" determines the error message.
+	</P>
+
+	<P>
+	CLC-INTERCAL 1.-94 contains a number of special registers. These are invisible
+	to programs, but accessible to compilers, and control the internal working of
+	the system. They are documented in
+	<A HREF="parsers.html">the chapter about writing compilers</A>.
+	</P>
+
+	<H2><A NAME="indirect">Indirect Variables</A></H2>
+
+	<P>
+	CLC-INTERCAL 0.05 introduced two new operators which might be useful to
+	figure out what a register is even after following BELONGS TO, or during
+	overloading.
+	</P>
+
+	<P>
+	The &quot;worm&quot; ("-") applied to a register returns its number. For example,
+	<CODE>-.5</CODE> is the same as #5 (do not confuse the worm with the bookworm,
+	which might be printed the same on VDUs). As another example, inside
+	overloading (see below), one can obtain the number of the register being
+	overloaded with <CODE>-$@0</CODE>.
+	</P>
+
+	<P>
+	The "intersection-worm" (never heard of this type of worm? we haven't either)
+	introduces indirect registers. The syntax is "intersection register worm
+	register", and represents a register with the type of the first, the number
+	of the second, for example <CODE>+:7-.3</CODE> is the same as <CODE>:3</CODE>.
+	Things get interesting when the registers start having belonging paths etc.
+	</P>
+
+	<P>
+	We were supposed to write some examples here, but frankly, we haven't got
+	the energy just now.
+	</P>
+
+	<H2><A NAME="unary">Unary Operators</A></H2>
+
+	<P>
+	The unary operators are the standard logical operators, <CODE>AND</CODE>,
+	<CODE>OR</CODE> and <CODE>XOR</CODE> (exclusive <CODE>OR</CODE>). They
+	should be written as <CODE>&amp;</CODE> for <CODE>AND</CODE> and <CODE>V</CODE>
+	for <CODE>OR</CODE>. For <CODE>XOR</CODE>, you should use the bookworm symbol,
+	which we cannot represent in this page because it's not in the character
+	set. As an approximation, we use the "yen" (<CODE>&#165;</CODE>) symbol, which
+	is accepted by the compiler when the input alphabet is ASCII. This only works
+	if the source is encoded in either ISO-8859-1 or UTF-8, so the compiler also
+	accepts <CODE>V-backspace-worm</CODE>. If the input alphabet is EBCDIC, only the
+	bookworm symbol can be used for <CODE>XOR</CODE>. If the compiler is
+	in "C-INTERCAL compatibility mode", the what (?) is accepted instead of yen.
+	(The "what" has a completely different meaning in CLC-INTERCAL mode, both
+	as an unary operator and as a special item to be used inside a
+	<CODE>CREATE</CODE> statement).
+	</P>
+
+	<P>
+	The value of an unary operator is determined by rotating the operand to the
+	right one bit, and applying the corresponding bitwise binary operation to
+	the result and the original operand.
+	</P>
+
+	<P>
+	The INTERCAL-72 specification says that the operation is inserted between the
+	one spot, two spot or mesh and the number, so <CODE>#&#165;1</CODE> means
+	"unary <CODE>XOR</CODE> applied to the number 1" (the result is 32769).
+	However, older versions of CLC-INTERCAL also allowed the operator to be used
+	as a prefix to an expression,
+	as in <CODE>V&#165;&amp;V#&#165;1</CODE> (it will be obvious by now that the
+	value is 61440). Current versions no longer allow that. You should not
+	have been using it anyway.
+	</P>
+
+	<P>
+	Note that we have absolutely no idea whether the unary operators "bind"
+	more or less than other things. In case of doubt, assign the result of
+	subexpressions to some register, or use sparks and rabbit ears to control
+	the order of evaluation.
+	</P>
+
+	<P>
+	C-INTERCAL introduced new unary operators for use with bases between 3 and
+	7. These are now available in CLC-INTERCAL 1.-94, but they use a different
+	symbol. These are the unary <CODE>BUT</CODE> (a whirlpool (@) in C-INTERCAL,
+	or a what (?) in CLC-INTERCAL) and the unary "add without carry" (a shark
+	fin (^) in C-INTERCAL, or a spike (|) in CLC-INTERCAL). For bases 4 or greater,
+	several types of unary <CODE>BUT</CODE> are available (C-INTERCAL: 2@, 3@, etc;
+	CLC-INTERCAL: 2?, 3?, etc). Please consult the documentation which comes
+	with C-INTERCAL for more information about these operators.
+	</P>
+
+	<P>
+	CLC-INTERCAL 1.-94.-4 introduced a new unary operator, division. This differs
+	from normal unary operators because it is arithmetic, not bitwise. The
+	operation is as follows: the operand is shifted right arithmetically, then
+	the original value is divided by the result of the shift and truncated to
+	an integer. Note that the most frequent result is the base, since a right
+	shift is equivalent to a division by the base, truncating the result to
+	an integer. For example, in base 5, unary division of #62 is #62 divided
+	by #12, which just happens to be #5. However, the operation can also
+	return other values, for example in base 5 unary division of #12 is #6.
+	And of course any value smaller than the base produces a division by zero
+	splat.
+	</P>
+
+	<P>
+	A compiler option, <I>bitwise-divide</I>, changes the unary division
+	to behave like a normal unary operation, performing a bitwise rotate
+	of its operand and so on. You can figure out what it does, and no doubt
+	you've already thought of a use for it. A program containing a "d" in
+	the suffix (for example "divide.abcdefi") automatically loads the
+	bitwise-divide option.
+	</P>
+
+	<P>
+	The symbol for the unary division is the worm (<CODE>-</CODE>), so
+	for example #-62 is the unary division of #62. Note that the worm
+	is also used to construct indirect registers, but that's OK because
+	the compiler does not get confused. The programmer might.
+	</P>
+
+	<H2><A NAME="binary">Binary Operators</A></H2>
+
+	<P>
+	There are four binary operators: interleave, select, and two forms of
+	operand overloading. Operand overloading is implemented in CLC-INTERCAL 0.05
+	or newer, and are described in <A HREF="#overloading">the next section</A>.
+	</P>
+
+	<P>
+	Interleave is written <CODE>&#162;</CODE> (change), but can also be
+	represented as <CODE>C-backspace-slat</CODE> or <CODE>C-backslace-spike</CODE>
+	if the input alphabet is ASCII. If the compiler is in "C-INTERCAL compatibility
+	mode", the big money ($) can be used as well. Note that this means you can't
+	use it for belonging paths, but that's OK since C-INTERCAL has no BELONGS TO
+	relation.
+	</P>
+
+	<P>
+	Interleave takes two 16 bit numbers and "interleaves" their bits. For
+	example, <CODE>#3&#162;#0</CODE> is 10. To see why, write the numbers
+	in binary (3 is 0000000000000011 in binary, so interleaving the bits
+	with 0000000000000000 you get 00000000000000000000000000001010, which
+	is 10). It can be used to simply form 32 bit constants by writing all
+	the "even" bits to the left of the <CODE>&#162;</CODE> and all the
+	"odd" bits to the right.
+	</P>
+
+	<P>
+	Interleave fails if it tries to produce more than 32 bits. Use it only on
+	16 bit values!
+	</P>
+
+	<P>
+	If the base is not 2, interleave works the same way, but interleaves
+	digits instead of bits; for example, in base 3, #3&#162;#0 is #9.
+	</P>
+
+	<P>
+	Select is written <CODE>~</CODE> (sqiggle [sic]). It uses the second number
+	to "select" bits in the first number. The bits selected are the ones where
+	the second number has a 1. All the bits of the result are right-aligned, and
+	padded with 0 to form a 16 bit or a 32 bit number depending on the size of
+	the result. Note that if you are planning to apply an unary operator on the
+	result of select you don't know in advance whether the 16 bit or 32 bit
+	operator will be used, because this is data-dependent. As an example,
+	<CODE>:1~#32768</CODE> selects bit 15 of <CODE>:1</CODE> and returns 0 or
+	1 accordingly. <CODE>.1~#32770</CODE> selects bits 15 and 2 of <CODE>.1</CODE>
+	and can return 0, 1, 2, or 3. C-INTERCAL has a different rule to determine
+	the size of the result: it is always the same as the size of the second
+	operand. When imitating "ick", CLC-INTERCAL also uses this different rule.
+	</P>
+
+	<P>
+	If the base is not 2, select works similarly. See the documentation coming
+	with C-INTERCAL for a full discussion.
+	</P>
+
+	<H2><A NAME="overloading">Operand Overloading</A></H2>
+
+	<P>
+	There are two operand overloading operators: they are written <CODE>/</CODE>
+	(slat) and <CODE>\</CODE> (backslat). These are binary operators, but the
+	first operand of slat must be a register or a register with subscripts.
+	The second operand can be any expression.
+	</P>
+
+	<P>
+	Both overloading operators return the value of their left operand. In the
+	case of slat, any previous overloading which applies to the left operand
+	is removed before evaluating it. For example, ".1/#1" returns the value
+	contained in .1
+	</P>
+
+	<P>
+	The <I>side effect</I> of the overloading operators is to change the
+	way some registers are used in future. Slat applies to a whole register,
+	which can be of any type (spot, two-spot, hybrid, tail, whirlpool or
+	if you have added a grammar rule to do that, any special register).
+	Whenever that value is used after the overloading, the expression is
+	evaluated instead. For example, after ".1/.2" using .1 will return the
+	value of .2. The register @0 is temporarily created and made to belong to the
+	register being overloaded, so ".1/$@0" is a slightly less efficient way
+	to access the value of .1 while on the other hand ".2/@7" would be
+	a rather confusing thing in which a spot register acts like a whirlpool,
+	so that "DO READ OUT .1 + .2 + .3" would change the filehandle between
+	the first and third register instead of outputting a value.
+	</P>
+
+	<P>
+	Assigning to an overloaded register or array element attempts to invert
+	the relevant operations. For example, if .1 is overloaded to .&amp;&amp;2, then
+	assigning #4 to .1 will leave .1 unchanged but assign #28 to .2 (this
+	is because #&amp;&amp;28 is #4). This does not always work, so you might get a
+	runtime error. However, if the expression includes only interleave,
+	select, overload, and registers, the assignment always succeeds. The
+	unary operators sometimes fail because there are values which they can
+	never return (for example, there is no way to get #10 as the result of
+	an unary AND, so if .1 is overloaded to .&amp;2, assigning #10 to .1 results
+	in an error, while of course assigning #12 would be fine because #&amp;28 is #12).
+	</P>
+
+	<P>
+	<I>New in CLC-INTERCAL 1.-94</I>. Constants are no longer constants. An
+	example will make this clear as mud. Suppose .2 is overloaded to #&amp;&amp;2;
+	assigning #4 to .2 will effectively mean assigning #28 to #2 (see the
+	discussion in the previous paragraph). Next time your program uses the
+	number 2, it will actually use 28 instead. For example, .2 will now have
+	the same value as .28, and an expression containing #2 will use #28 instead.
+	Moreover, if your program used to have a <CODE>COME FROM (2)</CODE> it
+	will now have a <CODE>COME FROM (28)</CODE> in the same place. You can
+	use it as a more elegant alternative to computed <CODE>COME FROM</CODE>.
+	Also, since grammar symbols are stored as numbers, and since ?SYMBOL
+	is stored as 2, any grammar which uses ?SYMBOL (that's every grammar)
+	will now use something completely different in its place. However, this
+	does not apply retroactively to statements already compiled, however
+	desirable this feature might be.  If you are not confused yet, keep reading.
+	</P>
+
+	<P>
+	The most recent pre-escapes of CLC-INTERCAL 1.-94 go a step further and
+	just permit to assign to an expression, so that it is no longer necessary
+	to use overloading to modify constants or generate splats. See
+	<a href="statements.html#calculate">the chapter about statements</a>
+	for mode information.
+	</P>
+
+	<P>
+	There is an exception to the above rules about constants. Assigning to
+	a constant always modifies the original value of the constant. For
+	example, this program:
+<PRE><CODE>
+	DO .2 &lt;- #1
+	DO #1 &lt;- #2
+	DO READ OUT #1
+	DO #1 &lt;- .2
+	DO READ OUT #1
+	PLEASE GIVE UP
+</CODE></CODE>
+	will produce "II" and "I", the first READ OUT will find that the current
+	value of #1 is actually #2, but the subsequent assignment restores its
+	value which had been saved in .2, so it finds that #1 now has value #1.
+	This programs produces an identical output because the ".1" finds that
+	"1" has value "2" so in fact accesses ".2":
+<PRE><CODE>
+	DO .2 &lt;- #1
+	DO #1 &lt;- #2
+	DO READ OUT #1
+	DO #1 &lt;- .1
+	DO READ OUT #1
+	PLEASE GIVE UP
+</CODE></CODE>
+	Note that it is not possible to do things like STASHing a constant, but
+	as shown it's possible to store it in a register and STASH the register,
+	so that the constant can be later restored by RETRIEVing the register
+	and assigning back to the constant.
+	</P>
+
+	<P>
+	The backslat operator is similar to slat, except that it affects a range
+	of registers. The expression on the left of the backslat is taken as the
+	interleaving of two values. The overloading applies to any register with
+	a number which is between the two values (if the first value is greater
+	than the second, no overloading is done). The register $@0 might be useful
+	to retrieve the original register. In the current implementation, this form
+	of overloading applies to all "user" registers (spot, two-spot, hybrid and
+	tail), but not to classes. For example, "#1&#162;#5"\"$@0~#1" replaces any
+	registers between .1 and .5, :1 and :5, ,1 with their lowest-significant bit
+	and also replaces registers between ,1 and ,5 and between ;1 and ;5 with
+	something which will be invalid at runtime: trying to use an array as
+	one would use a number.
+	</P>
+
+	<P>
+	Overloading loops are eliminated. So if you have .1/.2 and .2/.1, using
+	.1 will return .1 (.1 causes evaluation of .2, which causes evaluation of
+	.1 - the loop is noted and the overloading of .1 is not applied). This
+	means that, in particular, .1/.1 can be used to remove any overloading
+	associated with .1 - however, the resulting code will be slower than the
+	case when no overloading has been specified, and you should instead localise
+	the effects of overloading using statements STASH and RETRIEVE as described
+	in <A HREF="statements.html#stash">the chapter about statements</A>.
+	</P>
+
+	<P>
+	Note that programmer overloading is implemented by all INTERCAL compilers
+	known to mankind - it's just that their documentation don't mention this.
+	</P>
+
+	<P>
+	Also note that you cannot ABSTAIN from overloading, because overloading
+	is not a statement. However, you can prevent overloading by IGNORING a
+	register.
+	</P>
+
+	<H2><A NAME="grouping">Grouping</A></H2>
+
+	<P>
+	The precedence rules for operators are not defined by INTERCAL-72. For
+	CLC-INTERCAL, we have absolutely no idea, and different versions use
+	different precedences. It might help to either save the results of
+	subexpressions in registers or, if all else fails, group subexpression
+	using the grouping constructs. A group is started with a spark
+	(<CODE>'</CODE>) or rabbit ears (<CODE>"</CODE>) and closed with the
+	same symbol it started with. Any expression can go inside a group,
+	including any number of sparks or rabbit ears. However, remember that
+	the compiler has to make sense of it somehow, so don't be too cruel on
+	the poor thing. Just because you can follow sparks nested to 42 levels,
+	it doesn't mean that the result will be easy to understand.
+	</P>
+
+	<P>
+	For example, the expression <CODE>'"#3~#2"&#162;#0'~#2</CODE> has value
+	1, whereas the similar expression <CODE>"#3~#2"&#162;#0~#2</CODE> could
+	have value 2 - because the compiler may use the whole <CODE>#0~#2</CODE> as
+	right operand for the interleave.
+	</P>
+
+	<P>
+	Note that different compilers might have different ideas about precedence,
+	so always include enough sparks and/or rabbit ears to make the expression
+	unambiguous if you intend to write portable programs.
+	</P>
+
+	<P>
+	If a spark is followed immediately by a spot, the two can be "overpunched",
+	and they will look like a bang. So, for example, <CODE>'.1~.2'</CODE> could
+	be written <CODE>!1~.2</CODE>. A similar effect applies to the rabbit ears,
+	but in this case you use a real overpunch (rabbit ears, backspace, spot)
+	because there isn't a character looking like the result.
+	</P>
+
+	<H2><A NAME="examples">Examples</A></H2>
+
+	<P>
+	Everything should be clear by now, so you won't need any examples.
+	</P>
+
+    </BODY>
+</HTML>

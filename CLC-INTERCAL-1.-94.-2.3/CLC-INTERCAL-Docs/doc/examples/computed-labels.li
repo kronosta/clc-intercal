@@ -1,0 +1,29 @@
+PLEASE NOTE: This program demonstrates the use of computed labels
+
+Copyright (c) 2023 Claudio Calvelli, all rights reserved.
+
+CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+and distribute it is granted provided that the conditions set out in the
+licence agreement are met. See files README and COPYING in the distribution.
+
+(.1)	DO .1 <- #1
+	PLEASE COME FROM (42)
+	DO READ OUT .2
+	DO GIVE UP
+	PLEASE COME FROM (1)
+(.2)	DO .2 <- #42
+
+PLEASE NOTE: Both calculations trigger a COME FROM in the program so
+that the sequence actually executed is as follows (we show it without
+the "DO" or "PLEASE" because we do not want to have multiple "COME FROM
+(1)" or "COME FROM (2)" in the program!
+
+	,1 <- #1
+	COME FROM (1)
+	.2 <- #42
+	COME FROM (42)
+	READ OUT .2
+	GIVE UP
+
+And therefore the program READs OUT "XLII"
+

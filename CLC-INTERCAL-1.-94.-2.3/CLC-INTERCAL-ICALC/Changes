@@ -1,0 +1,35 @@
+Changes from CLC-INTERCAL 1.-94.-2.2 to 1.-94.-2.3
+
+* Updated the calculator's save/load state functions to match changes
+  in the Base package.
+
+* Implemented test t/06intercalc-state.t which has been present but empty
+  for a long time.
+
+* Updated Makefile.PL for the build system changes
+
+Changes from CLC-INTERCAL 1.-94.-2.1 to 1.-94.-2.2
+
+* Updated the calculator to use the Interpreter::State module rather
+  than Interpreter as some functionality has moved; also added a
+  command-line option to select a different interpreter, which will
+  be useful to test future Interpreter changes.
+
+Changes from CLC-INTERCAL 1.-94.-2 to 1.-94.-2.1
+
+* Added an extension module so that the calculator can register
+  the configuration it needs, and a default configuration file in
+  ICALC.sickrc. Updated code which needs configuration to use the
+  new mechanism.
+
+* Changed t/00use.t to use Language::INTERCAL::Distribute
+
+* Changed intercalc to check if the INET extension is installed and only
+  run the INET-specific code if it is.
+
+Changes from CLC-INTERCAL 1.-94.-3 to 1.-94.-2
+
+* Made a separate calculator package, so that the compiler can
+  be installed without the calculator (but of course not vice
+  versa).
+

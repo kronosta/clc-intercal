@@ -1,0 +1,17 @@
+!PLEASE NOTE: IACC FILE TO ADD NEXT TO THE "SICK" COMPILER
+!
+!Copyright (c) 2006-2008 Claudio Calvelli, all rights reserved.
+!
+!CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+!and distribute it is granted provided that the conditions set out in the
+!licence agreement are met. See files README and COPYING in the distribution.
+!
+!PERVERSION "CLC-INTERCAL/Base aux/next.src 1.-94.-2"
+!
+?TYPE <- ?EXTENSION
+VERB LABEL "NEXT" Q_NEXT : Q_NEXT "NXT" LABEL
+GERUND "NEXTING"=1 : "NXT"
+TEMPLATE "LABEL" "NEXT" : "NXT"
+Q_NEXT :
+Q_NEXT "WHILE" "NOT" "NEXTING" : "QUA"
+

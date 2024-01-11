@@ -1,0 +1,59 @@
+#!/usr/bin/perl -w
+
+# Creates postpre.io
+# usage:
+#     mkpostpre x
+
+# This file is part of CLC-INTERCAL
+
+# Copyright (c) 2008, 2023 Claudio Calvelli, all rights reserved.
+
+# CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+# and distribute it is granted provided that the conditions set out in the
+# licence agreement are met. See files README and COPYING in the distribution.
+
+my $dstdir = "../blib/iofiles";
+my $dstsuffix = ".io";
+
+use strict;
+
+use FindBin qw($Bin);
+use lib "$Bin/../blib/arch", "$Bin/../blib/lib";
+use Language::INTERCAL::Object '1.-94.-3';
+use Language::INTERCAL::Interpreter '1.-94.-2.2';
+use Language::INTERCAL::ByteCode '1.-94.-2.2', qw(BC BC_FLA BC_FRZ BC_GUP BC_STR BC_STS);
+use Language::INTERCAL::GenericIO '1.-94.-4', qw($stdsplat);
+
+use vars qw($VERSION $PERVERSION);
+($VERSION) = ($PERVERSION = "CLC-INTERCAL/Base aux/mkpostpre 1.-94.-2.2") =~ /\s(\S+)$/;
+
+for my $name (@ARGV) {
+    my $source = '';
+    my @code = ();
+    my $addit = "\tDO ?TYPE <- ?POSTPRE\n";
+    push @code, pack('C*', BC_STS, BC(length $source), BC(length $addit),
+			   BC(0), BC(0), BC_FLA, _str('TYPE'), _str('POSTPRE'));
+    $source .= $addit;
+    $addit = "\tDO FREEZE\n";
+    push @code, pack('C*', BC_STS, BC(length $source), BC(length $addit),
+			   BC(0), BC(0), BC_FRZ);
+    $source .= $addit;
+    $addit = "\tDO GIVE UP\n";
+    push @code, pack('C*', BC_STS, BC(length $source), BC(length $addit),
+			   BC(0), BC(0), BC_GUP);
+    $source .= $addit;
+    my $obj = new Language::INTERCAL::Object;
+    $obj->setbug(0, 0);
+    $obj->clear_code;
+    $obj->unit_code(0, $source, length($source), \@code);
+    my $dst = "$dstdir/$name$dstsuffix";
+    my $fh = new Language::INTERCAL::GenericIO('FILE', 'r', $dst);
+    my $int = new Language::INTERCAL::Interpreter($obj);
+    $int->read($fh, 0);
+}
+
+sub _str {
+    my ($str) = @_;
+    return (BC_STR, BC(length($str)), unpack('C*', $str));
+}
+

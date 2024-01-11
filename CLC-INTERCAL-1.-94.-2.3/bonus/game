@@ -1,0 +1,107 @@
+The CLC-INTERCAL game
+
+The CLC-INTERCAL game is a game of strategy. You receive a number of INTERCAL
+keywords with every move and you attempt to combine these words, and any
+INTERCAL statements already on the board, to produce more valid INTERCAL
+statements. The statements are executed immediately: if the execution
+produces a splat (INTERCAL-speak for error), you lose your move; if the
+statement completes without splats it gets added to the board in the way
+you requested and you gain some score points. Since the game relies on the
+CLC-INTERCAL compiler, executing the statement may have the side effect to
+modify the compiler itself (using "CREATE", "DESTROY", "CONVERT" or "SWAP":
+this modification to the compiler in turn changes the language accepted.
+
+As you've guessed, there is a further twist. The game is treated as a single
+Quantum INTERCAL program; the game board is simply the superposition of all
+the moves. This implies that any move which modifies the compiler itself can
+have retroactive effect, making a "previous" move invalid and causing the
+person who made the move to lose the corresponding score. It may also cause
+a previously invalid move to become valid, therefore gaining score points to
+the corresponding player. An example will completely fail to clarify matters:
+
+Player A inflicts the following upon the other players (spaces added for
+legibility):
+
+    PLEASE DO .1 <- '!1 / *' ~ .1 ¢ "* ~ #¥7 ~ .&253"'
+
+Since no error has yet occurred, it is invalid to use the "splat" operator,
+hence this move is invalid (of course, the first occurrence is perfecly valid,
+it's only the second which produces an error), and the player loses the move
+and does not gain any points. Later, however, the same player enters:
+
+    DO .8
+
+This is a syntax error, and causes a splat when executed. The player loses
+this move, with its small score (2), but gains the much larger score (38)
+from the previously lost move, which now succeeds.
+
+Soon afterwards, player B says:
+
+    PLEASE CREATE ?VERB ?REGISTER
+
+This is quite a good move: while player B only gains a small score, this move
+also makes the last move by A valid so that A's larger score for the statement
+which uses "splat" vanishes, to be replaced by the much smaller score for the
+statement which originally splatted. B gains eight points, A loses thirtysix.
+
+It goes without saying that Quantum statements are allowed. However it
+must be pointed out that, unlike the normal CLC-INTERCAL compiler, the one
+embedded in the game considers the first execution of any Quantum statement
+as an observation of such statement. As a consequence, as soon as the player
+enters one such move, the compiler decides which of the possible states to
+select, and any subsequent execution (which may be caused by a modification
+to the compiler, requiring re-evaluation of each move) will select the same
+state as previously observed. This is not cast in stone: it is possible to
+disable this feature and have a new state selected each time the compiler is
+modified or indeed each time the game engine consider that it has sufficient
+cause for re-evaluation of past moves. This makes the game impossible to
+play while conserving one's sanity, but, hey, you are using INTERCAL and
+you deserve everything you get.
+
+Since you are still reading here, we might as well tell you how to install
+the game and even how to play it once you have installed it.
+
+	(This paragraph omitted on ground that it was too sane)
+
+To play the game you need:
+
+    * The INTERCAL game server, which is installed in "PREFIX/sbin/igmp".
+      This can be started from the command line or be automatically started
+      at boot time as long as you are not using a normal init system or
+      even systemd.
+
+    * At least two human volunteers, each one running an INTERCAL game
+      client, "PREFIX/bin/igg". The current supports all user interfaces
+      available to the "intercalc" desk calculator.
+
+    * A pre-booked space in a mental hospital for each human volunteer.
+
+A future release of the game may allow people to play against the computer for
+cases when human volunteers are in short supply or mental hospitals overbooked.
+
+Extensive instructions on the game can be obtained by executing the command
+"I AM STUCK" in the game client. In general, anything you type which
+starts with "PLEASE" or "DO" is counted as a move, and checked against the
+keywords currently available to you and the current state of the game (you
+also need to supply two vectors so the game server knows where you want to
+make your move: see the documentation). If what you type starts with "I AM",
+it is interpreted as a command to the game client itself (in a way similar
+to the ".sickrc" file used by CLC-INTERCAL 1.-94 which contains statements
+the compiler is supposed to identify with). Anything else you type will be
+interpreted somehow by the game client, but it is intentionally undocumented
+how. To quit the game, inform the game client that "I AM FED UP" (Using
+"PLEASE GIVE UP" as a move has no effect: to see why, remember what happens
+when you use this statement in a Quantum INTERCAL program). If all players
+quit a game, the game is considered finished and the scores are recorded
+by the game server. When starting a client, you will have the choice of
+connecting to any games already in progress, or to start a new one.
+
+The game server will issue each client with keywords at predefined intervals.
+The game client will list moves made by other players as well as any new
+keywords issued by the server. The players can play at any time as long as
+they possess the necessary keywords. Network and other delays are considered
+part of the game. This means that if two players move at about the same
+time there's no telling whose move goes first. Any player who needs to be
+reminded of the game state and what keywords are available, he or she should
+admit to the game client: "I AM CONFUSED".
+

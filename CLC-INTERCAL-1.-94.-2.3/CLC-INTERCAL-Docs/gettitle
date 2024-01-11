@@ -1,0 +1,80 @@
+#!/usr/bin/perl -w
+
+# Extract titles from generated HTML documentation: this is only
+# used during the build process to generate index.html files
+
+# This file is part of CLC-INTERCAL
+
+# Copyright (c) 2023 Claudio Calvelli, all rights reserved.
+
+# CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+# and distribute it is granted provided that the conditions set out in the
+# licence agreement are met. See files README and COPYING in the distribution.
+
+use vars qw($VERSION $PERVERSION);
+($VERSION) = ($PERVERSION = "CLC-INTERCAL/Docs gettitle 1.-94.-2.3") =~ /\s(\S+)$/;
+
+my $thisdir = 'doc/examples/' . (shift @ARGV);
+$thisdir =~ s|//+|/|g;
+$thisdir =~ s|/$||;
+print <<EOI;
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>CLC-INTERCAL example programs</title>
+</head>
+<body>
+<p>
+This is an automatically-generated index of example programs found in the directory
+&quot;$thisdir&quot; inside the CLC-INTERCAL-Docs package; the descriptions are
+extracted from comments in the programs.
+</p>
+EOI
+
+my $up = shift @ARGV;
+$up and print "<p>\n<a href=\"../index.html\">Parent directory</a>\n</p>\n";
+
+my @down;
+while (@ARGV) {
+    my $down = shift @ARGV;
+    $down eq '--' and last;
+    push @down, $down;
+}
+
+print "<table>\n";
+while (@ARGV) {
+    my $fn = shift @ARGV;
+    my $name = shift @ARGV;
+    (my $link = $fn) =~ s|.*/||;
+    my $title = "($name)";
+    open(SRC, '<', $fn) or die "$fn: $!\n";
+    while (<SRC>) {
+	s/^.*<title>//i or next;
+	chomp;
+	while (1) {
+	    s/<\/title>.*$//i and last;
+	    my $nl = <SRC>;
+	    defined $nl or last;
+	    $_ .= $nl;
+	    chomp;
+	}
+	s/\s+/ /g;
+	s/^ //;
+	s/ $//;
+	$title = $_;
+	last;
+    }
+    close SRC;
+    print <<EOI;
+<tr><td align="left"><a href="$link">$name</a></td><td align="left"><a href="$link">$title</a></td></tr>
+EOI
+}
+print "</table>\n";
+
+for my $down (@down) {
+    print "<p>\n<a href=\"$down/index.html\">$down/</a>\n</p>\n";
+}
+
+print "</body>\n";
+print "</html>\n";
+

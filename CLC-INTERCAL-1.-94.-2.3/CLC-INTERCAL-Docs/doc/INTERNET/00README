@@ -1,0 +1,149 @@
+The file "Usenet" contains the original proposal as posted on
+alt.lang.intercal; some changes have been made to the proposal, as
+described in this file. The documentation (under doc/html) has been
+updated with all the changes.
+
+--------------------------------------------------------------------------------
+
+MODIFICATIONS to the proposal.
+
+1) Clarification about the representation of IP addresses.
+
+   IP addresses are represented by converting the network byte order to the
+   natural byte order of the computer running the program. In other words,
+   an IP address of 127.0.0.1 corresponds to 2130706433, which of course
+   should be entered by the programmer as #28672 ¢ #61441
+
+2) IPv6.
+
+   To represent IPv6 addresses, CLC-INTERCAL uses the address range normally
+   reserved for IPv4 multicast as follows. When there is a need to store an
+   IPv6 address, the system replaces it with an IPv4 address from the multicast
+   range and stores that. A separate register, invisible to the programmer,
+   contains the original 128 bits. Conversely, when an IPv4 address from the
+   multicast range is given to a CASE, STEAL or SMUGGLE statement, the system
+   looks up the corresponding original IPv6 address and uses that.
+
+   This implies that there is a limit on the maximum number of separate IPv6
+   addresses each program can use.
+
+   The localhost address, ::1, is always represented as 224.0.0.0 so it can
+   be used without performing a DNS lookup by using just #49152 ¢ #32768.
+
+   IPv4 addresses 127.x.y.z where x+y > 0 are associated with up to 65535
+   IPv6 multicast addresses, as described below.
+
+   The simplest way to obtain IPv6 addresses is by performing DNS lookups
+   using "CASE (array)" statements; any AAAA records will be automatically
+   stored as described above.
+
+   There is no concept of IPv6 broadcast, however any IPv6 multicast address
+   will result in a query sent out to that multicast group and the IPv6
+   addresses replying will then be stored as described above. Using the
+   presentation form of an IPv6 multicast address for a DNS query will
+   return a single 32 bit number corresponding to a 127.x.y.0 address:
+   note that the last octet is always zero. The "all nodes" multicast
+   group, ff02::1,  always corresponds to 127.0.1.0 so it can be used
+   without performing a DNS lookup.
+
+   And yes, the IPv6 unicast addresses are encoded as IPv4 multicast
+   addresses, and IPv6 multicast groups as IPv4 localhost addresses. This
+   is of course by design.
+
+   When a CASE statement sees an address of the form 127.x.y.z with x+y > 0
+   it sends out a query on the associated IPv6 multicast group, waits for
+   replies and stores the IPv6 addresses of all nodes which replied; if
+   the addresses are link-local it also stores which link they arrived
+   from. If z is 0, the request is sent out on all available interfaces,
+   otherwise z represents the interface to use. This allows a program to
+   use up to 255 distinct interfaces; a new interface number is assigned
+   when encoding an address of the form "ADDRESS%INTERFACE" where the
+   program has not used INTERFACE before, and remembered for future reference.
+
+   Incoming IPv6 connections will have a source address, and that is stored
+   exactly like IPv6 addresses ontained using CASE statements. If the
+   connection is from a link-local address, the system also remembers
+   which link it used.
+
+   Since it is impossible for the program to access the hidden translation
+   table, it is permitted to do a DNS query on the presentation form of an
+   IPv6 address and obtain the translated fake IPv4 address corresponding
+   to it. For link-local addresses, append %INTERFACE to the presentation
+   address.
+
+3) Theft server.
+
+   The provisional port for the theft server is 64928, which can be changed
+   by copying the file INTERCAL/Include/system.sickrc to $HOME/.sickrc, and
+   editing the result.
+
+   By default, the theft server listens for TCP4 and TCP6 unicast requests,
+   UDP4 broadcasts and UDP6 requests on the "all nodes" group. The configuration
+   can specify other IPv6 multicast groups to join. The program can then
+   use the mecnahism described above to query these groups.
+
+   The protocol has changed since the Usenet article was posted. It is not
+   yet documented but you don't need to access it directly unless you are
+   porting the INTERNET to another INTERCAL compiler.
+
+4) STEAL and SMUGGLE
+
+   These accept a list of registers (separated, as usual, by intersections)
+   rather than a single register. This has the effect of stealing (or
+   smuggling) a number of registers from the same process on the same
+   computer.
+
+   There are four cases depending on which of the expressions are provided:
+
+   4.1) Both ON (expression) and FROM (expression)
+        The program connects to the specific server and asks for that PID
+
+   4.2) FROM (expression) only
+        The program connects to the specific server and asks for the list
+        of PIDS: then it selects one at random
+
+   4.3) ON (expression) only
+        The program sends an IPv4 broadcast on the LAN, as well as one or
+        more IPv6 multicast packets (by default, to ff02::1, all nodes, but
+        different groups can be specified by configuration); it includes the
+        desired PID in the packet and only servers which are running that
+        PID reply; if more than one replies, the program selects one at random
+
+   4.4) No expressions
+        Like 4.3, but the packet does not include a PID, and any server will
+        reply; then the program selects a server at random and continues as
+        with 4.2.
+
+   Note that there is no guarantee that the thefts are done in a particular
+   order, and if one fails there is no rollback, so the theft may partly
+   succeed and then splat. Same for smuggling of multiple registers.
+
+5) CASE statement
+
+   The final ESAC is optional. There is no real need for it.
+
+   Instead of duplicating values, if there are more variables than results
+   some variables will be left unassigned.
+
+6) Quantum statements
+
+   Of course, one can say things like
+
+   PLEASE STEAL .1 FROM #1234 ON #28672 ¢ #61441 WHILE NOT STEALING IT
+   DO SMUGGLE .1 FROM #1234 ON #28672 ¢ #61441 WHILE NOT SMUGGLING IT
+
+   with the obvious meaning. A Quantum CASE statement is also provided with
+   a slightly unusual syntax:
+
+   CASE (expression) WHILE NOT CASING IN (variable1) THEN (statement1)
+   OR (variable2) THEN (statement2) ...
+
+7) ABSTAIN and REINSTATE
+
+   In addition to ABSTAIN FROM STEALING + SMUGGLING, one can also ABSTAIN FROM
+   CASING and of course the corresponding REINSTATEs.
+
+8) Overloaded registers
+
+   STEALing or SMUGGLing an overloaded register can cause unexpected behaviour.
+

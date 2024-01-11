@@ -1,0 +1,29 @@
+PLEASE NOTE: Look up a host name in DNS
+
+Usage:
+        sick -lRun dns.ri
+enter the host name when asked; enter an empty name to give up.
+
+Copyright (c) 2023 Claudio Calvelli, all rights reserved.
+
+CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+and distribute it is granted provided that the conditions set out in the
+licence agreement are met. See files README and COPYING in the distribution.
+
+	DO ;2 <- #6
+	DO ;2 SUB #1 <- #18695 ¢ #46597
+	DO ;2 SUB #2 <- #280 ¢ #10502
+	DO ;2 SUB #3 <- #9991 ¢ #43545
+	DO ;2 SUB #4 <- #24347 ¢ #41991
+	DO ;2 SUB #5 <- #2820 ¢ #49672
+	DO ;2 SUB #6 <- #1544 ¢ #1807
+	DO ,1 <- #256
+	PLEASE COME FROM (2)
+	DO READ OUT ;2
+	DO WRITE IN ,1
+(1)	DO .1 <- ',1 SUB #1 ~ ,1 SUB #1' ~ #1
+	PLEASE GIVE UP
+	DO COME FROM .1
+	DO CASE ,1 IN :1 THEN READ OUT :1
+(2)	DON'T GIVE UP
+

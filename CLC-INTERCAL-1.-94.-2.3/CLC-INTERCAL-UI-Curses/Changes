@@ -1,0 +1,41 @@
+Changes from CLC-INTERCAL 1.-94.-2.2 to 1.-94.-2.3
+
+* Updated Makefile.PL for the build system changes
+
+Changes from CLC-INTERCAL 1.-94.-2.1 to 1.-94.-2.2
+
+* Updated test 00use.t to match changes in Base package
+
+Changes from CLC-INTERCAL 1.-94.-2 to 1.-94.-2.1
+
+* Added support for mouse where possible: system curses library supports it,
+  the program is running in an environment where the mouse can be used etc.
+
+* Substantial update of the UI-Curses code with many parts rewritten:
+
+  * New window border code to get a better result on the screen.
+
+  * Added detection of resize events. If the Curses module already knows how
+    to do that, take advantage of it, otherwise use a SIGWINCH handler.
+
+  * Improved support for utf8 standard I/O, if Curses is able to detect it.
+
+  * Improved navigation of keypad and menus with cursor keys, including the
+    ability to access menus if the Alt-key combination doesn't work in a
+    particular environment.
+
+  * Overhaul of the window open/close code to make it more robust.
+
+* Added a better test to see if the terminal is suitable for a Curses
+  program. If not, the caller (usually intercalc) will try the next
+  available interface.
+
+* Added a new system configuration file, UI-Curses.sickrc, to register the
+  Courses interface.
+
+* Changed t/00use.t to use Language::INTERCAL::Distribute
+
+Changes from CLC-INTERCAL 1.-94.-3 to 1.-94.-2
+
+* Created a new package with the "Curses" user interface.
+

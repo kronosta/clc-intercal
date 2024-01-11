@@ -1,0 +1,271 @@
+<HTML>
+    <HEAD>
+	<TITLE>CLC-INTERCAL Reference</TITLE>
+    </HEAD>
+    <BODY>
+	<H1>CLC-INTERCAL Reference</H1>
+	<H2>... Quantum INTERCAL</H2>
+
+	<P>
+	Table of contents:
+	<UL>
+	    <LI><A HREF="index.html">Parent directory</A>
+	    <LI><A HREF="#introduction">Introduction - quantum computing</A>
+	    <LI><A HREF="#intercal">Quantum INTERCAL</A>
+	    <LI><A HREF="#emulator">Emulation on classical computers</A>
+	</UL>
+	</P>
+
+	<H2><A NAME="introduction">Introduction - quantum computing</A></H2>
+
+	<P>
+	A quantum computer differs from a classical computer because it allows
+	binary values to be "0" and "1" at the same time. At present, quantum
+	computers are not generally available, but this does not mean that you
+	cannot develop programs for them. It just means that as soon as they
+	will be available, you'll have the software for them. And INTERCAL will
+	be the first language available for them.
+	</P>
+
+	<P>
+	A quantum computer will usually have a limited number of quantum bits
+	(binary values), the rest being classical, one-valued, bits. When a
+	program executes on a quantum computer, some of its data can have multiple
+	values because it includes quantum bits, but most of the data will just
+	have one value.
+	</P>
+
+	<P>
+	Here's a simple example: an equation (depending on a
+	parameter) admits a large number of solutions, say sixtyfour. A program
+	determines whether one of these solution falls between 0 and 1, and prints
+	this solution. If there are several solutions between 0 and 1, it is
+	enough to print one of them. To complicate the matters further, somebody
+	has written algorithms to obtain the 64 solutions. However, they are
+	all different from each other and very time-consuming.
+	</P>
+
+	<P>
+	A classical program would compute the first solution, check if it is between
+	0 and 1, if it is print it and stop, otherwise compute the second one etc.
+	The worst case is to compute all 64 solutions. The average can be as low as
+	computing 32 of them, but could be more than that, depending on how often a
+	value of the parameters causes all solutions to be outside the interval
+	[0,1].
+	</P>
+
+	<P>
+	A quantum program would include a second parameter: the index of the
+	desired solution. For example, it could store pointers to the code to
+	compute each solutions in an array, and look it up using this index. Then
+	execute it and check if the solution is between 0 and 1. If we could know
+	in advance which is the value to assign to this index, the program would
+	be 32 to 64 times faster than the classical one. And here's how to do it:
+	the index can be stored in a 6 bit register. Make that 6 quantum bits, so
+	each one of them can be symultaneously 0 and 1. As a result, the computer
+	would symultaneously compute 64 solutions for the price of 1.
+	</P>
+
+	<H2><A NAME="intercal">Quantum INTERCAL</A></H2>
+
+	<P>
+	Quantum INTERCAL lets the programmer store the IGNORE status of a register.
+	and the ABSTAIN status of a statement in a quantum bit. Examples:
+<PRE>
+	PLEASE ABSTAIN FROM (1) WHILE REINSTATING IT
+	DO IGNORE .1 WHILE REMEMBERING IT
+	DO REMEMBER .1 + .2 WHILE IGNORING THEM
+	PLEASE REINSTATE COMING FROM + NEXTING WHILE ABSTAINING FROM THEM
+</PRE>
+	These will assign both values (IGNORE/REMEMBER and ABSTAIN/REINSTATE) to
+	the appropriate bit. As a result of this, the program might continue executing
+	completely different things, for example:
+<PRE>
+	DO REMEMBER .1
+	DO .1 &lt;- #0
+	DO IGNORE .1 WHILE REMEMBERING IT
+(15)	DO .1 &lt;- #15
+	PLEASE REMEMBER .1
+	DO READ OUT .2
+	DO GIVE UP
+
+	PLEASE COME FROM .1
+	DO READ OUT .3
+	DO GIVE UP
+</PRE>
+	Will the program READ OUT .2 or .3? Both! after executing the line with label
+	(15), the value of .1 will be both #15 and #0 (because the register is being
+	IGNOREd and REMEMBERed at the same time). Which means that the program will
+	continue with the next instruction (because .1 is #0) but also continue after
+	the COME FROM (because .1 is #15).
+	</P>
+
+	<P>
+	One point to note: the program READs OUT both .2 and .3, but we do
+	not know in which order. The two READ OUT statements cannot be executed at
+	the same time (because they lock the standard output while they are executed),
+	but there is nothing in the program which decides who goes first. If it is
+	important, you can do something like checking the value of a non-quantum
+	variable and have one of the two potential execution path modifying it when
+	the other one waits for the modification. For example:
+<PRE>
+	DO REMEMBER .1 + .4
+	DO .1 &lt;- #0
+	DO .4 &lt;- #16
+	DO IGNORE .1 WHILE REMEMBERING IT
+(15)	DO .1 &lt;- #15
+	PLEASE REMEMBER .1
+	DO READ OUT .2
+	DO .4 &lt;- #0
+	DO GIVE UP
+
+	PLEASE COME FROM .1
+(16)	DO .1 &lt;- .4
+	DO READ OUT .3
+	DO GIVE UP
+</PRE>
+	What happens now is that the program always READs OUT .2 and then .3 - this
+	is because initially .4 is #16, so when the line with label (16) is reached,
+	if .4 is still #16 the program will loop. Meanwhile, the program is also
+	executing the READ OUT .2 and eventually will reset .4 to #4 - at which
+	point it will get out of the loop and READ OUT .3
+	</P>
+
+	<P>
+	Beginning with CLC-INTERCAL 0.05, there are two new statements which can
+	generate quantum bits: CONVERT and SWAP. These allow a program to modify
+	its own semantics at runtime, while leaving it unchanged. The syntax is
+	something like:
+<PRE>
+	DO CONVERT CONVERT STATEMENT TO STATEMENT TO
+		   SWAP STATEMENT AND STATEMENT
+	   WHILE LEAVING IT UNCHANGED
+</PRE>
+	This means that next time the program executes a CONVERT, it will
+	(symultaneously) execute a CONVERT (as if this CONVERT had not been
+	executed) and a SWAP (because this CONVERT has also been executed).
+	A similar abomination can be obtained with SWAP:
+	</P>
+
+<PRE>
+	DO SWAP STASH REGISTER LIST AND IGNORE REGISTER LIST
+	   WHILE LEAVING THEM UNCHANGED
+</PRE>
+
+	<P>
+	What happens next time you STASH something away? Well, it will STASH
+	it as normal, but it will also IGNORE it. Do not confuse the above with:
+<PRE>
+	DO SWAP STASH REGISTER LIST AND IGNORE REGISTER LIST
+	   WHILE REMEMBERING IT
+</PRE>
+	which is a classical SWAP, which happens to have a quantum IGNORE as
+	one of its arguments.
+	</P>
+
+	<P>
+	CLC-INTERCAL 1.-94.-4 and newer allows any statement to be made quantum
+	statements, with the exception of comments and READ OUT. This is
+	actually implemented by letting the statement run to completion, and
+	then undoing its effects while not undoing them. In most cases this
+	is the same as executing the statements while not executing them,
+	however READ OUT cannot be handled this way - once the output has
+	been observed, we cannot undo that. WRITE IN is fine, as the undoing
+	just restores the registers to the values they had before the input,
+	it does not put the input back.
+	</P>
+
+	<P>
+	Starting with CLC-INTERCAL 1.-94.-2.2, statements can be followed by
+	ONCE or AGAIN to automatically change their abstain status when the
+	are executed; of course, specifying both:
+<PRE>
+	DO <I>statement</I> ONCE AND AGAIN
+</PRE>
+	results in a quantum statement which both reinstates and abstains
+	itself at the same time; this would have the same effect as:
+<PRE>
+	(1) DO <I>statement</I>
+	DO ABSTAIN FROM (1) WHILE REINSTATING IT
+</PRE>
+	except that the operation is atomic, there is no possibility of another
+	thread doing anything between the two, and of course there is no need
+	to have a label just to point at it with the ABSTAIN/REINSTATE.
+	</P>
+
+	<P>
+	There are subtle interactions between the quantum ONCE/AGAIN and a quantum
+	statement: the current implementation creates a single quantum bit for
+	this, which means that the statement is both executed and not executed
+	(because it's quantum), and it's both reinstated and abstained (because
+	of the quantum ONCE AND AGAIN), but these two quantum bits are entangled;
+	this situation is subject to review and could change in future.
+	</P>
+
+	<H2><A NAME="emulator">Emulation on classical computers</A></H2>
+
+	<P>
+	As it can be seen from the above examples, a Quantum INTERCAL program
+	effectively behaves like a multithreaded program in which some of the
+	registers are shared between threads, while others are private to each
+	thread. The private registers are the ones which participate in a quantum
+	IGNORE or REMEMBER. More precisely, all registers start as shared. When
+	a quantum IGNORE or REMEMBER is executed, the program acts as if it
+	started another thread, with the variables involved copied to a private
+	area of each thread, but with complementary IGNORE state. If the quantum
+	statement was an ABSTAIN or REINSTATE, a similar thing happens except
+	that no registers are made private to the threads.
+	</P>
+
+	<P>
+	This picture suggests how to emulate this behaviour on a classical
+	computer, using threads. The compiler will notice that this emulation
+	is required if you compile a quantum program on a classical computer,
+	and automatically includes the necessary code.
+	</P>
+
+	<P>
+	Note that the CLC-INTERCAL quantum emulator does not always create
+	superposed state when one would expect it. For example, consider the
+	program:
+<PRE>
+	DO ABSTAIN FROM (1) WHILE REINSTATING IT
+	PLEASE .1 &lt;- #1
+	(!) DO .1 &lt;- #2
+	DO READ OUT .1
+	DO GIVE UP
+</PRE>
+	The second calculation happens while not happening, because the
+	statement is both ABSTAINed FROM and REINSTATEd. So we would assume
+	that the same quantum bit which controls the ABSTAIN status of that
+	statement will also control whether .1 has the value #1 or #2; what
+	actually happens is that the register is still shared between the
+	two emulator's threads, and so the value is #2 even when the
+	assignment did not happen. See also
+	<A HREF="https://todo.sr.ht/~uilebheist/CLC-INTERCAL/12">this
+	issue on SourceHut</A>.
+	</P>
+
+	<P>
+	Fixing the above example would probably break existing programs
+	which may rely on this subtle behaviour. Therefore we decided that
+	this is a documented feature (we've just said it here, which is
+	the official documentation) and not a bug, and we define "Quantum
+	INTERCAL" as being whatever the CLC-INTERCAL quantum emulator does,
+	even if there is no basis for that behaviour in any interpretation
+	of Quanum Physica.
+	</P>
+
+	<P>
+	A future version of CLC-INTERCAL will include a new, different,
+	quantum emulator, selectable by a compiler option, which would make
+	the example work properly; it would also mean that only one of
+	the two READ OUTs will be observable (superposed state will collapse)
+	and so the program will say either "I" or "II", but one won't know
+	until it runs. The syntax will remain unchanged, so no other part
+	of the compiler will need to be modified.
+	</P>
+
+</BODY>
+</HTML>
+

@@ -1,0 +1,212 @@
+<HTML>
+    <HEAD>
+	<TITLE>CLC-INTERCAL Reference</TITLE>
+    </HEAD>
+    <BODY>
+	<H1>CLC-INTERCAL Reference</H1>
+	<H2>... Input/Output</H2>
+
+	<P>
+	We agree with the designers of C-INTERCAL that the I/O capabilities of
+	INTERCAL-72 are insufficient. However, we don't agree with their implementation
+	so we shamelessly go and do something entirely incompatible. However, if you
+	select the <I>ick</I> compiler for CLC-INTERCAL you get back their I/O behaviour.
+	</P>
+
+	<P>
+	Table of contents:
+	<UL>
+	    <LI><A HREF="index.html">Parent directory</A>
+	    <LI><A HREF="#numeric">Numeric I/O</A>
+	    <LI><A HREF="#alphanumeric">Alphanumeric I/O</A>
+	    <LI><A HREF="#binary">Binary I/O</A>
+	    <LI><A HREF="#class">Class I/O</A>
+	</UL>
+	</P>
+
+	<H2><A NAME="numeric">Numeric I/O</A></H2>
+
+	<P>
+	This is the standard INTERCAL-72 I/O. It is used with numeric variables
+	(one spot or two spots).
+	</P>
+
+	<P>
+	On input, one line is written in (other languages describe this process as
+	"one line is read") and its contents must be a sequence of digits spelled
+	out in full in a selection or popular languages, for example
+	"ONE THREE TWO ONE ZERO" (English for 13210) or "COIG CEITHIR TRI" (Scottish
+	Gaelic for 543). Spaces between digits are ignored.
+	</P>
+
+	<P>
+	On output, butchered Roman numerals are used. However, we differ from
+	INTERCAL-72 slightly in that we use backslats before numerals to multiply
+	them by 1,000,000 - however the actual format of the Roman numerals is
+	controlled by the compiler you use: if it is <I>sick</I>, you get the
+	backslats; if it is <I>ick</I> or <I>1972</I>, you get the overline
+	like C-INTERCAL does; you can also write your own compiler (or modify
+	an existing one) and have another one of the seven or eight formats available.
+	</P>
+
+	<P>
+	For example, 1,234,567,890 is read out:
+<PRE><CODE>
+	\M\C\C\X\X\X\I\VdlxviiDCCCXC
+</CODE></PRE>
+	by a program compiled with <I>sick</I> or:
+<PRE><CODE>
+	________
+	MCCXXXIVdlxviiDCCCXC
+</CODE></PRE>
+	by a program compiled with <I>ick</I>.
+	</P>
+
+	<H2><A NAME="alphanumeric">Alphanumeric I/O</A></H2>
+
+	<P>
+	This is the kind of input/output the compiler itself uses to write the program
+	source in and read program listings out. It applies to 16 bit arrays (tails),
+	which must be dimensioned. Multidimensional arrays are "flattened".
+	</P>
+
+	<P>
+	On input, text is obtained from the next line, and it is converted to
+	an extended Baudot code. This is essentially the same as standard Baudot,
+	except that selecting "letters" when you are already in "letters" will cause
+	a shift to lowercase, and selecting "figures" when you are already in
+	"figures" causes a shift to other symbols. See <A HREF="charset.html">the
+	chapter on Character Sets</A> for a complete description of extended Baudot.
+	Please note that the insertion of shift codes means that the Baudot code
+	can be as much as three times as long as the original ASCII, so you must
+	dimension your array accordingly.
+	</P>
+
+	<P>
+	On output, extended Baudot is converted to ASCII and sent to the virtual
+	line printer.
+	</P>
+
+	<H2><A NAME="binary">Binary I/O</A></H2>
+
+	<P>
+	This is the simplest, yet most powerful, form of input/output. It applies
+	to 32 bit arrays, which must be dimensioned. Multidimensional arrays are
+	"flattened".
+	</P>
+
+	<P>
+	The input is assumed to be a stream of bytes, which is not interpreted in
+	any way. The number of bytes written in from the input is the same as the
+	size of the array specified. To compute the data to store in the array, a
+	simple algorithm is applied to every pair of consecutive elements. Since
+	this would give one less element, a #172 is inserted at the start. If the
+	two numbers in a pair are in <CODE>.1</CODE> (left) and <CODE>.2</CODE>
+	(right), the following fragment produces the value to be stored and leaves
+	it in <CODE>:1</CODE>
+<PRE><CODE>
+DO :1 &lt;- '.2~.1'&#162;"'"&#165;'#65535&#162;.2'"~"#0&#162;#65535"'~'"&#165;'#65535&#162;.1'"~"#0&#162;#65535"'"
+</CODE></PRE>
+	</P>
+
+	<P>
+	We know it's an insult to the reader's intelligence to explain what it does,
+	but maybe somebody is in a hurry and doesn't have the two milliseconds to parse
+	that, so here it goes: the result is obtained by computing two numbers and
+	interleaving them. The first number computed is the second input element
+	selected by the first input element (<CODE>.2~.1</CODE>). The second number
+	computed is the same selection but applied to the bit-complement of the two
+	input numbers. Before applying the algorithm, the numbers are extended from
+	8 to 16 bits by padding them with a random value. It is clear that the result
+	has all the bits of the corresponding input value, permuted in a predictable
+	order, so all the information is there.
+	</P>
+
+	<P>
+	A value of zero is inserted to indicate end-of-file. The padding is guaranteed
+	to have at least one bit set, so the values stored for any input value is never
+	zero.
+	</P>
+
+	<P>
+	For output, the same algorithm is applied in reverse, except that zeros are
+	skipped. If you need to use a value zero, pad it to 32 bits with ones. The
+	current implementation does not check that the padding is sufficiently random,
+	although this might well change in future.
+	</P>
+
+	<H2><A NAME="class">Class I/O</A></H2>
+
+	<P>
+	If you use a class name (for example, <CODE>@1</CODE>) for I/O, nothing gets
+	actually input or output by the class. However, class registers have associated
+	filehandles and mentioning the class instructs the runtime to use the filehandle
+	on the current WRITE IN or READ OUT statement. For example:
+<PRE><CODE>
+	DO READ OUT .1 + @3 + .2 + @2 + .3
+</CODE></PRE>
+	produces the value of .1 on the standard read filehandle (the default
+	filehandle for READ OUT), then the value of .2 on the standard splat
+	filehandle (@3), finally .3 back on the standard read (@2).
+	</P>
+
+	<P>
+	The runtime system predefines a small number of filehandles:
+	<UL>
+	    <LI>@1 - standard write; the default for WRITE IN
+	    <LI>@2 - standard read; the default for READ OUT
+	    <LI>@3 - standard splat; error messages go here
+	    <LI>@7 - null filehandle; if used in WRITE IN, always
+	    returns an end-of-file condition; if used in READ OUT,
+	    discards anything you send to it
+	    <LI>@9 - trace filehandle; this is only available if
+	    tracing is enabled
+	</UL>
+	</P>
+
+	<P>
+	When running as a standalone program, or from inside the command-line
+	compiler tool, @1 corresponds to the system standard input, @2
+	to the system standard output and @3 to the system standard error;
+	if tracing is enabled, @9 corresponds to the standard error, unless
+	the user has specified <I>--stdtrace=FILE</I> on the command line,
+	in which case @9 refers to that file.
+	</P>
+
+	<P>
+	When running inside the calculator, these filehandles are mapped to
+	something appropriate for the user interface in use. Usually, @2
+	and @3 send their output to the calculator's display, @9 stores the
+	output separately (use the "trace" entry from the "Windows" menu to
+	see it) and @1 causes a dialog to pop up and asking the user to type
+	something.
+	</P>
+
+	<P>
+	The <A HREF="syscall.html">system call interface</A> provides a way
+	to open files and TCP sockets and associate them with filehandles.
+	</P>
+
+	<P>
+	Note that if a program steals a class register from another program,
+	it will use the corresponding filehandle as well. For example, this
+	produces "XLI" on somebody else's standard read:
+<PRE><CODE>
+	DO STEAL @2 ON #... FROM ...
+	DO READ OUT #42
+</CODE></PRE>
+	</P>
+
+	<P>
+	Assigning to a class register has the effect of closing any filehandle
+	associated with it, and then duplicating the filehandle provided by
+	the assignment if it had one; so to silence all subsequent output
+	one could say:
+<PRE><CODE>
+	DO @2 &lt;- @7
+</CODE></PRE>
+	which is equivalent to the "&gt;/dev/null" one could ask some shells.
+	</P>
+
+    </BODY>
+</HTML>

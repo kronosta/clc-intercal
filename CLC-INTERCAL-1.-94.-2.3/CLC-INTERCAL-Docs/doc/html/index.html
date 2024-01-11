@@ -1,0 +1,568 @@
+<HTML>
+    <HEAD>
+	<TITLE>CLC-INTERCAL Reference</TITLE>
+    </HEAD>
+    <BODY>
+	<H1>CLC-INTERCAL Reference</H1>
+
+	<P>
+	Table of Contents
+	<UL>
+	    <LI><A HREF="#introduction">Introduction</A>
+	    <LI><A HREF="#obtaining">Obtaining CLC-INTERCAL</A>
+	    <LI><A HREF="#installing">Installing CLC-INTERCAL</A>
+	    <LI><A HREF="concepts.html">Fundamental Concepts</A>
+	    <LI><A HREF="expressions.html">Expressions</A>
+	    <LI><A HREF="statements.html">Statements</A>
+	    <LI><A HREF="belongs.html">Belongs TO</A>
+	    <LI><A HREF="lectures.html">Classes and Lectures</A>
+	    <LI><A HREF="input_output.html">Input/Output</A>
+	    <LI><A HREF="quantum.html">Quantum INTERCAL</A>
+	    <LI><A HREF="internet.html">INTERNET: INTERcal NETworking</A>
+	    <LI><A HREF="syscall.html">The System call interface</A>
+	    <LI><A HREF="extensions.html">Compiler extensions and optional features</A>
+	    <LI><A HREF="parsers.html">Writing compilers for CLC-INTERCAL</A>
+	    <LI><A HREF="sick.html">The command-line compiler tool</A>
+	    <LI><A HREF="sick.html#embed">Embedding INTERCAL in Perl source</A>
+	    <LI><A HREF="intercalc.html">The INTERCAL calculator</A>
+	    <LI><A HREF="errors.html">Errors</A>
+	    <LI><A HREF="charset.html">The various character sets supported by CLC-INTERCAL</A>
+	    <LI><A HREF="sickrc.html">Configuration files</A>
+	</UL>
+
+	<H2><A NAME="introduction">Introduction</A></H2>
+
+	<P>
+	CLC-INTERCAL was first released as an April fool joke on April 1st,
+	1999. The idea behind the release was to provide a new INTERCAL
+	compiler which could be used as a test-bed for new language ideas,
+	provided one could justify such ideas with the fundamental INTERCAL
+	philosophy of &quot;doing things differently&quot;.
+	</P>
+
+	<P>
+	Some features of C-INTERCAL or INTERCAL-72 were thought to be too
+	&quot;normal&quot;, so support for them was made optional. In the
+	current version (1.-94.-2.1 at the time of writing), such optional
+	features can be enabled by providing command-line options to the
+	compiler tool (see the
+	<A HREF="sick.html">chapter about the command-line compiler tool</A>),
+	or by using the appropriate menus in the calculator (see the
+	<A HREF="intercalc.html">chapter about the INTERCAL calculator</A>).
+	The reference manual
+	will indicate which features are optional and which option enables
+	which feature. For example, CLC-INTERCAL has always considered NEXT to
+	be an obsolete statement, being just a standard subroutine call,
+	and one enables it by selecting the &quot;next&quot; option (or by using the
+	ick compatibility mode, which automatically enables this option).
+	</P>
+
+	<P>
+	Other optional features are experimental language extensions, or
+	else extensions which, it was felt, are above and beyond the call
+	of insanity, for example the ability to use computed statement
+	labels or the &quot;COME FROM gerund&quot; statement. See
+	<A HREF="extensions.html">the chapter about compiler extensions
+	and optional features</A>.
+	</P>
+
+	<H2><A NAME="obtaining">Obtaining CLC-INTERCAL</A></H2>
+
+	<P>
+	Unlike some other software projects, which have <I>releases</I> we try
+	to keep the world safe by not releasing CLC-INTERCAL. However, despite
+	our best efforts, it occasionally <I>escapes</I> and that makes it
+	possible for other people to obtain it.
+	</P>
+
+	<P>
+	The latest escape will always be available at the top of the
+	<a href="https://uilebheist.srht.site/dist/index.html">CLC-INTERCAL
+	download</a> page on SourceHut. In the page containing the escape,
+	the &quot;Bundle&quot; package is listed first, followed by the
+	&quot;Base&quot; package and then all other optional components.
+	</P>
+
+	<P>
+	The most recent escapes (since 1.-94.-2) are available as a &quot;Base&quot;
+	package containing the minimum set of things needed to compile and
+	run CLC-INTERCAL programs, and separate packages for optional components;
+	a &quot;Bundle&quot; package contains the whole thing and has a
+	method to install it at once instead of installing all the components
+	in the required order to satisfy their dependencies. Refer to
+	<a href="#installing">Installing</a> below for more details.
+	</P>
+
+	<P>
+	Escapes since 1.-94.-7 are available for download using two different
+	file formats: a tarball and a DD/SH program. These are listed in
+	separate columns in the various download pages, and it is only
+	necessary to obtain one of them for each package desired. When the
+	difference between an escape and the previous one is small, there
+	may also be a &quot;patch&quot; file which applies to the previous
+	escape, which eill be the one listed in the line after the one
+	containing the patch itself.
+	</P>
+
+	<P>
+	A development version, which may be broken and/or incomplete is
+	now maintained in
+	<a href="https://git.sr.ht/~uilebheist/CLC-INTERCAL">a git
+	repository on SourceHut</a>. <b>Please note that although escapes
+	are marked as &quot;release&quot; on the git repository, this
+	does not in any way imply that anything has been released: these
+	are generated automatically from git tags, and the corresponding
+	tarball will be different from the official ones on the
+	<a href="dist/index.html">download page</a>; moreover, the
+	<a href="#installing">installation instructions</a> may not
+	apply to such tarballs.</b> If you wanted something where tarballs
+	generated automatically by git are the same as the distribution
+	ones, you wouldn't be using INTERCAL anyway.
+	</P>
+
+	<P>
+	A Debian package for CLC-INTERCAL is provided by Mark Brown. See the
+	<A HREF="https://packages.debian.org/clc-intercal">Debian package description</A>
+	for more details. Packages for other operating systems and/or
+	distributions may be made available in future. Watch this space.
+	Or avoid watching it if that makes you feel safer.
+	</P>
+
+	<H2><A NAME="installing">Installing CLC-INTERCAL</A></H2>
+
+	<P>
+	The procedure to install CLC-INTERCAL has varied considerably between
+	escapes; this section applies to the latest escape; each escape
+	also contains installation instructions appropriate for its own
+	procedure.
+	</P>
+
+	<H3>Dependencies</H3>
+
+	<P>
+	Since CLC-INTERCAL is written in perl, a working perl installation is
+	a prerequisite. The Base package tries to use only modules installed
+	by default, but if we find out that some installations do not have
+	some of them we'll list them here.
+	</P>
+
+	<P>
+	The &quot;INET&quot; package needs to figure out which network
+	interfaces are present, and their IP address(es). Starting from escape
+	1.-94.-2.3 the build system will check if it's possible to use its
+	own module which requires a working C compiler and some C functions
+	to be available in the C library. This is known to work on Linux,
+	FreeBSD, NetBSD and OpenBSD if they have development tools installed.
+	</P>
+
+	<P>
+	If it is not possible to use CLC-INTERCAL's own interface detect
+	module, or if you are trying to build an escape prior to 1.-94.-2.3,
+	the build system will look for the Net::Interface module and use that
+	instead: this module is available on CPAN and all the usual mirrors.
+	It needs at least version 1.0. On NetBSD, Net::Interface has a bug
+	which requires fixing before using it: obtain the source from CPAN, apply
+	<A HREF="https://uilebheist.srht.site/patches/NetBSD-Net-Interface.patch">this
+	tiny patch</A> to them, then build and install it according to the
+	instructions in its own README. We reported the bug and the patch, so
+	it's possible that this may not be needed by the time you read this,
+	On all other systems, if there is a package providing Net::Interface
+	it can be used without building it from source; if you do build it
+	from source, it may give an error when you run Makefile.PL because
+	perl's defaults have changed: the easiest way to fix that is to apply
+	<A HREF="https://uilebheist.srht.site/patches/Net-Interface-Makefile.patch">this
+	tiny patch</A> (note that the NetBSD patch already includes this one,
+	so you do not need both!)
+	</P>
+
+	<P>
+	Speaking about Net::Interface, we are aware that there is also
+	IO::Interface and IO::Interface::Simple, but it turns out that they
+	didn't work at all in several of our test systems, so we preferred
+	Net::Interface which works on all of them, with a tiny patch required
+	in some cases.
+	</P>
+
+	<P>
+	IPv6 support in the &quot;INET&quot; package requires the Socket6
+	and IO::Socket::INET6 modules; if these are not installed, the package
+	will work but only use IPv4.
+	</P>
+
+	<P>
+	The &quot;UI-Curses&quot; package needs the Curses module.
+	</P>
+
+	<P>
+	The &quot;UI-Line&quot; package needs Term::ReadLine::Gnu - at present,
+	it does not work with Term::ReadLine::Perl but it may in future.
+	</P>
+
+	<P>
+	The &quot;UI-X&quot; package needs the Gtk3 or Gtk2 module, using Gtk3
+	if both are installed.
+	</P>
+
+	<H4>Debian, Ubuntu and derivatives</H4>
+
+	<P>
+	Required for INET:
+<PRE><CODE>
+	apt install libnet-interface-perl
+</CODE></PRE>
+	</P>
+
+	<P>
+	Highly recommended and necessary for IPv6 support:
+<PRE><CODE>
+	apt install libsocket6-perl libio-socket-inet6-perl
+</CODE></PRE>
+	</P>
+
+	<P>
+	Runtime dependencies for the three user interfaces:
+<PRE><CODE>
+	apt install libterm-readline-gnu-perl
+	apt install libcurses-perl
+	apt install libgtk3-perl
+</CODE></PRE>
+	</P>
+
+	<H4>Gentoo</H4>
+
+	<P>
+	Beginning with CLC-INTERCAL-1.-94.-2.3 we provide ebuilds which can
+	install all parts of the compiler; see
+	<a href="https://git.sr.ht/~uilebheist/CLC-INTERCAL-ebuilds">the information
+	in this git repo</a>. The rest of this section describes how to install
+	without using these ebuilds.
+	</P>
+
+	<P>
+	Required for INET: obtain the sources for Net::Interface from
+	<a href="https://metacpan.org/pod/Net::Interface">CPAN</a>,
+	apply
+	<a href="https://uilebheist.srht.site/patches/Net-Interface-Makefile.patch">this
+	patch</a>, then build and install as per its instructions.
+	</P>
+
+	<P>
+	Highly recommended and necessary for IPv6 support:
+<PRE><CODE>
+	emerge -a1 dev-perl/{Socket6,IO-Socket-INET6}
+</CODE></PRE>
+	</P>
+
+	<P>
+	Runtime dependencies for the three user interfaces:
+<PRE><CODE>
+	emerge -a1 dev-perl/Term-ReadLine-Gnu
+	emerge -a1 dev-perl/Curses
+	emerge -a1 dev-perl/Gtk3
+</CODE></PRE>
+	</P>
+
+	<H4>FreeBSD</H4>
+
+	<P>
+	Required for INET:
+<PRE><CODE>
+	pkg install p5-Net-Interface
+</CODE></PRE>
+	</P>
+
+	<P>
+	Highly recommended and necessary for IPv6 support:
+<PRE><CODE>
+	pkg install p5-Socket6 p5-IO-Socket-INET6
+</CODE></PRE>
+	</P>
+
+	<P>
+	Runtime dependencies for the three user interfaces:
+<PRE><CODE>
+	pkg install p5-Term-ReadLine-Gnu
+	pkg install p5-Curses
+	pkg install p5-Gtk3
+</CODE></PRE>
+	</P>
+
+	<H4>NetBSD, OpenBSD</H4>
+
+	<P>
+	Required for INET: obtain the sources for Net::Interface from
+	<a href="https://metacpan.org/pod/Net::Interface">CPAN</a>,
+	apply
+	<a href="https://uilebheist.srht.site/patches/NetBSD-Net-Interface.patch">this
+	patch</a>, then build and install as per its instructions.
+	</P>
+
+	<P>
+	Highly recommended and necessary for IPv6 support:
+<PRE><CODE>
+	pkg_add p5-Socket6 p5-IO-Socket-INET6
+</CODE></PRE>
+	</P>
+
+	<P>
+	Runtime dependencies for the three user interfaces:
+<PRE><CODE>
+	pkg_add p5-Term-ReadLine-Gnu
+	pkg_add p5-Curses
+	pkg_add p5-Gtk3
+</CODE></PRE>
+	(At the time of writing, NetBSD did not have a p5-Gtk3 or p5-Gtk2 package,
+	but OpenBSD did).
+	</P>
+
+	<H3>Unpacking the sources</H3>
+
+	<P>
+	There are different procedures depending on which type of sources
+	you have obtained.
+	</P>
+
+	<P>
+	After downloading a DD/SH program, you need to run it, either uncompressing
+	it first, or, if your shell allows it (most do) by using a pipe from the
+	decompressor. For example:
+<PRE>
+	gzip -dc /path/to/dowload.ddsh.gz | sh
+</PRE>
+	or
+<PRE>
+	gzip -d /path/to/dowload.ddsh.gz
+	sh /path/to/download.ddsh
+</PRE>
+	The &quot;sh&quot; must be a Bourne-type shell, like sh, ash, bash, dash or
+	ksh. A C-type shell like csh or zsh won't work.
+	</P>
+
+	<P>
+	After downloading a tarball, just unpack it using your system's &quot;tar&quot;
+	program or any other archive extraction software which can read tarballs.
+	If necessary, decompress the file first. For example:
+<PRE>
+	gzip -dc /path/to/dowload.tar.gz | tar xvf -
+</PRE>
+	or
+<PRE>
+	tar xvzf /path/to/dowload.tar.gz
+</PRE>
+	</P>
+
+	<P>
+	The git repository contains the whole bundle. Therefore to install
+	the bundle there is no need to unpack anything once you have
+	obtained a clone or copy of the repository. If planning to install
+	the components separately, these will be in a subdirectory named
+	after the component, but without the escape number, for example
+	&quot;CLC-INTERCAL-Base&quot;: change to that directory and follow
+	the normal installation instruction for each component.
+	</P>
+
+	<H3>Installing the bundle</H3>
+
+	<P>
+	Unpack the source as described above, then change to the directory it
+	created, which will be something like &quot;CLC-INTERCAL-<I>escape</I>&quot;.
+	Note that the bundle includes a different build system from the separate
+	packages, so it cannot be installed by downloading all packages, you need
+	to download the bundle itself. After unpacking and changing into the
+	directory, run the following four commands:
+<PRE>
+	perl Makefile.PL &lt;- see <a href="#xsbuild">notes below</a> about XS builds
+	make
+	make test        &lt;- see <a href="#syslib">notes below</a> about syslib tests
+			 &lt;- see <a href="#inet">notes below</a> about INET tests
+	make install     &lt;- as root or sudo if required
+</PRE>
+	After that, it is safe to change out of the directory and delete its
+	contents.
+	</P>
+
+	<H3>Installing from separate packages</H3>
+
+	<P>
+	Installing separate packages is possible after downloading either the
+	bundle or the required packages separately. This section describes how
+	to install from the separate downloads, with a note about the differences
+	when using the bundle or the git repository.
+	</P>
+
+	<P>
+	Always start with &quot;Base&quot;; the rest can then follow in any order.
+	For each package to install, start by unpacking it as described above,
+	then change to the directory it created, which will be something like
+	&quot;CLC-INTERCAL-<I>component</I>-<I>escape</I>&quot;, then run the
+	following four commands:
+<PRE>
+	perl Makefile.PL &lt;- see <a href="#xsbuild">notes below</a> about XS builds for the INET package
+	make
+	make test        &lt;- see <a href="#syslib">notes below</a> for the syslib tests in the Base package
+			 &lt;- see <a href="#inet">notes below</a> for the INET package
+	make install     &lt;- as root or sudo if required
+</PRE>
+	After that, it is safe to change out of the directory and delete its
+	contents, then repeat the process for other optional components if
+	desired.
+	</P>
+
+	<P>
+	If you have downloaded the bundle, or start from a clone or copy of the
+	git repository, the instructions are essentially the same, the only
+	difference is that the directory for each component will not have
+	the escape number, so it will be something like
+	&quot;CLC-INTERCAL-<I>component</I>&quot;.
+	</P>
+
+	<P>
+	Note that trying to install any component other than &quot;Base&quot;
+	while &quot;Base&quot; itself is not installed will fail: the
+	Makefile.PL actually needs some modules installed by it. Always
+	build and install &quot;Base&quot; first.
+	</P>
+
+	<P>
+	When building packages for distribution, it's also possible to use
+	the build directory for &quot;Base&quot; without installing it, by
+	adding the appropriate paths to perl's search path. How you do that
+	depends on your build environment. Another option when building
+	packages is to build and test the whole bundle first, then go into
+	each separate component directory and run &quot;make install&quot;
+	there, which will install that component only: provide any options
+	appropriate for your build system so that the install happens where
+	it needs it rather than on the root filesystem!
+	</P>
+
+	<H3><A NAME="xsbuild">Special note for XS builds</A></H3>
+
+	<P>
+	The INET package includes its own network detect module, and the
+	build system will try to build it if that looks possible.  If it
+	fails to build, that is obviously a bug, either in the module itself,
+	or in the decision by the build system that it could be built.
+	(Other parts of the compiler may include XS modules in future, and
+	if so the same notes will apply).
+	</P>
+
+	<P>
+	The first thing to do is to verify that the build succeeds without
+	the XS modules by running:
+<PRE>
+	perl Makefile.PL --avoid-xs
+</PRE>
+	then continuing the build as before.  If it now succeeds, please
+	report a bug including all relevant information such as operating
+	system and version, system architecture, name and version of C
+	compiler installed, version of Perl installed, and of course the
+	error messages produced by the build.
+	</P>
+
+	<P>
+	Until we can figure out what's wrong, please continue building the
+	system with --avoid-xs to work around the issue.
+	</P>
+
+	<H3><A NAME="syslib">Special note for syslib tests</A></H3>
+
+	<P>
+	The Base package includes a perl reimplementation of INTERCAL libraries
+	which ship with C-INTERCAL, but cannot be included in CLC-INTERCAL as
+	they have unknown licensing status; these are the system library,
+	syslib.i and syslib3.3i to syslib7,7i, and the floating point library,
+	floatlib.i. Two sets of tests, t/17syslib.o.t and t/19floatlib.o.i,
+	test this reimplementaion against results obtained running C-INTERCAL
+	with its own libraries, so we know that they are as compatible as
+	possible. These tests always run, and take between 10 seconds and a
+	few minutes on any reasonably modern system (by which we mean that
+	it has been manufactured in the last 20 years).
+	</P>
+
+	<P>
+	The Base package also includes two sets of tests which can only run
+	if these C-INTERCAL libraries are present, and which are skipped by
+	default, just printing "skipped: read the documentation to know
+	how to run this test". If they do run, they provide a more comprehensive
+	comparison between CLC-INTERCAL and C-INTERCAL, but they require the
+	user to have obtained these libraries separately and they are not
+	necessary to verify that CLC-INTERCAL was built correctly, only that
+	it can compile and run a large set of C-INTERCAL sources.
+	</P>
+
+	<P>
+	Another reason for not running these tests is that they are extremely
+	slow, and could take hours to complete.
+	</P>
+
+	<P>
+	If C-INTERCAL is installed on the system it provides these libraries,
+	normally in /usr/share/ick-<I>VERSION</I> or /usr/local/share/ick-<I>VERSION</I>.
+	To run these extra tests it is sufficient to set environment variable
+	$ICK_SYSLIB_DIR to a directory containing all these files and then
+	run "make test", for example (sh-like shells):
+<PRE>
+	    ICK_SYSLIB_DIR=/usr/share/ick-0.31 make test
+</PRE>
+	Of course, if the user has obtained these files without installing
+	C-INTERCAL the same applies, probably with a different directory in
+	the command.
+	</P>
+
+	<H3><A NAME="inet">Special note for INET package tests</A></H3>
+
+	<P>
+	When installing the &quot;INET&quot; package (or the Bundle), the tests may
+	require network access, and will fail if running in a sandboxed build
+	environment which prevents that. Some tests require a connection to
+	localhost and others require to perform DNS queries or other network
+	access. These tests can be skipped by creating one or two files in the
+	test directory.
+	</P>
+
+	<P>
+	First locate the test directory: when installing the &quot;INET&quot;
+	package separately, this will be the directory &quot;t&quot; within the
+	extracted package; when installing the bundle, this will be
+	&quot;CLC-INTERCAL-INET/t&quot;. These files need to be created in
+	the appropriate directory; the file contents are not important, so
+	an empty file will do. The files are:
+	<UL>
+	<LI>&quot;.skip-network&quot;<BR>
+	If this file is present, then any tests requiring DNS access will be
+	skipped. Any future test requiring non-local network access will also
+	check for the existence of this file before running.
+	<LI>&quot;.skip-localhost&quot;<BR>
+	If this file is present, then any tests using a connection to localhost
+	will be skipped; if IPv6 is present and usable, the presence of this
+	file will also disable tests sending a multicast query and listening for
+	it on the same host: these multicast queries will use a hop limit of 0,
+	so the packets will never leave the test system; however on many
+	systems this requires a &quot;loopback&quot; network interface to be
+	present, active, and enabled for multicast.
+	</UL>
+	If desired, the tests can be re-enabled by removing these files and
+	re-running &quot;make test&quot;
+	</P>
+
+	<P>
+	For example, to skip all these tests while installing the &quot;INET&quot;
+	package:
+<PRE>
+	touch t/.skip-network t/.skip-localhost
+	make test
+</PRE>
+	</P>
+
+	<P>
+	For example, to skip non-local network tests while installing the
+	bundle package:
+<PRE>
+	touch CLC-INTERCAL-INET/t/.skip-network
+	make test
+</PRE>
+	</P>
+
+    </BODY>
+</HTML>
+

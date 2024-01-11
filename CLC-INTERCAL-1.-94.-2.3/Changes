@@ -1,0 +1,58 @@
+Changes from CLC-INTERCAL 1.-94.-2.2 to 1.-94.-2.3
+
+* Updated the VIM syntax highlighting module to know about the new
+  statements introduced recently, and generally to get better results.
+
+* Also see */Changes
+
+Changes from CLC-INTERCAL 1.-94.-2.1 to 1.-94.-2.2
+
+* Serious performance improvements: see CLC-INTERCAL-Base/Changes for
+  details of all the work. It's still obviously interpreted rather than
+  compiler, but we are working on that too.
+
+* Corrected version numbers on a lot of files: they were present in
+  comments or as assignment to $PERVERSION but many had an incorrect
+  format; also, changed t/00use.t to check the format in more files
+
+* Also see */Changes
+
+Changes from CLC-INTERCAL 1.-94.-2 to 1.-94.-2.1
+
+* Split the sickrc between modules, so that Base no longer need to know
+  what may be installed later needing configuration.
+
+* Added the a new planned extension mechanism for the language; this is
+  in addition to the "Undocumented opcode" mechanism which is of course
+  fully documented.
+
+* Moved all the INTERNET related stuff to INET using the new extension
+  mechanism, with the exception of Server which is used by Base (the
+  system call interface can open TCP sockets).
+
+* Updated URLs and other things which referred to old servers which we
+  no longer use.
+
+* New README.md (the original README renamed README.original)
+
+* Somewhat simplified Makefile.PL and also allowed to build from either
+  the bundle of tarballs (as 1.-94.-2 required) or the unpacked directories
+  (as the git repository provides)
+
+* Added a directory of "bonus" stuff which was not part of the distribution
+  but may be of interest.  The first item in there is a DD/SH script to
+  implement INTERCAL unary and binary operations, obviously a must for any
+  shell programmer.
+
+* Changed the top-level "make test" to run all tests directly rather than
+  calling each subdirectory recursively: this provides an easier to read
+  summary of all tests; calling "make test" from a subdirectory still works
+  and runs only the tests for that subdirectory.
+
+* Changes specific to just a single part are listed be in */Changes
+
+Changes from CLC-INTERCAL 1.-94.-3 to 1.-94.-2
+
+* The package has been split into various parts. See the various
+  "Changes" in there.
+

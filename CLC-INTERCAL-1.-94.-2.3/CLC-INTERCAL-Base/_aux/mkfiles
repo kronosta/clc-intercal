@@ -1,0 +1,348 @@
+#!/usr/bin/perl -w
+
+# Creates x.iacc and x.io from aux/x.src
+# usage:
+#     mkfiles compiler x
+#     mkfiles object x
+
+# This file is part of CLC-INTERCAL
+
+# Copyright (c) 2008, 2023 Claudio Calvelli, all rights reserved.
+
+# CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+# and distribute it is granted provided that the conditions set out in the
+# licence agreement are met. See files README and COPYING in the distribution.
+
+my $auxdir = ".";
+my $auxsuffix = ".src";
+
+my $srcdirhint = 'INTERCAL/Include';
+my $srcsuffix = ".iacc";
+
+my $objdir = "../blib/iofiles";
+my $objsuffix = ".io";
+
+use strict;
+
+use FindBin qw($Bin);
+use lib "$Bin/../blib/arch", "$Bin/../blib/lib";
+use Language::INTERCAL::Splats '1.-94.-3', qw(splatnumber);
+use Language::INTERCAL::ByteCode '1.-94.-2.3', qw(
+    bc_list bytecode BC BC_CRE BC_GUP BC_NOT BC_STO BC_STR BC_STS
+);
+use Language::INTERCAL::Registers '1.-94.-2.3', qw(
+    reg_code2 reg_decode reg_list reg_translate
+);
+use Language::INTERCAL::Interpreter '1.-94.-3';
+use Language::INTERCAL::Exporter '1.-94.-2.3', qw(compare_version);
+
+use vars qw($VERSION $PERVERSION);
+($VERSION) = ($PERVERSION = "CLC-INTERCAL/Base aux/mkfiles 1.-94.-2.3") =~ /\s(\S+)$/;
+
+@ARGV or die "Usage: mkfiles compiler|object SOURCES\n";
+my $mode = lc(shift);
+$mode eq 'compiler' || $mode eq 'object'
+    or die "Invalid mode: $mode\n";
+
+my %reg_obj = ();
+my %reg_right = ();
+for my $reg (reg_list) {
+    my ($type, $number) = reg_translate($reg);
+    my @code = reg_code2($type, $number);
+    my $name = reg_decode($type, $number, 1);
+    $reg_obj{$name} = pack('C*', @code);
+    $reg_right{$name} = pack('C*', BC(4), BC(scalar @code), @code);
+}
+my $registers = join('|', map { s/^(\\*.)/$1\\s*/; $_ }
+			      map { quotemeta } keys %reg_obj);
+my $is_assignment = qr/^($registers)\s*<\s*-\s*/;
+
+my %bc_right = ();
+for my $bc (bc_list) {
+    my @code = bytecode($bc);
+    $bc_right{$bc} = pack('C*', BC(4), BC(scalar @code), @code);
+}
+
+my $dataversion = $Language::INTERCAL::ByteCode::DATAVERSION;
+my $splatsversion = $Language::INTERCAL::Splats::DATAVERSION;
+
+for my $name (@ARGV) {
+    my $exit = 0;
+    $name =~ s/$auxsuffix$//o;
+    open(AUX, "< $auxdir/$name$auxsuffix")
+	or die "$auxdir/$name$auxsuffix: $!\n";
+    my $source = '';
+    my $start = 0;
+    my @code = ();
+    my %flags = ();
+    my $dv;
+    if ($name eq 'asm' || $name eq 'iacc' || $name eq 'sick') {
+	$dv = $dataversion;
+	$name eq 'sick' || $name eq 'iacc' and compare_version($dv, $splatsversion) < 0
+	    and $dv = $splatsversion;
+    }
+    LINE: while (<AUX>) {
+	chomp;
+	s/\xc2([\x80-\xbf])/$1/g;
+	if (s#\\\s*$##) {
+	    $_ .= <AUX>;
+	    redo LINE;
+	}
+	next if /^\s*$/ || /^\s*#/;
+	my $orig = $_;
+	if (s/^!//) {
+	    if (m#\baux/\Q$name$auxsuffix\E\s*(\S+)\b#) {
+		my $sv = $1;
+		defined $dv and compare_version($sv, $dv) < 0 and $sv = $dv;
+		s#\baux/\Q$name$auxsuffix\E(\s*)\S+\b#INTERCAL/Include/$name$srcsuffix$1$sv#g;
+	    }
+	    $source .= $_ . "\n";
+	    push @code, sts($start, length($source) - $start) .
+			pack('C*', BC_NOT);
+	    $start = length $source;
+	    next LINE;
+	}
+	if (s/\?(\S+)\s*<\s*-\s*\?(\S+)//i) {
+	    my $flag = $1;
+	    my $value = $2;
+	    $source .= fold("DO ?$flag <- ?$value");
+	    $flags{$flag} = $value;
+	    if (/\S/) {
+		print "??? $_\n";
+		$exit = 1;
+	    }
+	    push @code, sts($start, length($source) - $start) .
+			pack('C*', BC_NOT);
+	    $start = length $source;
+	    next;
+	}
+	if (s/$is_assignment//) {
+	    my $reg = $1;
+	    my ($expr, $code) = extract_expression();
+	    if ($expr ne '') {
+		$source .= fold("DO $reg <- $expr");
+		push @code, sts($start, length($source) - $start) .
+			    chr(BC_STO) . $code . $reg_obj{$reg};
+		if (/\S/) {
+		    print "??? $_\n";
+		    $exit = 1;
+		}
+	    } else {
+		print "??? $orig\n";
+		$exit = 1;
+	    }
+	    $start = length $source;
+	    next;
+	}
+	if (s/^(\S+)\s+//) {{
+	    my $sname = $1;
+	    my $symbol = $sname =~ /^\w+$/ ? "?$sname" : const('?', $sname);
+	    my $stmt = "DO CREATE _2 $symbol";
+	    my %left = ();
+	    my ($left, @left) = extract_left(\%left);
+	    last if $left eq '';
+	    $stmt .= $left;
+	    my $code = pack('C*', BC_CRE, BC(2), BC_STR, BC(length $sname)) .
+		       $sname .
+		       pack('C*', BC(scalar @left)) .
+		       join('', @left);
+	    if (s/^:\s*//) {
+		my ($right, @right) = extract_right(\%left);
+		last if $right eq '';
+		$stmt .= " AS " . $right;
+		$code .= pack('C*', BC(scalar @right)) . join('', @right);
+	    }
+	    $source .= fold($stmt);
+	    $code = sts($start, length($source) - $start) . $code;
+	    push @code, $code;
+	    $start = length $source;
+	    next LINE unless /\S/;
+	    print "??? $_\n";
+	    $exit = 1;
+	    next LINE;
+	}}
+	print "??? $orig\n";
+	$exit = 1;
+    }
+    $source .= "\n";
+    $source .= fold('DO GIVE UP');
+    push @code, sts($start, length($source) - $start) . chr(BC_GUP);
+    close AUX;
+    die "Error in $name\n" if $exit;
+    if ($mode eq 'compiler') {
+	# find where it's supposed to go
+	my $srcdir;
+	opendir(DIR, '../..') or die "../..: $!\n";
+	while (defined (my $ent = readdir DIR)) {
+	    $ent =~ /^\./ and next;
+	    -f "../../$ent/$srcdirhint/$name$srcsuffix" or next;
+	    $srcdir = "../../$ent/$srcdirhint" or next;
+	    last;
+	}
+	closedir DIR;
+	defined $srcdir or die "Cannot determine where $name would go\n";
+	unlink("$srcdir/$name$srcsuffix");
+	open(SRC, "> $srcdir/$name$srcsuffix")
+	    or die "$srcdir/$name$srcsuffix: $!\n";
+	print SRC $source
+	    or die "$srcdir/$name$srcsuffix: $!\n";
+	close SRC
+	    or die "$srcdir/$name$srcsuffix: $!\n";
+    } else {
+	my $int = new Language::INTERCAL::Interpreter();
+	$int->object->setbug(0, 0);
+	$int->object->clear_code;
+	$int->object->unit_code(0, $source, length($source), \@code);
+	for my $f (keys %flags) {
+	    $int->object->add_flag($f, $flags{$f});
+	}
+	my $obj = "$objdir/$name$objsuffix";
+	my $fh = new Language::INTERCAL::GenericIO('FILE', 'r', $obj);
+	$int->read($fh, 0);
+    }
+}
+
+sub extract_expression {
+    return ("#$1", pack('C*', BC($1))) if s/^(\d+)\s*//;
+    if (s/^\?(\w+)\s*//) {
+	return ("?$1", pack('C*', BC_STR, BC(length $1)) . $1);
+    }
+    if (s/^\?(\S+)\s*//) {
+	return (",?" . join(' + ', map {"#$_"} unpack('C*', $1)) . ",",
+		pack('C*', BC_STR, BC(length $1)) . $1);
+    }
+    ('', '');
+}
+
+sub const {
+    my ($prefix, $data) = @_;
+    return ",$data," if $prefix eq '' && $data =~ /^\w+$/;
+    return ",$prefix" . join(' + ', map {"#$_"} unpack("C*", $data)) . ",";
+}
+
+sub extract_left {
+    my ($left) = @_;
+    s/^\s+//;
+    s/^:/"" :/;
+    my $ret = '';
+    my @ret = ();
+    while (/^./) {
+	last if /^[:<]/;
+	my ($lp, $lc) = left_production($left);
+	return ('') if $lp eq '';
+	$ret .= ' ' . $lp;
+	my $count = 0;
+	if (s/^=\s*(\d+)\s*//) {
+	    $ret .= "=$1";
+	    $count = $1;
+	} elsif (s/^=\s*\*\s*//) {
+	    $ret .= '=*';
+	    $count = 65535;
+	}
+	push @ret, pack('C*', BC($count)) . $lc;
+    }
+    ($ret, @ret);
+}
+
+sub left_production {
+    my ($left) = @_;
+    if (s/^"([^"]*)"\s*// || s/^'([^']*)'\s*//) {
+	my $string =  $1;
+	return (const('', $string),
+		pack('C*', BC(1), BC_STR, BC(length $string)) . $string);
+    }
+    if (s/^(\w[^\s=]*)\s*//) {
+	my $symbol = $1;
+	$left->{$symbol}++;
+	my $code = pack('C*', BC(0), BC_STR, BC(length $symbol)) . $symbol;
+	return ("?$symbol", $code) if $symbol =~ /^\w+$/;
+	return (const('?', $symbol), $code);
+    }
+    ('', '');
+}
+
+sub extract_right {
+    my ($left) = @_;
+    s/^\s+//;
+    return (",,", pack('C*', BC(4), BC(0))) if /^$/;
+    my $ret = '';
+    my @ret = ();
+    while (/^./) {
+	last if s/^:\s*//;
+	my ($rp, $rc) = right_production($left);
+	return ('') if $rp eq '';
+	$ret .= ' + ' if $ret ne '';
+	$ret .= $rp;
+	push @ret, $rc;
+    }
+    ($ret, @ret);
+}
+
+sub right_production {
+    my ($left) = @_;
+    return right_decode($1) if s/^"([^"]*)"\s*//;
+    return right_decode($1) if s/^'([^']*)'\s*//;
+    if (s/^(\d+)\s*//) {
+	my @code = BC($1);
+	return ("#$1", pack('C*', BC(4), BC(scalar @code), @code));
+    }
+    if (s/^\*(\w+)\s*//) {
+	my $splat = splatnumber($1);
+	return ('', '') if $splat < 0;
+	my @scode = BC($splat);
+	return ("#$splat", pack('C*', BC(4), BC(scalar @scode), @scode));
+    }
+    return ("*", pack('C*', BC(15))) if s/^\*\s+// || s/^\*$//;
+    if (s/^(\!?)(\w\S*)\s*//) {
+	my $bang = $1;
+	my $symbol = $2;
+	my $number = 1;
+	if ($symbol =~ s/=(\d+)$//) {
+	    $number = $1;
+	} elsif (exists $left->{$symbol} && $left->{$symbol} > 1) {
+	    print "$.: warning: assuming $symbol=1\n";
+	}
+	return ('', '') if ! exists $left->{$symbol} || $left->{$symbol} < $number;
+	my $code = pack('C*', BC($bang eq '' ? 0 : 6), BC($number),
+			      BC_STR, BC(length $symbol)). $symbol;
+	if ($symbol =~ /^\w+$/) {
+	    return ("?$symbol #$number", $code) if $bang eq '';
+	    return ("$bang$symbol #$number", $code);
+	}
+	return (const($bang eq '' ? '?' : $bang, $symbol) . " #$number", $code);
+    }
+    ('', '');
+}
+
+sub right_decode {
+    my ($n) = @_;
+    return ($n, $reg_right{$n}) if exists $reg_obj{$n};
+    return ($n, $bc_right{$n}) if exists $bc_right{$n};
+    ('', '');
+}
+
+sub fold {
+    my ($text) = @_;
+    my $res = "\t";
+    $text =~ s/^\s*//;
+    my $indent = '';
+    $indent = ' ' x length($1) if $text =~ /^(\S+\s*)/;
+    my $len = 0;
+    while ($text =~ s/^(\S+)\s*//) {
+	my $add = ($len ? ' ' : '') . $1;
+	if (length($add) + $len >= 64) {
+	    $res .= "\n\t" if $len;
+	    $len = 0;
+	    $add =~ s/^\s*/$indent/;
+	}
+	$res .= $add;
+	$len += length($add);
+    }
+    $text . $res . "\n";
+}
+
+sub sts {
+    my ($before, $after) = @_;
+    pack('C*', BC_STS, BC($before), BC($after), BC(0), BC(0));
+}
+

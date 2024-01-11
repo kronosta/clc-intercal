@@ -1,0 +1,1798 @@
+<HTML>
+    <HEAD>
+	<TITLE>CLC-INTERCAL Reference</TITLE>
+    </HEAD>
+    <BODY>
+	<H1>CLC-INTERCAL Reference</H1>
+	<H2>... Statements</H2>
+
+	<P>
+	The statements are described in an order which minimises forward references.
+	In other words, the first time you read this page go from beginning to end.
+	For easy reference, an alphabetic list follows. See the description for the
+	various statements to determine which compilers support them.
+	</P>
+
+	<P>
+	Table of contents:
+	<UL>
+	    <LI><A HREF="index.html">Parent directory</A>
+	    <LI><A HREF="#abstain_from">ABSTAIN FROM</A>
+	    <LI><A HREF="#once">AGAIN</A>
+	    <LI><A HREF="#calculate">Calculate</A>
+	    <LI><A HREF="#case">CASE</A>
+	    <LI><A HREF="#close_off">CLOSE_OFF</A>
+	    <LI><A HREF="#come_from">COME FROM</A>
+	    <LI><A HREF="#comments">Comments</A>
+	    <LI><A HREF="#convert">CONVERT</A>
+	    <LI><A HREF="#create">CREATE</A>
+	    <LI><A HREF="#destroy">DESTROY</A>
+	    <LI><A HREF="#enrol">ENROL</A>
+	    <LI><A HREF="#make_belong">MAKE BELONG</A>
+	    <LI><A HREF="#finish_lecture">FINISH LECTURE</A>
+	    <LI><A HREF="#forget">FORGET</A>
+	    <LI><A HREF="#no_longer_belong">NO LONGER BELONG</A>
+	    <LI><A HREF="#give_up">GIVE UP</A>
+	    <LI><A HREF="#graduates">GRADUATES</A>
+	    <LI><A HREF="#ignore">IGNORE</A>
+	    <LI><A HREF="#learns">LEARNS</A>
+	    <LI><A HREF="#next">NEXT</A>
+	    <LI><A HREF="#next_from">NEXT FROM</A>
+	    <LI><A HREF="#once">ONCE</A>
+	    <LI><A HREF="#read_out">READ OUT</A>
+	    <LI><A HREF="#reinstate">REINSTATE</A>
+	    <LI><A HREF="#remember">REMEMBER</A>
+	    <LI><A HREF="#reopen">REOPEN</A>
+	    <LI><A HREF="#resume">RESUME</A>
+	    <LI><A HREF="#retrieve">RETRIEVE</A>
+	    <LI><A HREF="#steal">SMUGGLE</A>
+	    <LI><A HREF="#stash">STASH</A>
+	    <LI><A HREF="#steal">STEAL</A>
+	    <LI><A HREF="#study">STUDY</A>
+	    <LI><A HREF="#swap">SWAP</A>
+	    <LI><A HREF="#trickle">TRICKLE DOWN</A>
+	    <LI><A HREF="#truss">TRUSS UP</A>
+	    <LI><A HREF="#while">WHILE</A>
+	    <LI><A HREF="#write_in">WRITE IN</A>
+	</UL>
+	</P>
+
+	<H2><A NAME="comments">Comments</A></H2>
+
+	<P>
+	Any statement which cannot be recognised is simply inserted in the compiled
+	program. Executing this statement is very likely to be an error, however
+	one can make sure the comments are ABSTAINed FROM (see below), so they
+	won't be executed.
+	</P>
+
+	<P>
+	The following statement is initially ABSTAINed FROM (because of the word
+	"NOT" as a prefix of "NOTE"):
+<PRE><CODE>
+	PLEASE NOTE THAT WE DO NOT KNOW WHAT WE ARE TALKING ABOUT
+</PRE>
+	(in fact, this example contains two statements, but this is OK as they
+	are both ABSTAINed FROM).
+	</P>
+
+	<P>
+	If a comment is executed, it is printed as an error message. For example,
+<PRE><CODE>
+	DO YOU REALISE THAT USING INTERCAL IS BAD FOR YOUR SANITY?
+	PLEASE DO SOMETHING ELSE.
+</CODE></PRE>
+	would print the first line and terminate the program (the second
+	line is understood by the compiler as a separate statement,
+	which does not get executed because the first line terminates
+	the program).
+	</P>
+
+	<P>
+	Comments usually correspond to a splat code 0. Other error codes are
+	listed in <A HREF="errors.html">the chapter about Errors</A>.
+	</P>
+
+	<H2><A NAME="calculate">Calculate</A></H2>
+
+	<P>
+	This statement has the form of a register name, a left arrow
+	(<CODE>&lt;-</CODE>) and an expression. The effect is to assign the value
+	of the expression to the register.
+	</P>
+
+	<P>
+	Examples:<BR>
+	<CODE>DO .1 &lt;- #3</CODE><BR>
+	<CODE>DO ,1 SUB .1 SUB .2 &lt;- .3~#3</CODE>
+	</P>
+
+	<P>
+	If the left-hand side contains an array without subscripts, this statement
+	will dimension the array (or redimension it, throwing away the old contents).
+	In this case, it is possible to specify multidimensional arrays by including
+	more than one expression, separated by the keyword "BY".
+	</P>
+
+	<P>
+	Example:<BR>
+	<CODE>DO ,1 &lt;- #3 BY #4 BY .1</CODE>
+	</P>
+
+	<P>
+	CLC-INTERCAL 1.-94.-4 and newer extends the syntax of assignment so that both
+	the calculation and the result are expressions: this sort of things has always
+	been possible using overloading, but it is now easier to achieve
+	with a normal calculation.
+	</P>
+
+	<P>
+	Examples:<BR>
+	<CODE>DO #1 &lt;- #3</CODE><BR>
+	<CODE>DO .1 &lt;- #4</CODE><BR>
+	assigns #3 to #1 and then assigns #4 to .3
+	(because the value of the "1" in .1 is now 3).
+	</P>
+
+	<P>
+	Examples:<BR>
+	<CODE>DO .2 &lt;- #1</CODE><BR>
+	<CODE>DO #1 &lt;- #3</CODE><BR>
+	<CODE>DO #3 &lt;- .2</CODE><BR>
+	swaps the values of #1 and #3.
+	</P>
+
+	<P>
+	Starting with CLC-INTERCAL 1.-94.-4, assigning to a whirlpool register
+	is permitted as long as the expression evaluates to a whirlpool: this
+	means that the underlying filehandles are assigned, so in effect it is
+	a form of redirection. If the register already contained a filehandle,
+	this will be closed first. See examples under <A HREF="#read_out">READ
+	OUT</A> below.
+	</P>
+
+	<P>
+	Quantum INTERCAL has a form of the statement which both assigns and doesn't
+	assign at the same time; the syntax is like:<BR>
+	<CODE>DO .1 &lt;- #2 WHILE NOT ASSIGNING TO IT</CODE><BR>
+	This is described in more detail in
+	<A HREF="quantum.html">the chapter about Quantum INTERCAL</A>.
+	</P>
+
+	<H2><A NAME="ignore">IGNORE</A></H2>
+
+	<P>
+	The keyword "IGNORE" is followed by a list of registers,
+	separated by intersection (<CODE>+</CODE>). After this, any
+	attempt to modify the values of the registers will be silengly
+	ignored, but any side effect will still happen, so if you try to
+	WRITE IN an ignored register you discard some input, and if you
+	assign an expression containing overloading you still execute the
+	overloading; however, if you try to overload an IGNOREd register,
+	this overloading won't be applied.
+	</P>
+
+	<P>
+	Note that you can IGNORE whole arrays, but not single subscripts.
+	</P>
+
+	<P>
+	The effect of IGNORE ceases when a REMEMBER lists the same registers.
+	</P>
+
+	<P>
+	Examples:<BR>
+	<CODE>IGNORE .1 + ,1 + :3</CODE><BR>
+	<CODE>IGNORE $49.99</CODE>
+	<P>
+
+	<P>
+	Quantum INTERCAL allows the programmer to set the "ignore" state of a
+	variable to both true and false symultaneously, for example:<BR>
+	<CODE>IGNORE .1 + ,1 + :3 WHILE REMEMBERING THEM</CODE><BR>
+	<CODE>IGNORE $49.99 WHILE REMEMBERING IT</CODE><BR>
+	This is described in more detail in <A HREF="quantum.html">the
+	chapter about Quantum INTERCAL</A>.
+	</P>
+
+	<H2><A NAME="remember">REMEMBER</A></H2>
+
+	<P>
+	The keyword is followed by a list of registers, separated by intersection
+	(<CODE>+</CODE>). It undoes the effect of an IGNORE on those registers, so
+	subsequent changes will affect them. It is not an error to REMEMBER a
+	register which had not been IGNOREd.
+	</P>
+
+	<P>It is possible to follow the list of registers with <CODE>WHILE IGNORING
+	THEM</CODE> (or <CODE>WHILE IGNORING IT</CODE> if it's a single register):
+	this produces a program which simultaneously remembers and ignores the registers:
+	see <A HREF="quantum.html">the chapter about Quantum INTERCAL</A>.
+	(Note that <CODE>IGNORING WHILE REMEMBERING</CODE> is actually the
+	same thing as <CODE>REMEMBERING WHILE IGNORING</CODE> so we didn't need
+	to provide two separate statements; but we were in a generous mood when
+	we implemented this).
+	</P>
+
+	<H2><A NAME="abstain_from">ABSTAIN FROM</A></H2>
+
+	<P>
+	This is followed by either a label or a list of gerunds separated by
+	intersection (<CODE>+</CODE>). The statement corresponding to that label,
+	or all statements corresponding to the gerunds, will not be executed from
+	now on (until a REINSTATE is executed, see next section).
+	</P>
+
+	<P>
+	It is not possible to ABSTAIN FROM GIVING UP. If you ABSTAIN FROM a label,
+	and that happens to be a GIVE UP statement, what happens depends on which
+	compiler was used: in C-INTERCAL compatibility mode the GIVE UP statement
+	will be abstained from, in other modes the GIVE UP statement remains unchanged.
+	</P>
+
+	<P>
+	For example, the following program will assign 12 to register <CODE>.1</CODE>
+<PRE><CODE>
+	PLEASE ABSTAIN FROM (1)
+    (1) DO ABSTAIN FROM CALCULATING + ABSTAINING
+	DO .1 &lt;- #12
+	DO ABSTAIN FROM (2)
+    (2) DO .1 &lt;- #4
+	PLEASE GIVE UP
+</CODE></PRE>
+	</P>
+
+	<P>
+	It is possible to ABSTAIN FROM ABSTAINING. It is also possible to ABSTAIN
+	FROM REINSTATING, although we do not recommend it.
+	</P>
+
+	<P>
+	The presence of a negative (<CODE>NOT</CODE>, <CODE>N'T</CODE> or
+	<CODE>&#172;</CODE>) before a statement will cause it to be initially
+	ABSTAINED FROM, so the above program is equivalent to:
+<PRE><CODE>
+	DO NOT ABSTAIN FROM CALCULATING + ABSTAINING
+	DO .1 &lt;- #12
+	DO NOT .1 &lt;- #4
+	PLEASE GIVE UP
+</CODE></PRE>
+	</P>
+
+	<P>
+	Which in turn is the same as:
+<PRE><CODE>
+	DO .1 &lt;- #12
+	PLEASE GIVE UP
+</CODE></PRE>
+	</P>
+
+	<P>
+	CLC-INTERCAL 1.-94 introduced ABSTAIN FROM COMMENTING, which ABSTAINs from
+	anything the compiler finds unparseable. There is a corresponding
+	REINSTATE COMMENTING.
+	</P>
+
+	<P>
+	If you have a quantum computer, you can simultaneously ABSTAIN
+	and REINSTATE a statement or a list of gerunds:
+<PRE><CODE>
+	PLEASE ABSTAIN FROM (1) WHILE REINSTATING IT
+    (1) DO ABSTAIN FROM CALCULATING + ABSTAINING WHILE REINSTATING THEM
+	DO ABSTAIN FROM CALCULATING WHILE REINSTATING IT
+	PLEASE GIVE UP
+</CODE></PRE>
+	This is described in more detail in <A HREF="quantum.html">the
+	chapter about Quantum INTERCAL</A>.
+	</P>
+
+	<P>
+	A special form of ABSTAIN applies to the Quantum INTERCAL engine:
+	ABSTAIN FROM QUANTUM COMPUTING makes all quantum statement behave
+	like classical ones; the corresponding REINSTATE QUANTUM COMPUTING
+	returns to the normal state of affairs. And of course, one can
+	ABSTAIN FROM QUANTUM COMPUTING WHILE REINSTATING IT.
+	</P>
+
+	<P>
+	Since CLC-INTERCAL 0.05, the label in an ABSTAIN FROM can be replaced
+	with an expression so that the label is determined at runtime, and the
+	list of gerunds can be replaced with a statement template. For example:
+<PRE><CODE>
+	DO ABSTAIN FROM REGISTER &lt;- EXPRESSION
+		      + REMEMBER REGISTER LIST
+		      + IGNORE REGISTER LIST
+</CODE></PRE>
+	is equivalent to:
+<PRE><CODE>
+	DO ABSTAIN FROM CALCULATING + REMEMBERING + IGNORING
+</CODE></PRE>
+	</P>
+
+	<P>
+	However, statement templates give finer control than gerunds. For example,
+	after:
+<PRE><CODE>
+	DO ABSTAIN FROM ABSTAIN FROM LABEL + REINSTATE GERUND LIST
+</CODE></PRE>
+	an "ABSTAIN FROM (2)" or "REINSTATE ABSTAINING" would be ignored, but
+	"ABSTAIN FROM REINSTATING" and "REINSTATE (3)" would be still executed.
+	</P>
+
+	<P>
+	There are subtle interactions between ABSTAIN FROM gerunds / templates
+	and the <A HREF="#convert">CONVERT</A> and <A HREF="#swap">SWAP</A> statements
+	described below. The current behaviour is to ABSTAIN FROM any statements
+	which had the given gerunds or templates at the time the program was
+	compiled, although these statements could have changed their meaning since.
+	</P>
+
+	<H2><A NAME="reinstate">REINSTATE</A></H2>
+
+	<P>
+	Followed by the same kind of things you can say after
+	"ABSTAIN FROM", undoes the effects of ABSTAINING FROM these
+	things. CLC-INTERCAL 0.05 or later allows an expression instead
+	of a label, and a statement template instead of a gerund.
+	</P>
+
+	<P>
+	You can REINSTATE REINSTATING, and it does make sense - maybe you want to
+	make sure that any REINSTATE which was ABSTAINED FROM by label is
+	REINSTATEd. You cannot REINSTATE GIVING UP, not even by label,
+	unless you are running in C-INTERCAL compatibility mode.
+	</P>
+
+	<P>
+	Quantum program might wish to add <CODE>WHILE ABSTAINING FROM IT</CODE>
+	(or <CODE>WHILE ABSTAINING FROM THEM</CODE>). See <A HREF="quantum.html">the
+	chapter about Quantum INTERCAL</A>.
+	</P>
+
+	<P>
+	CLC-INTERCAL 0.05 and newer also permit computed labels instead of constant
+	labels known at compile time, and templates instead of gerunds: the syntax
+	is similar to the corresponding ABSTAIN FROM forms.
+	</P>
+
+	<P>
+	CLC-INTERCAL 1.-94 also has REINSTATE COMMENTING. You probably don't want
+	to do that, but it's there if you need it.
+	Note that there is no template corresponding to this gerund.
+	</P>
+
+	<P>
+	There are subtle interactions between REINSTATE gerunds / templates
+	and the <A HREF="#convert">CONVERT</A> and <A HREF="#swap">SWAP</A> statements
+	described below. The current behaviour is to REINSTATE any statements
+	which had the given gerunds or templates at the time the program was
+	compiled, although these statements could have changed their meaning since,
+	</P>
+
+	<H2><A NAME="come_from">COME FROM</A></H2>
+
+	<P>
+	This is the main program control statement in CLC-INTERCAL. It is followed by
+	either a label or an expression. When the execution reaches the label (or
+	a label with the same value as the expression), it will run the current
+	statement and then jump to the COME FROM. Other languages have GO TO or similar,
+	which operates the other way: when the program reaches the GO TO it will continue
+	to the statement indicated by the GO TO. These other languages may speak of
+	the destination as the "target" of the GO TO. We occasionally refer to a
+	statement which ends by ju mping to a COME FROM as "target" of the COME FROM.
+	However we are more likely to spell "target" backwards as "tegrat" in this
+	case, to emphasise that things go in a different way from other languages.
+	<P>
+
+	</P>
+	For example, this is a subroutine
+	call, in which register <CODE>.1</CODE> is used to hold the "return address"
+	and register <CODE>.2</CODE> to hold the "subroutine address":
+<PRE><CODE>
+	    DO .1 &lt;- #1000
+    (100)   DO .2 &lt;- #100
+	    PLEASE COME FROM .1
+	    DO .1 &lt;- #0
+    ...
+	    PLEASE COME FROM .2
+	    DO .2 &lt;- #0
+    ...
+    (1000)  DON'T PANIC
+</CODE></PRE>
+	</P>
+
+	<P>
+	The assignment of <CODE>#100</CODE> to <CODE>.2</CODE> causes an immediate
+	jump to the subroutine. At the end of the subroutine, after the
+	no-op (DON'T PANIC does nothing because it is ABSTAINed FROM), the program
+	jumps back to the COME FROM <CODE>.1</CODE>. We assign zero to the pointers
+	just after use to avoid problems when the subroutine is called in more than
+	one place.
+	</P>
+
+	<P>
+	It is an error to have multiple COME FROMs pointing at the same label (unless the
+	<I>thick</I> compiler option is in operation). However,
+	if all except one are ABSTAINed FROM, this is not a problem. So the above
+	program can be rewritten as:
+<PRE><CODE>
+	    DO REINSTATE (101)
+    (100)   DO .2 &lt;- #100
+    (101)   PLEASE DON'T COME FROM (1000)
+	    DO ABSTAIN FROM (101)
+    ...
+	    PLEASE COME FROM .2
+	    DO .2 &lt;- #0
+    ...
+    (1000)  DON'T PANIC
+</CODE></PRE>
+	or even without computed COME FROMs (although this requires to change the
+	subroutine every time you add a call - this way of removing computed COME
+	FROMs is best left to the optimiser):
+<PRE><CODE>
+	    DO REINSTATE (1001)
+    (100)   DO REINSTATE (101)
+    (101)   PLEASE DON'T COME FROM (1000)
+	    DO ABSTAIN FROM (101)
+	    DO ABSTAIN FROM (1001)
+    ...
+    (1001)  PLEASE DO NOT COME FROM (100)
+    ...
+    (1000)  DON'T PANIC
+</CODE></PRE>
+	</P>
+
+	<P>
+	The simple program to implement a stack and allow recursive subroutines using
+	this technique is left as an exorcism (sic) to the reader.
+	</P>
+
+	<P>
+	With recent versions of CLC-INTERCAL one can get away with repeating labels,
+	so the subroutine can be called from several places without using computed
+	COME FROMs:
+<PRE><CODE>
+	    PLEASE NOTE: CALL SUBROUTINE
+	    DO REINSTATE (1001)
+    (100)   DO REINSTATE (101)
+    (101)   PLEASE DON'T COME FROM (1000)
+	    DO ABSTAIN FROM (101)
+	    DO ABSTAIN FROM (1001)
+    ...
+	    PLEASE NOTE: CALL SUBROUTINE
+	    DO REINSTATE (1001)
+    (100)   DO REINSTATE (102)
+    (102)   PLEASE DON'T COME FROM (1000)
+	    DO ABSTAIN FROM (102)
+	    DO ABSTAIN FROM (1001)
+    ...
+    (1001)  PLEASE DO NOT COME FROM (100)
+    ...
+    (1000)  DON'T PANIC
+</CODE></PRE>
+	All is needed is to have unique labels for the return statement, in this
+	case (101) and (102) otherwise the subroutine won't know where to return.
+	</P>
+
+	<P>
+	CLC-INTERCAL 1.-94 introduces COME FROM GERUND (and NEXT FROM GERUND): for
+	example:
+<PRE><CODE>
+        PLEASE COME FROM COMING FROM
+</CODE></PRE>
+	causes an infinite loop because the statement keeps reexecuting (and COMING
+	FROM itself!). Since there are runtime overheads associated with COME FROM
+	GERUND, it must be requested by the compiler option <I>come-from-gerund</I>
+	or by having the letter "g" somewhere in the suffix. And of course, templates
+	can be used instead of gerunds, just like the ABSTAIN FROM and REINSTATE statements.
+	</P>
+
+	<P>
+	Note that a COME FROM gerund (or template) refers to the way a statement
+	has been compiled, not what it currently means, so if
+	<A HREF="#convert">CONVERT</A> or <A HREF="#swap">SWAP</A> has been
+	used to change what a statement means, this does not affect whether
+	it is considered a tegrat for a COME FROM. For example:
+<PRE><CODE>
+	DO SWAP REGISTER &lt;- EXPRESSION AND REGISTER LEARNS EXPRESSION
+	DO .1 LEARNS #1
+	DO READ OUT .1
+	DO YOU REALISE THAT THIS STATEMENT IS INVALID?
+	PLEASE COME FROM READING OUT
+	PLEASE COME FROM CALCULATING
+	DO GIVE UP
+</CODE></PRE>
+	Will have the first COME FROM act, but not the second, even though
+	it refers to a gerund which exists "now", because it did not
+	exist at compile time. So the actual sequence executed will be:
+<PRE><CODE>
+	DO .1 &lt;- #1
+	DO READ OUT .1
+	DO GIVE UP
+</CODE></PRE>
+	Because the "LEARNS" statement now means "calculate", however the COME
+	FROM CALCULATING does not apply because the statement had been compiled
+	with a different gerund, so the program proceeds to the READ OUT, which
+	then triggers the COME FROM READING OUT.
+	</P>
+
+	<P>
+	When the <I>thick</I> compiler option is in operation, multiple COME FROMs
+	all pointing at the same label will cause the program to start as many
+	threads as necessary so it gan go to all those places.
+	</P>
+
+	<P>
+	When using computed COME FROMs or computed labels, please
+	remember that if any of the expressions have side effects
+	(e.g. overloading), these side effects can appear in the most
+	unexpected places. See for example the
+	<A HREF="../examples/hello.i">Hello, World</A> program,
+	which works by having each of the computed COME FROM setting
+	up an overload to modify the way the other computed COME FROMs
+	behave. It is slightly confusing.
+	</P>
+
+	<P>
+	The Quantum variant of COME FROM adds a "WHILE NOT COMING FROM
+	THERE" at the end of the statement.
+	</P>
+
+	<P>
+	One final note, if the runtime detects something looking like an infinite
+	loop, or if a statement COMEs FROM itself too often, it will introduce
+	some extra delays or, if the INTERNET option is loaded, it will replace
+	the loop with an operating system call to wait for network activity.
+	This optimisation is done by the runtime, even when the optimiser is
+	not loaded or disables.
+	</P>
+
+	<H2><A NAME="once">ONCE and AGAIN</A></H2>
+
+	<P>
+	Beginning with CLC-INTERCAL 1.-94.-2.2, any statement can be followed by
+	ONCE or AGAIN to atomically execute it and auto-reinstate or auto-abstain
+	from it. What actually happens depends on the initial abstain status
+	(the presence of a literal negation in the source) and the keyword used,
+	ONCE or AGAIN.
+	</P>
+
+	<P>
+	ONCE means that the statement will automatically revert to the opposite
+	abstain state compared to what the source say. So for example:
+<PRE><CODE>
+	DO READ OUT .1 ONCE
+</CODE></PRE>
+	Will execute the READ OUT and immediately abstain from this statement,
+	since there is no negation in the source. This means it does exactly
+	what it says: it READs OUT .1 ONCE and then never again... until a
+	REINSTATE changes the situation, at which point it will again run once
+	then auto-abstains. Similarly:
+<PRE><CODE>
+	DO NOT READ OUT .1 ONCE
+</CODE></PRE>
+	Will do nothing the first time the statement is executed, but at that
+	point it also reinstates itself (because there is a negation in the
+	source) and so if it gets executed again it will READ something OUT.
+	</P>
+
+	<P>
+	AGAIN means that the statement will automatically revert to the same
+	abstain state as indicated in the source. So for example:
+<PRE><CODE>
+	DO READ OUT .1 AGAIN
+</CODE></PRE>
+	Will execute the READ OUT and make sure it is still reinstated after
+	executing; if some other ABSTAIN FROM statement has changed this READ
+	OUT so it won't execute, it will reinstate itself at that point. And:
+<PRE><CODE>
+	DO NOT READ OUT .1 AGAIN
+</CODE></PRE>
+	Will not execute the READ OUT, and also makes sure it stays abstained.
+	If some other REINSTATE has changed that, it will run once and then
+	abstain again.
+	</P>
+
+	<P>
+	There is a quantum version of this statement, with syntax:
+<PRE>
+	<CODE>DO </CODE><I>(statement</I><CODE> ONCE AND AGAIN</CODE>
+</PRE>
+	Which will execute (or not) the statement according to its current
+	abstain/reinstate situation, and at the same time it will both
+	abstain and reinstate itself in case it runs again. See
+	<A HREF="quantum.html">the chapter on quantum computing</A>.
+	</P>
+
+	<P>
+	A COME FROM or NEXT FROM statement can also have ONCE and/or AGAIN, with
+	the difference that such statement are not executed when they are found
+	in the instruction sequence, but instead they are executed when a jump to
+	them occurs: this means that the action implied by ONCE and AGAIN happens
+	at that time too. For example this sequence executes a READ OUT exactly
+	twice and produces I and II:
+<PRE>
+	DO .1 &lt; #1
+	DO COME FROM (1) ONCE
+	DO READ OUT .1
+	(1) DO .1 &lt; #2
+	PLEASE GIVE UP
+</PRE>
+	This ie because the COME FROM is not considered to be executed when it
+	is reached after the first calculation, so it is skipped and the program
+	executes the READ OUT, producing I. Then after the second calculation
+	the label (1) triggers the COME FROM, which is now considered to execute
+	and therefore abstains from itself, proceeds to the READ OUT, which
+	now produces II, and then the execution continues with the second
+	calculation and the statement following it in sequence, the GIVE UP,
+	because the COME FROM is now ABSTAINED.
+	</P>
+
+	<H2><A NAME="next">NEXT</A></H2>
+
+	<P>
+	The keyword must be <EM>preceded</EM> by a label. It serves the function
+	of the GO TO statement of other languages, and can also be used for subroutine
+	calls. For this reason, it can be misuesd to write programs which look just like
+	any other language, and this is a Bad Idea. CLC-INTERCAL considers any programs
+	which use NEXT, FORGET or RESUME as obsolete, and will only run them if you
+	use the <I>next</I> option or have an "n" somewhere in the suffix, or
+	use the <I>ick</I> or <I>1972</I> compiler.
+	</P>
+
+	<P>
+	Beginning with CLC-INTERCAL 0.05, the label preceding "NEXT" can be replaced
+	by an expression.
+	</P>
+
+	<P>
+	The effect of NEXT is to transfer control to the stated label, and also to
+	save a return address in an internal stack. See FORGET and RESUME below for
+	the rest of the story.
+	</P>
+
+	<P>
+	The Quantum version of NEXT adds "WHILE NOT NEXTING" at the end of the statement.
+	</P>
+
+	<H2><A NAME="forget">FORGET</A></H2>
+
+	<P>
+	Followed by an expression. It evaluates the expression, then removes that
+	many return addresses from the stack managed by NEXT and RESUME. These
+	addresses are simply discarded. If you want to use NEXT as a GO TO, you
+	should FORGET #1 just afterwards so the stack does not overflow.
+	</P>
+
+	<P>
+	The Quantum version of FORGET adds "WHILE REMEMBERING" at the end of
+	the statement; for compatibility with previous versions of CLC-INTERCAL,
+	"WHILE NOT FORGETTING" can also be used.
+	</P>
+
+	<H2><A NAME="resume">RESUME</A></H2>
+
+	<P>
+	Followed by an expression. It evaluates the expression, then removes that
+	many return addresses from the stack managed by NEXT and FORGET. After that,
+	it jumps to the last return address it removed. So RESUME #1 is a normal
+	return from subroutine, while RESUME #3 is equivalent to FORGET #2 followed
+	by RESUME #1.
+	</P>
+
+	<P>
+	This is an example of subroutine call:
+<PRE><CODE>
+	    DO (1000) NEXT
+    ...
+    (1000)  DO ....
+	    PLEASE RESUME #1
+</CODE></PRE>
+	</P>
+
+	<P>
+	The Quantum version of RESUME adds "WHILE NOT RESUMING" at the end of the statement.
+	</P>
+
+	<H2><A NAME="next_from">NEXT FROM</A></H2>
+
+	<P>
+	Like <CODE>COME FROM</CODE>, but it saves the return address, as a
+	<CODE>NEXT</CODE> would do. It has the same syntax as <CODE>COME FROM</CODE>:
+<PRE><CODE>
+	PLEASE NEXT FROM (666)
+	...
+	DO RESUME #1
+</CODE></PRE>
+	</P>
+
+	<P>
+	Just after executing the statement with label (666) the program jumps to the
+	above fragment: at the end, it returns to the statement after the one with
+	the label (666).
+	</P>
+
+	<P>
+	The Quantum version of NEXT FROM uses the syntax "WHILE NOT NEXTING FROM THERE"
+	</P>
+
+	<H2><A NAME="stash">STASH</A></H2>
+
+	<P>
+	Followed by a list of registers, it copies them to some secret place for
+	safekeeping. You can stash whole arrays, but not single elements (well,
+	you can always assign the element to a register and then STASH that).
+	Note that not just the values are saved: the current BELONGS TO relation,
+	the current overloading, and the current IGNORE/REMEMBER state are also
+	saved. See RETRIEVE for the second half of the story.
+	</P>
+
+	<H2><A NAME="retrieve">RETRIEVE</A></H2>
+
+	<P>
+	Followed by a list of registers, it rummages through the STASH until it
+	finds the most recent saved values of these registers, and restores them.
+	These values are removed from the STASH, which effectively acts like a stack
+	(yet another normal programming concept which has managed to creep into
+	INTERCAL, sigh). After RETRIEVE, the register's value, BELONGS TO relation,
+	overloading, and IGNORE/REMEMBER state are restored as they were before the
+	corresponding STASH.
+	</P>
+
+	<P>
+	For example, the following program leaves <CODE>.1</CODE>, <CODE>;1</CODE> and
+	<CODE>,1 SUB #1</CODE> unchanged:
+<PRE><CODE>
+	    PLEASE STASH .1 + ;1
+	    DO .1 &lt;- ,1 SUB #1
+	    DO STASH .1
+	    DO ,1 SUB #1 &lt;- #0
+	    DO ;1 SUB .1 &lt;- #1
+    ...
+	    PLEASE RETRIEVE .1
+	    DO ,1 SUB #1 &lt;- .1
+	    DO RETRIEVE .1 + ;1
+</CODE></PRE>
+	</P>
+
+	<P>
+	Quantum version of STASH and RETRIEVE are of course available, by appending
+	"WHILE NOT STASHING THEM" or "WHILE NOT RETRIEVING THEM".
+	</P>
+
+	<H2><A NAME="give_up">GIVE UP</A></H2>
+
+	<P>
+	Finishes executing the program, presumably returning to saner things like a
+	shell or perhaps JCL.
+	</P>
+
+	<P>
+	ABSTAIN FROM and REINSTATE do not have any effect on GIVE UP. This means that
+	you can always GIVE UP, no matter how badly you've managed to screw up your
+	program. Also, it means that DON'T GIVE UP is guaranteed to be a no-op.
+	</P>
+
+	<P>
+	The quantum version of GIVE UP appends "WHILE CONTINUING TO RUN"
+	to the statement. What happens is that the program continues
+	to run, the fact it also stops at the same time is irrelevant
+	because it is not observable.
+	</P>
+
+	<P>
+	An interesting side-effect of the Quantum version is that if you
+	ABSTAIN FROM QUANTUM COMPUTING and then GIVE UP WHILE CONTINUING
+	TO RUN, you effectively GIVE UP; however if you REINSTATE QUANTUM
+	COMPUTING then the above Quantum GIVE UP is a no-op. In other
+	words, you can abstain from giving up, using this trick, by
+	calling it REINSTATE QUANTUM COMPUTING.
+	</P>
+
+	<H2><A NAME="read_out">READ OUT</A></H2>
+
+	<P>
+	Followed by a list of expressions, which are allowed to evaluate to
+	numbers or to whole arrays, will read whatever came out of these
+	expressions to the standard output. See
+	<A HREF="input_output.html">the chapter on Input/Output</A>.
+	If an element of the list evaluates to a whirlpool register, this
+	changes the destination for the subsequent elements.
+	</P>
+
+	<P>
+	Since the effects of a READ OUT are observable.  there is no Quantum
+	READ OUT. Either you do it, or you don't.
+	</P>
+
+	<P>
+	For example, the following produces XLII on the standard read
+	filehandle (usually, the system's standard output), assuming default
+	Roman mode and no wimp mode:
+<PRE><CODE>
+	PLEASE READ OUT #42
+</CODE></PRE>
+	The following produces XLII on the standard splat filehandle,
+	usually the system's standard error:
+<PRE><CODE>
+	PLEASE READ OUT @3 + #42
+</CODE></PRE>
+	Note that the redirection to standard splat is local to the READ
+	OUT statement: a subsequent statement will default to standard read
+	again; since CLC-INTERCAL 1.-94.-4 a more permanent form of
+	redirection can be achieved with:
+<PRE><CODE>
+	DO @2 &lt;- @3
+	PLEASE READ OUT #42
+</CODE></PRE>
+	This has the same observable effect on standard splat, however it
+	has the side effect of closing the standard read and redirecting
+	all subsequent output to the standard splat (unless, of course,
+	they specify otherwise).
+	</P>
+
+	<H2><A NAME="write_in">WRITE IN</A></H2>
+
+	<P>
+	Followed by a list of expressions, which are allowed to evaluate to
+	numbers, registers or whole arrays, this will get some data from
+	standard input and tries to make the data go into the expressions.
+	For example:
+<PRE><CODE>
+	PLEASE WRITE IN .1 + #2
+</CODE></PRE>
+	will try to get two separate numbers from standard input, store the
+	first one in register .1 and use the second one to alter the value
+	of the constant #2.  See <A HREF="input_output.html">the chapter on
+	Input/Output</A>. If any of the elements evaluates to a whirlpool
+	register, this changes the place the subsequent elements will try
+	to obtain the data from.
+	</P>
+
+	<P>
+	The quantum WRITE IN (which appends "WHILE NOT WRITING THEM" to
+	the statement) always consumes some input, except that it assigns
+	it to variables while at the same time not assigning it. This is
+	not the same as executing the WRITE IN while not executing it,
+	which would require the input to be consumed while at the same
+	time not being consumed, which would be impossible as the internal
+	quantum state could be observed.
+	</P>
+
+	<H2><A NAME="make_belong">MAKE BELONG</A></H2>
+
+	<P>
+	Followed by two registers (without subscripts, if arrays), using the form:
+<PRE><CODE>
+	DO MAKE .1 BELONG TO ,1
+</CODE></PRE>
+	it sets the BELONGS TO relation between the first and the second. It is
+	not an error if the first register already belong to something, although it can
+	be confusing. See <A HREF="belongs.html">the chapter on Belongs TO</A>.
+	</P>
+
+	<P>
+	This documentation occasionally refers to a register as a "group" if
+	another register BELONGs TO it.
+	</P>
+
+	<P>
+	The Quantum version of this statement appends "WHILE LEAVING IT NOT BELONGING"
+	</P>
+
+	<P>
+	Previous versions of CLC-INTERCAL referred to registers being enslaved,
+	which is of course completely inappropriate; however to allow older program
+	to still work, such terminology is accepted in sources using a syntax
+	which is no longer documented.
+	</P>
+
+	<H2><A NAME="no_longer_belong">NO LONGER BELONG</A></H2>
+
+	<P>
+	Followed by two registers (without subscripts, if arrays), using the form:
+<PRE><CODE>
+	DO MAKE .1 NO LONGER BELONG TO ,1
+</CODE></PRE>
+	it removes the BELONGS TO relation between the first and the second. It is
+	an error if the first register did not belong to the second. If the first
+	register BELONGed TO more than one register, the rest of the BELONG TO
+	relation remain unchnanged. See <A HREF="belongs.html">the chapter on
+	Belongs TO</A>.
+	</P>
+
+	<P>
+	The Quantum version of this statement appends "WHILE LETTING IT CONTINUE TO BELONG"
+	</P>
+
+	<P>
+	Previous versions of CLC-INTERCAL referred to registers being freed,
+	which is of course completely inappropriate; however to allow older program
+	to still work, such terminology is accepted in sources using a syntax
+	which is no longer documented.
+	</P>
+
+	<H2><A NAME="study">STUDY</A></H2>
+
+	<P>
+	Followed by a subject number, a lecture label, and a class name, using a
+	format like:
+<PRE><CODE>
+	DO STUDY #2 AT (1030) IN CLASS @4
+</CODE></PRE>
+	It advertise that the lecture is available. See
+	<A HREF="lectures.html">the chapter on Classes and Lectures</A>.
+	</P>
+
+	<P>
+	Beginning with CLC-INTERCAL 0.05, the subject number and the label can
+	be replaced by expressions.
+	</P>
+
+	<P>
+	The Quantum version of this statement appends "WHILE NOT STUDYING IT"
+	</P>
+
+	<H2><A NAME="enrol">ENROL</A></H2>
+
+	<P>
+	Followed by a register (without subscripts, if an array) and a list of
+	subjects, using a format like:
+<PRE><CODE>
+	DO ENROL .2 TO LEARN #1 + #4 + #5
+</CODE></PRE>
+	</P>
+
+	<P>
+	It looks for a class where these subjects are taught, and makes a note that
+	the register is now a student there. It is an error if no class is found
+	which teaches these subjects, or if there is more than one eligible class.
+	The latter case results in a CLASS WAR error. See
+	<A HREF="lectures.html">the chapter on Classes and Lectures</A>.
+	</P>
+
+	<P>
+	Beginning with CLC-INTERCAL 0.05, the subject numbers can be specified
+	as expressions and need not be constant.
+	</P>
+
+	<P>
+	The Quantum version of this statement appends "WHILE NOT ENROLLING"
+	</P>
+
+	<H2><A NAME="learns">LEARNS</A></H2>
+
+	<P>
+	Preceded by a register (without subscripts, if an array) and followed by
+	a subject number, as in:
+<PRE><CODE>
+	DO .2 LEARNS #4
+</CODE></PRE>
+	</P>
+
+	<P>
+	The register must have ENROLled in a class which teaches that subject. The
+	effect is to go to the lecture. During the lecture, the class will be made
+	to belong to the student (yes, we know) and this belonging relationship
+	gets sutomatically removed at the end. This can be used to replace what
+	other languages call "self" or "this" in a cleaner way. See
+	<A HREF="lectures.html">the chapter on Classes and Lectures</A>.
+	</P>
+
+	<P>
+	Beginning with CLC-INTERCAL 0.05, the subject number can be specified
+	as an expression.
+	</P>
+
+	<P>
+	The Quantum version of this statement is specified with "WHILE NOT LEARNING IT"
+	</P>
+
+	<H2><A NAME="finish_lecture">FINISH LECTURE</A></H2>
+
+	<P>
+	Used in lectures to return to the statement following the last LEARNS. See
+	<A HREF="lectures.html">the chapter on Classes and Lectures</A>.
+	</P>
+
+	<P>
+	The Quantum version of this statement is specified with "WHILE CONTINUING IT"
+	</P>
+
+	<H2><A NAME="graduates">GRADUATES</A></H2>
+
+	<P>
+	Preceded by a register (if an array, without subscripts), it removes it
+	from the list of students of all classes. The effect is that the register
+	cannot LEARN anything after that, unless he ENROLs again. See
+	<A HREF="lectures.html">the chapter on Classes and Lectures</A>.
+	</P>
+
+	<P>
+	The Quantum version of this statement is specified with "WHILE REMAINING A STUDENT"
+	</P>
+
+	<H2><A NAME="convert">CONVERT</A></H2>
+
+	<P>
+	Followed by one statement template, the keyword "TO", and another statement
+	template. At runtime, the meaning of the first statement is changed into
+	the meaning of the second. In most back ends, this will be implemented by
+	keeping a list of code references (or pointer to functions or whatever),
+	and changing them as needed. The statements must be "compatible", i.e.
+	their syntactic definition must use the same terminals. For example,
+	the statement ABSTAIN FROM can contain wither a single LABEL or a
+	GERUND LIST. In the latter form, can only be converted to a REINSTATE.
+	In the form with LABEL, it can be converted to COME FROM, NEXT, or REINSTATE.
+	The statements to do all these conversions are:
+<PRE><CODE>
+	DO CONVERT ABSTAIN FROM GERUND LIST TO REINSTATE GERUND LIST
+	DO CONVERT ABSTAIN FROM LABEL TO COME FROM LABEL
+	DO CONVERT ABSTAIN FROM LABEL TO LABEL NEXT
+	DO CONVERT ABSTAIN FROM LABEL TO REINSTATE LABEL
+</CODE></PRE>
+	</P>
+
+	<P>
+	Of course, if the <I>come-from-gerund</I> option is in effect, it is
+	also possibe to:
+<PRE><CODE>
+	DO CONVERT ABSTAIN FROM GERUND LIST TO COME FROM GERUND LIST
+</CODE></PRE>
+	</P>
+
+	<P>
+	The gerunds and templates listed here refer to the current versions,
+	which might be affected by previous executions of the CONVERT (or SWAP)
+	statement, so for example:
+<PRE><CODE>
+	DO CONVERT COME FROM LABEL TO LABEL NEXT
+	DO CONVERT ABSTAIN FROM LABEL TO LABEL NEXT
+</CODE></PRE>
+	is equivalent to:
+<PRE><CODE>
+	DO CONVERT COME FROM LABEL TO LABEL NEXT
+	DO CONVERT ABSTAIN FROM LABEL TO COME FROM LABEL
+</CODE></PRE>
+	because the second CONVERT will use the current meaning of LABEL NEXT,
+	which is the same as COME FROM label, due to the first CONVERT.
+	Note that this is different from the way ABSTAIN FROM, REINSTATE,
+	COME FROM and NEXT FROM interpret gerunds.
+	</P>
+
+	<P>
+	There is a quantum version of this statement, obtained adding the
+	string "WHILE LEAVING IT UNCHANGED" at the end. This has the effect
+	of doing the conversion but at the same time not doing it.
+	This is described in more detail in <A HREF="quantum.html">the
+	chapter about Quantum INTERCAL</A>.
+	</P>
+
+	<P>
+	This statement was introduced in CLC-INTERCAL 0.05.
+	</P>
+
+	<H2><A NAME="swap">SWAP</A></H2>
+
+	<P>
+	Followed by one statement template, the keyword "AND", and another statement
+	template. At runtime, the meaning of the first statement is changed into
+	the meaning of the second, and vice versa. In most back ends, this will
+	be implemented by keeping a list of code references (or pointer to functions
+	or whatever), and changing them as needed. The statements must be
+	"compatible", i.e. their syntactic definition must use the same terminals.
+	For example, "CALCULATE" has two terminals, a REGISTER and an EXPRESSION.
+	The other statement which has the same terminals is LEARNS. Therefore, they
+	can be swapped. The two following statements both do the same (and undo
+	each other):
+<PRE><CODE>
+	DO SWAP REGISTER &lt;- EXPRESSION AND REGISTER LEARNS EXPRESSION
+	DO SWAP REGISTER LEARNS EXPRESSION AND REGISTER &lt;- EXPRESSION
+</CODE></PRE>
+	</P>
+
+	<P>
+	The meaning of each gerund or template will be what is in operation at the
+	time the SWAP statement is executed, which may have been changed by previous
+	CONVERT or SWAP statements. This is why the two statements in the previous
+	example undo each other. Note that this is different from the way
+	ABSTAIN FROM, REINSTATE, COME FROM and NEXT FROM interpret gerunds.
+	</P>
+
+	<P>
+	There is a quantum version of this statement, obtained adding the
+	string "WHILE LEAVING THEM UNCHANGED" at the end. This has the effect
+	of doing the swapping but at the same time not doing it.
+	This is described in more detail in <A HREF="quantum.html">the
+	chapter about Quantum INTERCAL</A>.
+	</P>
+
+	<P>
+	This statement was introduced in CLC-INTERCAL 0.05
+	</P>
+
+	<H2><A NAME="create">CREATE</A></H2>
+
+	<P>
+	This is the most powerful statement of CLC-INTERCAL, and, by necessity, the
+	most complex. The syntax is described in detail in <A HREF="parsers.html">the
+	chapter about parsers</A>. It extends the C-unlike postprocessor (see the
+	<A HREF="#convert">convert</A> and <A HREF="#swap">swap</A> statements) in
+	such a way that a complete compiler can be written out of <CODE>CREATE</CODE>
+	statements. In fact, CLC-INTERCAL 1.-94 and newer are written this way.
+	</P>
+
+	<P>
+	This statement was introduced in CLC-INTERCAL 1.-94.
+	</P>
+
+	<P>
+	The Quantum version of this statement appends "WHILE NOT CREATING IT"
+	</P>
+
+	<P>
+	The gerund for this statement is CREATING, or since CLC-INTERCAL 1.-94.-2.2
+	also CREATION which is compatible with C-INTERCAL's gerund. Additionally,
+	since CLC-INTERCAL 1.-94.-2.2 it is possible to "ABSTAIN FROM EVOLUTION"
+	meaning "REINSTATE CREATION" and vice versa. For example the statement:
+<PRE><CODE>
+	PLEASE ABSTAIN FROM EVOLUTION + DESTRUCTION
+</CODE></PRE>
+	Does the same as the two statements:
+<PRE><CODE>
+	PLEASE REINSTATE CREATION
+	DO ABSTAIN FROM DESTRUCTION
+</CODE></PRE>
+	If a statement lists both EVOLUTION and CREATION, the last one listed
+	wins, so:
+<PRE><CODE>
+	PLEASE ABSTAIN FROM EVOLUTION + CREATION
+</CODE></PRE>
+	Is the same as:
+<PRE><CODE>
+	DO ABSTAIN FROM CREATION
+</CODE></PRE>
+	</P>
+
+	<H2><A NAME="destroy">DESTROY</A></H2>
+
+	<P>
+	This statement undoes the effect of a CREATE. Note that since
+	the compiler itself is just a big list of CREATE statement you
+	can also remove bits of the compiler you don't like. The syntax
+	is described in detail in <A HREF="parsers.html">the chapter
+	about parsers</A>.
+	</P>
+
+	<P>
+	This statement was introduced in CLC-INTERCAL 1.-94.
+	</P>
+
+	<P>
+	The Quantum version of this statement appends "WHILE NOT DESTROYING IT"
+	</P>
+
+	<P>
+	The gerund for this statement is DESTROYING, or since CLC-INTERCAL 1.-94.-2.2
+	also DESTRUCTION, because "PLEASE ABSTAIN FROM DESTRUCTION" seems something
+	desirable to ask.
+	</P>
+
+	<H2><A NAME="while">WHILE</A></H2>
+
+	<P>
+	Preceded by a statement, and followed by another one, executes the two
+	simultaneously. The first statement acts as a "loop control" for the
+	second, which is repeated as many times as needed. For example:
+<PRE><CODE>
+	PLEASE STUDY #1 AT (1000) IN CLASS @1
+	DO ENROL .1 TO LEARN #1
+	DO .1 LEARNS #1 WHILE READ OUT .1
+</CODE></PRE>
+	</P>
+
+	<P>
+	Would keep reading out the value of .1 until the lecture is finished. This
+	might or might not cause disruption to the lecture.
+	</P>
+
+	<P>
+	The first statement can be replaced by an expression, in which case the
+	WHILE statement is called "event statement". If the expression can be
+	evaluated, the statement is executed and the program continues as normal.
+	If the expression produces an error, the WHILE is kept in suspended animation
+	until it is possible to execute it. For example:
+<PRE><CODE>
+	DO ,1 &lt;- #2
+	PLEASE DO ,1 SUB #1 #1 WHILE ,1 SUB #1 #1 &lt;- #5
+	DO ,1 SUB #1 &lt;- #2
+	DO ,1 &lt;- #2 BY #2
+	DO .1 &lt;- ,1 SUB #1 #1
+	DO READ OUT .1
+</CODE></PRE>
+	</P>
+
+	<P>
+	Will read "V". This is because the ",1 SUB #1 #1" produces an error (too
+	many subscripts), but is retried as soon as ,1 is redimensioned, and causes
+	#5 to be assigned to ",1 SUB #1 #1" after dimensioning but before assigning
+	to .1
+	</P>
+
+	<P>
+	This statement was introduced in CLC-INTERCAL 0.05.
+	</P>
+
+	<P>
+	Note that there isn't a Quantum version of this statement, although
+	its two sub-statements can be quantum, for example:
+<PRE><CODE>
+	DO ABSTAIN FROM (1) WHILE REINSTATING IT
+	WHILE
+	COME FROM (2) WHILE NOT COMING FROM THERE
+</CODE></PRE>
+	</P>
+
+	<H2><A NAME="steal">STEAL and SMUGGLE</A></H2>
+
+	<P>
+	These statements are only available after loading the INTERNET option.
+	Since CLC-INTERCAL 1.-94.-2 they also require the optional package
+	CLC-INTERCAL-INET to be installed.
+	</P>
+
+	<P>
+	The statement is followed by a list of variables,
+	optionally ON and a Process ID and optionally FROM and an IP
+	address. For example:
+<PRE><CODE>
+	DO STEAL .1 ON #1234 FROM :1
+	DO STEAL .1 ON #1234
+	DO STEAL .1 FROM :1
+	DO STEAL .1
+</CODE></PRE>
+	</P>
+
+	<P>
+	When both a PID and an IP address are specified (first example),
+	and the IP address is a IPv4 or IPv6 unicast address, the program
+	will first connect to a theft server on that IP address, using TCP
+	and default INTERNET port, it asks that theft server how to connect
+	to the required PID, then opens a second connection to talk directly
+	to that program. Once connected, it coordinates with the other
+	program to perform the STEAL or SMUGGLE operation, as described below.
+	Note that the &quot;other&quot; program could actually be the same
+	program if it specifies its own PID and a local IP address: this is
+	fully supported.
+	</P>
+
+	<P>
+	If the statement specifies an IP address and it turns out to be
+	IPv4 broadcast address or an IPv6 multicast group address, the
+	program will first attempt to locate a theft server by sending a
+	query out (using IPv4 broadcast or IPv6 multicast as appropriate),
+	asking for any server who happens to have that particular PID running
+	to reply, then waits to see who answers, and picks a random IP address
+	from the ones who answered: then it proceeds as though that random IP
+	address had been specified in the first place.
+	</P>
+
+	<P>
+	If the statement does not specify an IP address, by omitting the
+	FROM (second example), the program will send out both IPv4 broadcast
+	and IPv6 multicast queries, as specified by
+	<a href="sickrc.html#inet">the configuration</a>, waits for an answer,
+	and proceeds as described in the previous paragraph.
+	</P>
+
+	<P>
+	If the statement does not specify a PID (third and fourth example),
+	the program will first determines an IP address as described above,
+	with the difference that any broadcast or multicast queries will
+	not include a specifid PID, so all nodes running any INTERNET-enabled
+	INTERCAL programs will reply. After selecting a particular IP address
+	from the replies, the program will select a random PID from these
+	running on that particular IP address (this requires a connection
+	to the theft server on that particular node, but instead of asking
+	how to communicate with a particular PID, it will ask to pick one
+	at random and reply with its details). It is possible for the
+	implementation to optimise the network usage when this description
+	implies multiple network connections, but a single one could return
+	all the necessary information, so the programmer must not make
+	assumptions about the exact network activity resulting from the
+	execution of a STEAL or SMUGGLE.
+	</P>
+
+	<P>
+	Stealing a variable means doing a destructive copy, so that the
+	vistim can no longer use it, while the thief gets the original
+	value. For example, suppose the following program runs as Process
+	ID #666 on IP address 10.0.0.1:
+<PRE><CODE>
+	DO .1 &lt;- #2
+    (2) PLEASE COME FROM (.1)
+	DO READ OUT .1
+	DO GIVE UP
+</CODE></PRE>
+	The second statement is recognised by runtime as an infinite loop
+	when it gets executed, and automatically replaced with a wait for
+	a network connection or some other event which may cause register
+	.1 to change its value, so this is a good way to wait for such
+	events.
+	</P>
+
+	<P>
+	Now consider the following program running on some other computer:
+<PRE><CODE>
+	DO STEAL .1 ON #666 FROM #12288 &cent; #1
+	PLEASE READ OUT .1
+	DO GIVE UP
+</CODE></PRE>
+	</P>
+
+	<P>
+	This produces "II", because it goes to get the variable .1 from
+	the previous program (#12288 &cent; #1 is 10.0.0.1; do the calculation
+	to convince yourself that this is the case).
+	</P>
+
+	<P>
+	Meanwhile, the first program produces NIHIL and terminates: this
+	is because register .1 has been stolen, so it's now reset to its
+	initial value (#0). This causes the COME FROM to stop executing,
+	and the READ OUT to produce NIHIL.
+	</P>
+
+	<P>
+	If a register is IGNOREd by the victim it cannot be stolen. This
+	is because stealing a register modifies it. However, the SMUGGLE
+	statement, which has identical syntax, copies an IGNOREd register,
+	of course without modifying it. It is a runtime error to STEAL an
+	IGNOREd register, or to SMUGGLE one which is not IGNOREd.
+	</P>
+
+	<P>
+	Note that the thief is free to IGNORE or REMEMBER a register
+	before stealing or smuggling it: the theft will always succeed,
+	but the subsequent assignment of the value to the thief's variables
+	is controlled by the thief's IGNORE state for the register. For
+	example, the code:
+<PRE><CODE>
+	PLEASE IGNORE .1
+	DO STEAL .1 ON #666 FROM #12288 &cent; #1
+</CODE></PRE>
+	would effectively throw away the value of .1 in the program running
+	as PID 666 on 10.0.0.1: the theft succeeds, so that program will no
+	longer be able to access the value of .1, but the thief is ignoring
+	the register, so the value is thrown away.
+	</P>
+
+	<P>
+	If a register is overloaded at the time it is stolen, the thief will
+	receive the overload code and will find its own register overloaded;
+	of course, the victim's register will no longer be overloaded. In case
+	of smuggling, both the thief's and the victim's registers will be
+	overloaded after the operation. For example if the victim does:
+<PRE><CODE>
+	PLEASE :1 &lt;- :2 / :3
+</CODE></PRE>
+	and then the thief STEALs :2, then the following code will READ OUT
+	the number XLII:
+<PRE><CODE>
+	DO :3 &lt;- #42
+	PLEASE READ OUT :2
+</CODE></PRE>
+	This is because :2 is now overloaded and means :3, and :3 contains #42.
+	On the other hand, :2 is no longer overloaded for the victim, so any
+	reference to its :2 will boringly mean :2.
+	</P>
+
+	<P>
+	STEAL and SMUGGLE have Quantum counterparts, which are specified with
+	"WHILE NOT STEALING IT" and "WHILE NOT SMUGGLING IT" (or "THEM"). Like
+	Quantum WRITE IN, the theft always happens, but the assignment
+	of the result happens while not happening.
+	</P>
+
+	<P>
+	The next section suggests a way to obtain IP addresses and process IDs
+	</P>
+
+	<H2><A NAME="case">CASE</A></H2>
+
+	<P>
+	This statement is only available after loading the INTERNET option.
+	Since CLC-INTERCAL 1.-94.-2 it also requires the optional package
+	CLC-INTERCAL-INET to be installed.
+	</P>
+
+	<P>
+	This statement is followed by an expression, IN and a list of case
+	elements (with the form expression THEN statement) separated by OR,
+	and optionally followed by ESAC if one wants to type a bit more.
+	For example:
+<PRE><CODE>
+	DO CASE :1 IN
+	   .2 THEN READ OUT ,3
+	OR
+	   .3 THEN READ OUT .2
+	OR
+	   .4 THEN GIVE UP
+	ESAC
+</CODE></PRE>
+	It executes a generic network look-up and assigns the results to
+	the variables indicated in the case elements; after that, it
+	executes all the statements in sequence, skipping any which are
+	ABSTAIed FROM.
+	</P>
+
+	<P>
+	The network look-up performed depends on the type of the
+	expression. If it is an array, it is converted to characters (as
+	if you READ it OUT) and used as a name to perform a DNS look-up;
+	if it is a number, it is interpreted as an IP address; if it
+	corresponds to an IPv4 broadcast or IPv6 multicast address, the
+	system will send a query on the specified address and waits a few
+	seconds for replies: the encoded IP addresses of everything which
+	replied will be used as result of the look-up; if the number
+	corresponds to a unicast address, the program queries the specified
+	computer and obtains a list of Process IDs running INTERNET programs
+	as a result of the look-up. Note that INTERCAL programs which have
+	not loaded the INTERNET extension are not reported by this query.
+	</P>
+
+	<P>
+	The list of numbers returned by a query are then assigned to each
+	of the expressions mentioned in a case element: if there are more
+	numbers returned than there are expressions, an implementation-defined
+	subset will be used; if there are more expressions than numbers to assign
+	to them, an implementation-defined subset of the registers will not
+	be assigned to. At the time of writing (1.-94.-2.1), the implementation
+	does not specify what values are discarded if there are too many of
+	them, but it does specify that the registers are assigned in order,
+	so that the unassigled ones will all be at the end.
+	</P>
+
+	<P>
+	If any of the expressions evaluates to an array (tail or hybrid),
+	the array elements are assigned in order as though they had been
+	specified as separate expressions; if the array is not dimensioned,
+	a splat occurs.
+	</P>
+
+	<P>
+	Consider the statement:
+<PRE><CODE>
+	DO CASE #0 IN
+	   :1 THEN CASE :1 IN
+	      .2 THEN STEAL ,1 ON .2 FROM :1
+</CODE></PRE>
+	or, for better legibility:
+<PRE><CODE>
+	DO CASE #0 IN
+	   :1 THEN CASE :1 IN
+	      .2 THEN STEAL ,1 ON .2 FROM :1
+	   ESAC
+	ESAC
+</CODE></PRE>
+	This is the internal implementation of DO STEAL ,1 - first,
+	it broadcasts on all local network interfaces to get a list of
+	IP addresses (#0 is considered a broadcast address by the CASE
+	statement). Then a random one is selected (because there is only
+	one case element) and assigned to :1. Then the statement inside
+	the CASE is executed - this is another CASE, his time using the
+	IP address returned by the first one to get a list of Process
+	IDs. Again, there is only one element, so a random one is selected
+	and assigned to .2 - finally, the STEAL statement uses the IP
+	address and Process ID. The only real difference between this
+	example and a simple DO STEAL .1 is that this example also keeps
+	the random IP and PId used (in :1 and .2 respectively), which
+	may be used by the program to do something else, while the
+	implicit CASE executed by STEAL when ON or FROM are not
+	specified does not save these numbers.
+	</P>
+
+	<P>
+	Of course there is also a Quantum CASE statement: the syntax is
+	slightly unusual: DO CASE expression WHILE NOT CASING IT IN
+	register THEN statement [OR register THEN statement]... [ESAC],
+	for example:
+<PRE><CODE>
+	DO CASE :1 WHILE NOT CASING IT IN
+	   .2 THEN READ OUT ,3
+	OR
+	   .3 THEN READ OUT .2
+	OR
+	   .4 THEN GIVE UP
+</CODE></PRE>
+	The operation is the obvious one: the look-up, assignments and
+	sub-statements are all executed while at the same time none of
+	them is executed.
+	</P>
+
+	<P>
+	To improve the program's legibility when a CASE statement is
+	nested inside another, it is possible to terminate the list of
+	case elements with the keyword ESAC. This closes the innermost
+	CASE. For example:
+<PRE><CODE>
+	DO CASE #0 IN
+	   :1 THEN CASE :1 IN
+	      .1 THEN STEAL ,1 ON .1 FROM :1
+	   OR
+	      .2 THEN READ OUT .2
+	   ESAC
+	OR
+	   :2 THEN WRITE IN :3
+	ESAC
+</CODE></PRE>
+	(And, yes, it's a rather meaningless program, but it shows the syntax).
+	A seasoned programmers will simplify this to the more compact:
+<PRE><CODE>
+	DOCASE#0IN:1THENCASE:1IN.1THENSTEAL,1ON.1FROM:1OR.2THENREADOUT.2ESACOR:2THENWRITEIN:3
+</CODE></PRE>
+	The final ESAC has also been omitted as it was not necessary in such a
+	simple and legible line
+	</P>
+
+	<H2><A NAME="close_off">CLOSE OFF</A></H2>
+
+	<P>
+	A program can declare a bit of source code "off-limits" by closing it off and
+	installing a diversion. This is a generalisation of ABSTAIN FROM and COME
+	FROM with a helping of extra tentacles.  This is done with a statement like:
+<PRE><CODE>
+	DO CLOSE OFF BETWEEN (1) AND (2) AND DIVERT VIA (3) TO (4)
+</CODE></PRE>
+	The four labels determine two regions of code: they must all exist at the time
+	of executing the statement, and the portion of code which is between (1) and
+	(2), inclusive, forms the first region, and the portion between (3) and (4),
+	inclusive, forms the second region. After executing the statement, the first
+	region, the one delimited by (1) and (2) will in effect disappear from the
+	program, and any attempt to execute there will result in a jump to the start
+	of the second region, i.e. to what was label (3) at the time the road closure
+	was installed; if execution tries to leave the second region, it will land
+	juat after the end of the first region instead.
+	</P>
+
+	<P>
+	This statement was introduced in CLC-INTERCAL 1.-94.-2.2.
+	</P>
+
+	<P>
+	An example program will make this crystal clear:
+<PRE><CODE>
+(6)     DO COME FROM (1)
+(2)     DO .1 &lt;- #1
+        DO .2 &lt;- #3
+        DO .3 &lt;- #5
+(3)     DO .4 &lt;- #7
+        DO CLOSE OFF BETWEEN (2) AND (3) AND DIVERT VIA (4) TO (5)
+(1)     PLEASE DO READ OUT .1 + .2 + .3 + .4
+        PLEASE GIVE UP
+(4)     DO .1 &lt;- #2
+        DO .2 &lt;- #4
+        DO .3 &lt;- #6
+        DO .4 &lt;- #8
+(5)     DO CLOSE OFF BETWEEN (6) AND (6) AND DIVERT VIA (1) TO (4)
+</CODE></PRE>
+	</P>
+
+	<P>
+	The program starts by assigning four numbers to registers and then READing
+	OUT these four registers; the CLOSE OFF statement between the last assignment
+	and the READ OUT will make these four assignments unavailable if execution
+	gets there again, and installs a diversion via (4) to (5).
+	</P>
+
+	<P>
+	Since the READ OUT has label (1), this triggers the COME FROM at the start
+	of the program, but this time the program will find the road closed before
+	the first assignment, and execute the bit of code between (4) and (5)
+	instead: this assigns four different values to the registers, and then causes
+	the COME FROM itself to be closed off. After this second CLOSE OFF statement,
+	execution resumes after the end of the road closure, which means it will
+	repeat the first CLOSE OFF and the READ OUT.
+	</P>
+
+	<P>
+	This time, after the READ OUT the COME FROM statement will not be triggered
+	because it has been closed off. Instead, execution continues to the
+	GIVE UP statement and the program terminates.
+	</P>
+
+	<P>
+	Note that the second diversion blocks off the COME FROM but does not cause
+	execution to continue at label (1): this is because the program is not
+	going to attempt entering the closed-off section.
+	</P>
+
+	<P>
+	A quantum CLOSE OFF is available by adding WHILE LEAVING IT OPEN.
+	</P>
+
+	<H2><A NAME="reopen">REOPEN</A></H2>
+
+	<P>
+	This is the opposite of a CLOSE OFF: it identifies a single section of
+	code, which must have been previously closed off, and reopens it. The syntax is:
+<PRE><CODE>
+	DO REOPEN BETWEEN (1) AND (2)
+</CODE></PRE>
+	A quantum REOPEN is available by adding WHILE LEAVING IT CLOSED.
+	</P>
+
+	<P>
+	This statement was introduced in CLC-INTERCAL 1.-94.-2.2.
+	</P>
+
+	<H2><A NAME="trickle">TRICKLE DOWN</A></H2>
+
+	<P>
+	Arranges for one register to be considered above another, and also
+	introduces a slow leak in the "upper" register.  The effect of this
+	is that after assigning to the "upper" register the value will slowly
+	"trickle down" to the "lower" register, resulting in the same value
+	being assigned later. The syntax is:
+<PRE><CODE>
+	DO TRICKLE </CODE><EM>REGISTER</EM><CODE> DOWN TO </CODE><EM>REGISTERS</EM><CODE> AFTER </CODE><EM>EXPRESSION</EM>
+</CODE></PRE>
+	This places the first register above the second, and the expression
+	specifies a time in milliseconds controlling the trickling down
+	process. For example:
+<PRE><CODE>
+	DO TRICKLE .1 DOWN TO .2 AFTER #1000
+	PLEASE .1 &lt;- #42
+</CODE></PRE>
+	Assigns #42 to .1 as normal, and 1 second later also assigns #42 to .2.
+	</P>
+
+	<P>
+	This statement was introduced in CLC-INTERCAL 1.-94.-2.3.
+	</P>
+
+	<P>
+	The gerund for this statement is TRICKLING DOWN. When used in an ABSTAIN
+	FROM or REINSTATE, this refers to the actual movement of values rather
+	than the statement itself. Therefore after:
+<PRE><CODE>
+	DO ABSTAIN FROM TRICKLING DOWN
+</CODE></PRE>
+	Any TRICKLE DOWN statement will execute as normal, setting up the structure,
+	but the actual values assigned will stay put. A later:
+<PRE><CODE>
+	DO REINSTATE TRICKLING DOWN
+</CODE></PRE>
+	will cause assignments to trickle down again. To ABSTAIN FROM or REINSTATE
+	a particular TRICKLE DOWN statement, rather than the action of tricking
+	values down, one must use a ABSTAIN FROM LABEL or REINSTATE LABEL. It is
+	possible that a future version will have a second gerund for use with
+	the statement itself. However when used in a COME FROM or NEXT FROM
+	statement, this gerund refers to the actual TRICKLE DOWN statements,
+	it does not trigger a branch when values move around. This difference in
+	gerund interpretation could be confusing. The ABSTAIN state of TRICKLING
+	DOWN is checked at the time of the assignment to the "upper" register;
+	once a trickling down has started, it cannot be interrupted.
+	</P>
+
+	<P>
+	More than two registers can be involved in trickling down. For example:
+<PRE><CODE>
+	DO TRICKLE .1 DOWN TO .2 AFTER #1000
+	DO TRICKLE .2 DOWN TO .3 AFTER #1000
+	DO TRICKLE .3 DOWN TO .1 AFTER #1000
+	PLEASE .1 &lt;- #42
+</CODE></PRE>
+	Will "circulate" #42 between 3 registers: every second, the next
+	register will get assigned #42. In the meantime, the program may
+	assign other values, but the #42 will continue to be assigned by the
+	trickling down process. Note that it's perfectly acceptable to have
+	circular trickling down, or something more complicated.
+	</P>
+
+	<P>
+	The second register in the statement can be replaced by a list, which
+	is an abbreviation for a sequence of statements trickling down to
+	just a register, for example:
+<PRE><CODE>
+	DO TRICKLE .1 DOWN TO .2 + .3 + .4 AFTER #100
+</CODE></PRE>
+	is equivalent to:
+<PRE><CODE>
+	DO TRICKLE .1 DOWN TO .2 AFTER #100
+	DO TRICKLE .1 DOWN TO .3 AFTER #100
+	DO TRICKLE .1 DOWN TO .4 AFTER #100
+</CODE></PRE>
+	</P>
+
+	<P>
+	As usual, there is a quantum version of this statement, which adds
+	"WHILE LEAVING IT TRUSSED UP" at the end (the "IT" can be replaced
+	by "THEM" if more grammatically correct). For example:
+<PRE><CODE>
+	DO TRICKLE .1 DOWN TO .1 AFTER #1000
+	   WHILE LEAVING IT TRUSSED UP
+	DO TRICKLE .1 DOWN TO .2 + .3 + .4 AFTER #1
+	   WHILE LEAVING THEM TRUSSED UP
+</CODE></PRE>
+	Note that the example shows that it's possible to place a register
+	above itself.
+	</P>
+
+	<P>
+	The assignment of "lower" registers behaves exactly like any other
+	assignment statement; in particular, if the register is overloaded
+	at the time the trickled down assignment actually happens, the
+	overload code will be executed; if the register is IGNOREd at the
+	time the assignment would happen, it does not happen; etc. Note that
+	the overloading or IGNORE state can change between the assignment to
+	the "upper" register and that of the "lower" register as the program
+	will keep running in the meantime.
+	</P>
+
+	<P>
+	See TRUSS UP, below for another example.
+	</P>
+
+	<H2><A NAME="truss">TRUSS UP</A></H2>
+
+	<P>
+	Using the syntax:
+<PRE><CODE>
+	PLEASE TRUSS </CODE><EM>REGISTERS</EM><CODE> UP
+</CODE></PRE>
+	Ties the values in some registers up so that their contents stop moving.
+	This undoes anything done by TRICKLE DOWN.
+	</P>
+
+	<P>
+	This statement was introduced in CLC-INTERCAL 1.-94.-2.3.
+	</P>
+
+	<P>
+	The gerund for this statement is TRUSSING UP. When used in an ABSTAIN
+	FROM, REINSTATE, COME FROM or NEXT FROM, it refers to all TRUSS UP
+	statements.
+	</P>
+
+	<P>
+	It must be noted that the use of the verb TRUSS to stop trickling down
+	bears no resemblance to any human being, or even to a former UK Prime
+	Minister. As the Oxford English Dictionary defines it: "truss v. 2.
+	(often followed by <em>up</em>): tie (a person) up with the arms to the
+	sides". After being tied up, and possibly even bound and gagged, it
+	will be quite difficult for the value in a register to go walking
+	around the program.
+	</P>
+
+	<P>
+	Consider for following program fragment:
+<PRE><CODE>
+	DO TRICKLE .2 DOWN TO .1 AFTER #500
+	DO TRICKLE .1 DOWN TO .1 AFTER #1000
+	DO .1 &lt;- #1
+	DO .2 &lt;- #0
+    (1) DO COME FROM .1
+	DO TRUSS .2 UP
+</CODE></PRE>
+	The COME FROM will loop on itself for half a second, because .1
+	contains #1. After this time, the value from .2 (#0) trickes down
+	to .1 and therefore the program proceeds to the next statement,
+	the TRUSS UP. The result is that .1 will "oscillate" between 0
+	and 1 with a cycle of 1 second. Finding a use for this is left
+	as an exercise to the reader.
+	</P>
+
+	<P>
+	Of course, there is a quantum version of this statement, which
+	adds "WHILE LEAVING IT TRICKLING DOWN" (or "THEM" instead of "IT"),
+	for example:
+<PRE><CODE>
+	DO TRUSS .1 UP WHILE LEAVING IT TRICKLING DOWN
+	DO TRUSS .2 + .3 UP WHILE LEAVING THEM TRICKLING DOWN
+</CODE></PRE>
+	</P>
+
+    </BODY>
+</HTML>
+

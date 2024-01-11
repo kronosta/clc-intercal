@@ -1,0 +1,13 @@
+	DO NOTE: THIS COMPILER OPTION SETS THE BASE TO 6
+
+Copyright (c) 2006-2008 Claudio Calvelli, all rights reserved.
+
+CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+and distribute it is granted provided that the conditions set out in the
+licence agreement are met. See files README and COPYING in the distribution.
+
+PERVERSION "CLC-INTERCAL/Base INTERCAL/Include/6.iacc 1.-94.-2"
+
+	DO ?TYPE <- ?BASE
+	PLEASE %BA <- #6
+	DO GIVE UP

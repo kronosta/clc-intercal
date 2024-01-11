@@ -1,0 +1,186 @@
+#!/usr/bin/perl -w
+
+# this script generates tarballs and dd/sh install scripts for CLC-INTERCAL
+
+# This file is part of CLC-INTERCAL
+
+# Copyright (c) 2023 Claudio Calvelli, all rights reserved.
+
+# CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+# and distribute it is granted provided that the conditions set out in the
+# licence agreement are met. See files README and COPYING in the distribution.
+
+use strict;
+use Archive::Tar;
+use Archive::Tar::Constant ();
+
+use vars qw($VERSION $PERVERSION);
+($VERSION) = ($PERVERSION = "CLC-INTERCAL build/make-dist 1.-94.-2.3") =~ /\s(\S+)$/;
+
+@ARGV == 4 && ! -t STDIN && ! -t STDOUT
+    or die "Usage: $0 TYPE DISTNAME SUBDIR SUFFIX < MANIFEST | gzip > DISTNAME SUFFIX\n"
+	 . "   or: find ... | $0 TYPE DISTNAME SUBDIR SUFFIX | gzip > DISTNAME SUFFIX\n";
+my ($type, $distname, $subdir, $suffix) = @ARGV;
+(my $plain = $distname) =~ s/\.gz$//i;
+$subdir = ($subdir eq '' || $subdir eq '-') ? '' : "$subdir/";
+
+my $now = time;
+
+if ($type eq 'ddsh') {
+    *process_file = \&process_ddsh;
+    *make_dir = \&dir_ddsh;
+    *close_archive = \&close_ddsh;
+    print <<EOF or die "$distname: $!\n";
+#!/bin/sh
+
+# THIS DD/SH PROGRAM IS A SELF-UNPACKING ARCHIVE - JUST RUN IT WITH:
+#     gzip -dc $distname.ddsh$suffix | sh
+
+# OR IF YOUR SHELL CANNOT RUN THIS FROM STANDARD INPUT, UNCOMPRESS IT FIRST:
+#     gzip -d $distname.ddsh$suffix
+#     sh $distname.ddsh
+
+dd 2>/dev/null <<'E'
+Unpacking $distname
+E
+
+EOF
+} elsif ($type eq 'tar') {
+    *process_file = \&process_tar;
+    *make_dir = \&dir_tar;
+    *close_archive = \&close_tar;
+} else {
+    die "Unknown TYPE: $type\n";
+}
+
+my %dirs = ();
+while (defined (my $file = <STDIN>)) {
+    chomp $file;
+    my $path = $subdir . $file;
+    lstat $path or die "$path: $!\n";
+    -f _ or die "$path: Not a regular file\n";
+    my $mode = -x _ ? 0755 : 0644;
+    open(FILE, '<', $path) or die "$path: $!\n";
+    my $data;
+    {
+	local $/ = undef;
+	$data = <FILE>;
+    }
+    close FILE;
+    # we no longer have any binary files in the distribution
+    # so we can get away with this
+    my $size = length $data;
+    make_parent("$distname/$file");
+    process_file("$distname/$file", $mode, $size, $data);
+}
+
+close_archive();
+exit 0;
+
+sub make_parent {
+    my ($file) = @_;
+    $file =~ s|/[^/]+$|| or return; # top level
+    exists $dirs{$file} and return;
+    make_parent($file);
+    make_dir($file);
+    $dirs{$file} = undef;
+}
+
+sub process_ddsh {
+    my ($file, $mode, $size, $data) = @_;
+    $data =~ /\n$/ or $data .= "\n";
+    my $count = '';
+    if (index($data, "END_OF_FILE$count") >= 0) {
+	$count = 1;
+	while (index($data, "END_OF_FILE$count") >= 0) {
+	    $count++;
+	}
+    }
+    my $blocks = int($size / 4096);
+    my $rest = $size % 4096;
+    my $dd;
+    if ($rest && $blocks) {
+	$dd = "(dd bs=4096 count=$blocks; dd bs=$rest count=1) >'$file'";
+    } elsif ($rest) {
+	$dd = "dd of='$file' bs=$rest count=1";
+    } else {
+	$dd = "dd of='$file' bs=4096 count=$blocks";
+    }
+    my $omode = sprintf "%03o", $mode;
+    print <<EOF or die "$!\n";
+if test -e '$file'; then dd >&2 2>/dev/null <<E; exit 1; fi
+Will not overwrite $file
+E
+dd 2>/dev/null <<E || exit 1
+$file ($size)
+E
+$dd 2>/dev/null <<'END_OF_FILE$count'
+$data
+END_OF_FILE$count
+chmod $omode '$file'
+EOF
+}
+
+sub dir_ddsh {
+    my ($file) = @_;
+    print <<EOF or die "$!\n";
+test -d '$file' || mkdir '$file' || exit 1
+EOF
+}
+
+sub close_ddsh {
+    print <<EOF or die "$!\n";
+dd 2>/dev/null <<'E'
+Finished unpacking $distname, all seems OK
+E
+exit 0
+EOF
+}
+
+# no need to keep the whole archive in memory, one file at a time will do;
+# but we do need to remove the end blocks...
+sub tar_file {
+    my ($file, $type, $data, $size, $mode) = @_;
+    my $fp = Archive::Tar::File->new(data => $file, $data, {
+	type => $type,
+	mode => $mode,
+	uid => 1000,
+	uname => 'intercal',
+	gid => 1000,
+	gname => 'intercal',
+	size => $size,
+	mtime => $now,
+    }) or die "Archive::Tar::File->new($file): $!\n";
+    my $archive = Archive::Tar->new() or die "Archive::Tar->new(): $!\n";
+    $archive->add_files($fp) or die "TAR->add_files($file): $!\n";
+    my $err;
+    $err = $archive->error and die "TAR: $err\n";
+    my $output = $archive->write() or die "TAR->write: $!\n";
+    $err = $archive->error and die "TAR: $err\n";
+    my $block = Archive::Tar::Constant::BLOCK();
+    for my $end (0, 1) {
+	my $len = length($output);
+	$len < $block and last;
+	substr($output, $len - $block, $block) eq Archive::Tar::Constant::TAR_END() or last;
+	substr($output, $len - $block, $block) = '';
+    }
+    print $output or die "write: $!\n";
+    undef $archive;
+    undef $fp;
+}
+
+sub process_tar {
+    my ($file, $mode, $size, $data) = @_;
+    tar_file($file, Archive::Tar::Constant::FILE(), $data, $size, $mode);
+}
+
+sub dir_tar {
+    my ($file) = @_;
+    tar_file($file, Archive::Tar::Constant::DIR(), '', 0, 0755);
+}
+
+sub close_tar {
+    print Archive::Tar::Constant::TAR_END(), Archive::Tar::Constant::TAR_END()
+	or die "end block: $!\n";
+}
+

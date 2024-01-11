@@ -1,0 +1,276 @@
+#!/usr/bin/perl -w
+
+# INTERNET (INTERcal NETworking) server
+
+# This file is part of CLC-INTERCAL
+
+# Copyright (c) 2007-2008, 2023 Claudio Calvelli, all rights reserved.
+
+# CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+# and distribute it is granted provided that the conditions set out in the
+# licence agreement are met. See files README and COPYING in the distribution.
+
+require v5.6;
+
+use strict;
+use Getopt::Long;
+use Socket;
+eval "use Socket6 qw(inet_pton)"; # ignore error if Socket6 not installed
+
+use Language::INTERCAL::Server '1.-94.-2.1';
+use Language::INTERCAL::Theft '1.-94.-2.3', qw(is_localhost);
+use Language::INTERCAL::INET::Interface '1.-94.-2.3', qw(
+    interface_list iflags_up iflags_multicast ifitem_index address_multicast6
+);
+
+use vars qw($VERSION $PERVERSION);
+($VERSION) = ($PERVERSION = "CLC-INTERCAL/INET bin/theft-server 1.-94.-2.3") =~ /\s(\S+)$/;
+
+my ($PERVNUM) = $PERVERSION =~ /\s(\S+)$/;
+
+if (defined &Getopt::Long::Configure) {
+    Getopt::Long::Configure qw(no_ignore_case auto_abbrev permute bundling);
+} else {
+    $Getopt::Long::ignorecase = 0;
+    $Getopt::Long::autoabbrev = 1;
+    $Getopt::Long::order = $Getopt::Long::PERMUTE;
+    $Getopt::Long::bundling = 1;
+}
+
+my $port = undef;
+my $debug = 0;
+my $linger = 15; # time we hang around
+my @groups = (); # multicast groups
+my $show_pid = 0;
+my $show_port = 0;
+
+GetOptions(
+    'port|p=i'      => \$port,
+    'debug|d!'      => \$debug,
+    'linger|l=i'    => \$linger,
+    'group|g=s'     => \&add_group,
+    'show-pid'      => \$show_pid,
+    'show-port'     => \$show_port,
+) or usage();
+
+defined $port or die "Must specify --port\n";
+
+# figure out interfaces before fork()ing so we can provide an error message
+my @ifindex;
+if (@groups) {
+    for my $if (interface_list(iflags_up | iflags_multicast)) {
+	push @ifindex, $if->[ifitem_index];
+    }
+    @ifindex or die "Cannot find any multicast interface\n";
+}
+
+# open sockets before fork()ing so we can provide an error message
+my $server = Language::INTERCAL::Server->new();
+$port = $server->tcp_listen(\&_open, \&_line, \&_close, undef, $port);
+if (@groups && @ifindex) {
+    $server->udp_listen(\&_packet, $port, \@groups, \@ifindex);
+} else {
+    $server->udp_listen(\&_packet, $port);
+}
+$show_port and print "PORT: $port\n";
+
+if ($debug) {
+    $| = 1;
+    $show_pid and print "PID: $$\n";
+} else {
+    close STDIN;
+    close STDERR;
+    my $pid = fork;
+    defined $pid or die "Cannot fork(): $!\n";
+    if ($pid) {
+	$show_pid and print "PID: $pid\n";
+	exit 0;
+    }
+    close STDOUT;
+    if (open(TTY, '<', '/dev/tty')) {
+	eval {
+	    require 'ioctl.ph';
+	    my $x;
+	    ioctl(TTY, &TIOCNOTTY, $x);
+	};
+	close TTY;
+    }
+    $SIG{HUP} = 'IGNORE';
+    $SIG{TSTP} = 'IGNORE';
+    $SIG{INT} = 'IGNORE';
+}
+
+$debug and $server->debug;
+
+$debug and print STDERR time, ": Opened TCP and UDP sockets on port $port\n";
+my $socket_bitmap = '';
+my %pids = ();
+my %ports = ();
+my %ids = ();
+
+while ($server->connections || $linger == 0 || time < $server->active + $linger) {
+    my $timeout = $server->connections || $linger == 0
+		? undef
+		: ($server->active + $linger - time);
+    $server->progress($timeout);
+}
+$debug and print STDERR time, ": Exiting server\n";
+exit 0;
+
+sub _packet {
+    # UDP packet received, we just send back the same way
+    my ($id, $port, $theiraddr, $theirip, $theirport, $packet) = @_;
+    if ($packet =~ /^(\d+)/) {
+	# they are looking for a particular PID
+	exists $pids{$1} or return;
+	$packet .= ' ' . $pids{$1};
+    } else {
+	# they are asking for any pid
+	my @pids = keys %pids;
+	@pids or return;
+	my $pid = $pids[int(rand(scalar @pids))];
+	$packet .= " $pid $pids{$pid}";
+    }
+    $debug and print STDERR time, ":$theirip:$theirport: sending ($packet)\n";
+    $id->send($packet, 0, $theiraddr);
+}
+
+sub _open {
+    my ($id, $sockhost, $peerhost, $close) = @_;
+    my $local = is_localhost($peerhost);
+    $ids{$id} = [$local, undef, undef];
+    "200 INTERNET on $sockhost (CLC-INTERCAL $PERVNUM)";
+}
+
+sub _line {
+    my ($server, $id, $close, $line) = @_;
+    exists $ids{$id}
+	or return "598 Internal error: missing ID";
+    my ($local, $pid, $port) = @{$ids{$id}};
+    $line =~ s/^\s+//;
+    if ($local && $line =~ /^VICTIM\s+(\d+)\s+ON\s+PORT\s+(\d+)/i) {
+	my $new_pid = $1;
+	my $new_port = $2;
+	if (defined $pid || defined $port) {
+	    return '530 You have already issued a VICTIM command';
+	} elsif ($new_pid == 0) {
+	    return '531 That was an invalid PID';
+	} elsif (exists $pids{$new_pid}) {
+	    return '532 I already know about that PID';
+	} elsif ($new_port > 65535 || $new_port == 0) {
+	    return '533 That was an invalid PORT';
+	} elsif (exists $ports{$new_port}) {
+	    return '534 I already know about that PORT';
+	} else {
+	    $ids{$id}[1] = $new_pid;
+	    $ids{$id}[2] = $new_port;
+	    $pids{$new_pid} = $new_port;
+	    $ports{$new_port} = $id;
+	    return "230 Welcome $new_pid:$new_port!";
+	}
+    }
+    if ($line =~ /^CASE\s+PID/i) {
+	my @pids = map { "$_ ON PORT $pids{$_}" } keys %pids;
+	my $num = @pids || 'no';
+	my $es = @pids == 1 ? '' : 'es';
+	return (
+	    "210 We have $num process$es running",
+	    @pids,
+	    '.',
+	);
+    }
+    if ($line =~ /^CASE\s+PORT\s+(\d+)/i) {
+	if (exists $pids{$1}) {
+	    return "220 $pids{$1} is the port you need";
+	} else {
+	    return "520 No such PID";
+	}
+    }
+    if ($line =~ /^THANKS/i) {
+	$$close = 1;
+	return '240 You are welcome';
+    }
+    return '590 Command not understood';
+}
+
+sub _close {
+    my ($id) = @_;
+    exists $ids{$id} or return;
+    my ($local, $pid, $port) = @{$ids{$id}};
+    defined $pid and delete $pids{$pid};
+    defined $port and delete $ports{$port};
+    delete $ids{$id};
+}
+
+sub add_group {
+    my ($name, $value) = @_;
+    my $packed = inet_pton(&AF_INET6, $value)
+	or die "Invalid group: $value\n";
+    address_multicast6($packed)
+	or die "Address $value not a multicast group\n";
+    push @groups, $packed;
+}
+
+sub usage {
+    (my $p = $0) =~ s#^.*/##;
+    die "Usage: $p [--port=PORT] [--debug] [--linger-TIME] [--group=MC_GROUP]... [--show_pid] [--show_port]\n";
+}
+
+__END__
+
+=pod
+
+=head1 NAME
+
+theft-server - CLC-INTERCAL networking
+
+=head1 SYNOPSIS
+
+B<theft-server> --port=I<port> [options]
+
+=head1 DESCRIPTION
+
+The B<theft-server> mediates the communication between two CLC-INTERCAL
+programs with the I<internet> extension. It keeps a list of process IDs
+running on the current computer so it can provide lists of processes which
+can be engaged in INTERcal NETworking; it also responds to broadcasts
+allowing other CLC-INTERCAL programs on the LAN to know there is something
+happening on this computer.
+
+Under normal conditions, the B<theft-server> is started automatically
+by a CLC-INTERCAL programs with the I<internet> extension (unless one
+is already running, of course!) because the extension cannot operate
+without a server on the local computer. However, it is possible to
+start one manually, for example from a F</etc/init.d> or F</etc/rc.d>.
+
+If the program is started automatically, it uses defaults for all its
+configuration; when started manually, it accepts the following options:
+
+=over 4
+
+=item B<-p>I<port> / B<--port>=I<port>
+
+Uses the given I<port> (number or service name) for communications,
+instead of using the default one from a configuration file.
+
+=item B<-l>I<seconds> / B<--linger>=I<seconds>
+
+Waits the specified time for a connection, then exit. The default is
+15 (seconds). The timeout applies when the program starts and also
+when all existing connections are closed. This allows the program to
+be started on demand by CLC-INTERCAL programs, and to automatically
+exit when no longer required (unless more programs start up during
+the timeout).
+
+This function is disabled by setting the timeout to 0 (i.e. B<-l>I<0>);
+for example, if starting the server from F</etc/init.d> or equivalent
+one would disable the timeout.
+
+=item B<-d> / B<--debug>
+
+Tells everything it's doing (on Standard Error). Also, prevents the
+program from detaching from the current terminal and going into the
+background.
+
+=back
+

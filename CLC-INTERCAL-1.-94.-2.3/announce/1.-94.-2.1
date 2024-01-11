@@ -1,0 +1,73 @@
+2023-05-06: ALERT: CLC-INTERCAL 1.-94.-2.1 escaped
+
+After 15 years in a secure containment facility, it appears that the latest
+CLC-INTERCAL found a way to copy itself to a web server.
+
+We are not sure how this could have happened, however we suspect that it might
+have been avoided if the guards had been doing the rounds of the containment
+facility rather than playing the INTERCAL game.  In any case, what's done is
+done and it can't be undone.
+
+The escaped compiler can be found at:
+
+  https://uilebheist.srht.site/dist/CLC-INTERCAL-1.-94.-2.1/
+
+The "bundle" package includes the compiler and all optional modules, as well
+as a new "bonus" directory of things which could be of interest to the, ahem,
+professional INTERCAL programmer, and which had never before managed to see
+the light of day.
+
+Changes since 1.-94.-2 are detailed in the Changes files which can be found
+all over the sources; or see the git log at:
+
+  https://git.sr.ht/~uilebheist/CLC-INTERCAL
+
+As a very short summary:
+
+* Amazing parser performance improvement by changing one single character
+  in Parser.pm.  A very important character but just one nevertheless.
+  Now instead of adding the whole grammar every time it expands a symbol,
+  it only adds the productions which make sense in the context.
+
+* Split sickrc in the same way as the package itself so that it never needs
+  to know about configuration for a module which is not installed; note
+  that people who modified the defaults may need to make changes to their
+  configuration; however the file format is now documented as opposed to
+  vaguely hinted at.  And it's possible to write poems which are also valid
+  configuration.
+
+* Full IPv6 support in the INTERNET (INTERcal NETworking) library, with a
+  mechanism by which 128-bit IPv6 addresses can be forced into 32 bit two-spot
+  registers.
+
+* IPv6 multicast support to locate other INTERCAL programs; if you have
+  working multicast routing, and with the right configuration, you can now
+  find INTERCAL programs anywhere in the world and steal registers from
+  them: the security implications are endless.  For some mysterious reason,
+  we decided to leave this feature limited to the local network by default,
+  but do go and read the documentation.
+
+* New compiler extension mechanism, to complement the existing one; the new
+  one is used to load the INTERNET, while the system call interface still uses
+  the old mechanism; there are no plans to merge them, but who knows what may
+  happen when nobody is looking.
+
+* Bugfixes and changes due to differences between a recent Perl and a 25 years
+  old one; apparently, ExtUtils::MakeMaker no longer accepts negative version
+  numbers: this sounds like a bug in Perl to me.
+
+* INTERCAL objects no longer contain any timestamps, and any data is now added
+  strictly sorted, and any reference to the build environment is removed.
+  According to "diff" and "cmp", there are no differences between separate
+  builds, so we have fully reproducible builds.
+
+* Dissociative identity disorder (multiple personalities): the "sick" tool can
+  now pretend to be somebody else when it feels in the right mood for this sort
+  of things.  And yes, it's still called "sick", and there are still plans to
+  reintroduce the old "oo, ick" (with embedded space and comma in the name)
+  at some point.
+
+* Updated documentation, some of which even resembles reality.
+
+* Some bugs fixed, and to keep things balanced, new bugs added.
+

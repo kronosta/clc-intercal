@@ -1,0 +1,15 @@
+	PLEASE NOTE: EXAMPLE OF CALLING SYSTEM CALL #1 AND #2
+
+(666)	DO .1 <- #2
+	DO ,2 <- #3
+	DO ,2 SUB #1 <- #91
+	DO ,2 SUB #2 <- #95
+	DO ,2 SUB #3 <- #68
+(666)	DO .3 <- #1
+	DO ,4 <- #3
+	DO ,4 SUB #1 <- #91
+	DO ,4 SUB #2 <- #95
+	DO ,4 SUB #3 <- #66
+(666)   DO .1 <- #7
+	PLEASE READ OUT ,1 + ,2 + ,3 + ,4
+	PLEASE GIVE UP

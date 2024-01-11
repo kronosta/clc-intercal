@@ -1,0 +1,524 @@
+#!/bin/sh
+
+# INTERCAL unary and binary operators written in dd/sh (base 2 only)
+# with an example simple calculator
+
+# usage: type simple numbers with an optional operation, for example:
+# #1
+# #V1
+# #&1
+# #1~#2
+
+# /bin/rm is not really required, but it is nice to clean up temporary files
+
+PATH=
+dd=/bin/dd
+rm=/bin/rm
+
+# temporary files we might need
+tmp=/tmp/silly.$$
+trap "$rm -f $tmp $tmp.*; exit" 0 HUP INT QUIT
+
+# from now on, no more rm - the above trap is enough
+unset rm
+
+# we do interesting things with IFS, but better save it...
+saveIFS="$IFS"
+
+# in case "echo" is not a shell builtin...
+
+Echo () {
+case "$1" in
+  -n) shift
+      $dd of=$tmp 2>/dev/null <<EOF 
+$@
+EOF
+      IFS="+"
+      set `$dd if=$tmp bs=1 of=/dev/null skip=1 2>&1`
+      IFS="$saveIFS"
+      $dd if=$tmp bs=1 count=$1 2>/dev/null
+      ;;
+  *)  $dd 2>/dev/null <<EOF 
+$@
+EOF
+      ;;
+esac
+}
+
+# useful functions
+
+true () {
+    return 0;
+}
+
+false () {
+    return 1;
+}
+
+zero () {
+  ( trap 'go=false' PIPE
+    go=true
+    while $go
+    do
+      $dd "if=$0"
+      case "$?" in
+	0) ;;
+	*) go=false ;;
+      esac
+    done
+  ) 2>/dev/null
+}
+
+# we use this during recursion
+
+stash () {
+    $debug "stash($1)"
+    eval sname=\$stash_$1
+    case "$sname" in
+	?*) sname="s$sname" ;;
+	*)  sname="s_$1" ;;
+    esac
+    eval stash_$1="$sname"
+    eval $sname=\$$1
+}
+
+retrieve () {
+    $debug "retrieve($1)"
+    eval fname=\$stash_$1
+    eval value=\$$fname
+    eval $1=\$$fname
+    eval sv=\$stash_$1
+    value="`Echo -n $sv | $dd bs=1 skip=1 2>/dev/null`"
+    eval stash_$1=$value
+}
+
+# parse simple INTERCAL expressions
+
+parse () {
+    $debug "parse($text)"
+    if ! parse_term
+    then
+	return 1
+    fi
+    while true
+    do
+	skip=1
+	case "$text" in
+	    '¢'*) f=f_interleave ;;
+	    'Â¢'*) f=f_interleave; skip=2 ;;
+	    '$'*) f=f_interleave ;;
+	    '£'*) f=f_interleave ;;
+	    '~'*) f=f_select ;;
+	    *)    return 0 ;;
+	esac
+	text="`Echo -n "$text" | $dd bs=1 skip=$skip 2>/dev/null`"
+	left="$result"
+	stash left
+	stash f
+	if ! parse_term
+	then
+	    retrieve f
+	    retrieve left
+	    return 1
+	fi
+	retrieve f
+	retrieve left
+	right="$result"
+	if ! $f result "$left" "$right"
+	then
+	    return 1
+	fi
+    done
+}
+
+parse_term () {
+    code="`Echo -n "$text" | $dd bs=1 count=1 2>/dev/null`"
+    text="`Echo -n "$text" | $dd bs=1 skip=1 2>/dev/null`"
+    $debug "parse_term($code,$text)"
+    case "$code" in
+	'#') if parse_number
+	     then
+		 return 0
+	     else
+		 return 1
+	     fi
+	     ;;
+	'"') if ! parse
+	     then
+		 return 1
+	     fi
+	     case "$text" in
+		  '"'*) ;;
+		  *)    return 1 ;;
+	     esac
+	     text="`Echo -n "$text" | $dd bs=1 skip=1 2>/dev/null`"
+	     return 0
+	     ;;
+	"'") if ! parse
+	     then
+		 return 1
+	     fi
+	     case "$text" in
+		  "'"*) ;;
+		  *)    return 1 ;;
+	     esac
+	     text="`Echo -n "$text" | $dd bs=1 skip=1 2>/dev/null`"
+	     return 0
+	     ;;
+	*)   return 1
+	     ;;
+    esac
+}
+
+parse_number () {
+    $debug "parse_number($text)"
+    skip=1
+    case "$text" in
+	'V'*) f=f_or;  c=true ;;
+	'¥'*) f=f_xor; c=true ;;
+	'Â¥'*) f=f_xor; c=true; skip=2 ;;
+	'?'*) f=f_xor; c=true ;;
+	'&'*) f=f_and; c=true ;;
+	*)    f=true;  c=false ;;
+    esac
+    stash f
+    problem=true
+    if $c
+    then
+	text="`Echo -n "$text" | $dd bs=1 skip=$skip 2>/dev/null`"
+	if parse_number
+	then
+	    problem=false
+	fi
+    else
+	result=0000000000000000
+	$debug "f=$f c=$c -- text=($text)"
+	while parse_n1
+	do
+	    problem=false
+	    $debug "result=$result text=($text)"
+	done
+    fi
+    retrieve f
+    if $problem
+    then
+	return 1
+    fi
+    arg="$result"
+    $f result "$arg"
+    $debug "result($result) -- text=($text)"
+    return 0
+}
+
+parse_n1 () {
+    digit="`Echo -n "$text" | $dd bs=1 count=1 2>/dev/null`"
+    case "$digit" in
+	0) num=0000000000000000 ;;
+	1) num=1000000000000000 ;;
+	2) num=0100000000000000 ;;
+	3) num=1100000000000000 ;;
+	4) num=0010000000000000 ;;
+	5) num=1010000000000000 ;;
+	6) num=0110000000000000 ;;
+	7) num=1110000000000000 ;;
+	8) num=0001000000000000 ;;
+	9) num=1001000000000000 ;;
+	*) return 1 ;;
+    esac
+    text="`Echo -n "$text" | $dd bs=1 skip=1 2>/dev/null`"
+    $debug "parse_n1($digit,$text)"
+    # check if result is already too big
+    case "$result" in
+	*1) return 1 ;;
+	*01) return 1 ;;
+	*001) return 1 ;;
+    esac
+    $debug "result=$result num=$num"
+    # shift left result by 1 and 3
+    res1="0`Echo -n "$result" | $dd bs=1 count=15 2>/dev/null`"
+    res3="000`Echo -n "$result" | $dd bs=1 count=13 2>/dev/null`"
+    $debug "res1=$res1  res3=$res3"
+    # now add the numbers
+    c1=0
+    c2=0
+    temp=''
+    for digit in 0 1 2 3 4 5 6 7 8 9 A B C D E F
+    do
+	dig1="`Echo -n "$res1" | $dd bs=1 count=1 2>/dev/null`"
+	res1="`Echo -n "$res1" | $dd bs=1 skip=1 2>/dev/null`"
+	dig3="`Echo -n "$res3" | $dd bs=1 count=1 2>/dev/null`"
+	res3="`Echo -n "$res3" | $dd bs=1 skip=1 2>/dev/null`"
+	dign="`Echo -n "$num" | $dd bs=1 count=1 2>/dev/null`"
+	num="`Echo -n "$num" | $dd bs=1 skip=1 2>/dev/null`"
+	case "$dig1$dign$dig3$c1" in
+	    0000) add=0; carry=0 ;;
+	    0001) add=1; carry=0 ;;
+	    0010) add=1; carry=0 ;;
+	    0011) add=0; carry=1 ;;
+	    0100) add=1; carry=0 ;;
+	    0101) add=0; carry=1 ;;
+	    0110) add=0; carry=1 ;;
+	    0111) add=1; carry=1 ;;
+	    1000) add=1; carry=0 ;;
+	    1001) add=0; carry=1 ;;
+	    1010) add=0; carry=1 ;;
+	    1011) add=1; carry=1 ;;
+	    1100) add=0; carry=1 ;;
+	    1101) add=1; carry=1 ;;
+	    1110) add=1; carry=1 ;;
+	    1111) add=1; carry=2 ;;
+	esac
+	temp="$temp$add"
+	case "$c2$carry" in
+	    00) c1=0; c2=0 ;;
+	    01) c1=1; c2=0 ;;
+	    02) c1=0; c2=1 ;;
+	    10) c1=1; c2=0 ;;
+	    11) c1=0; c2=1 ;;
+	    12) c1=1; c2=1 ;;
+	esac
+    done
+    $debug "temp=$temp c1=$c1 c2=$c2"
+    case "$c1" in
+	1) return 1 ;;
+    esac
+    case "$c2" in
+	1) return 1 ;;
+    esac
+    result="$temp"
+    $debug "==> $result text($text)"
+    return 0
+}
+
+reverse () {
+    text="$1"
+    result=''
+    while true
+    do
+	case "$text" in
+	    ?*) ;;
+	    *)  return ;;
+	esac
+	first="`Echo -n "$text" | $dd bs=1 count=1 2>/dev/null`"
+	text="`Echo -n "$text" | $dd bs=1 skip=1 2>/dev/null`"
+	result="$first$result"
+    done
+}
+
+num2wimp () {
+    $debug "num2wimp($1)"
+    reverse "$1"
+    num="$result"
+    result=0
+    while true
+    do
+	$debug "num2wimp($num,$result)"
+	case "$num" in
+	    ?*) ;;
+	    *)  break ;;
+	esac
+	carry="`Echo -n "$num" | $dd bs=1 count=1 2>/dev/null`"
+	num="`Echo -n "$num" | $dd bs=1 skip=1 2>/dev/null`"
+	temp="$result"
+	result=''
+	while true
+	do
+	    case "$temp" in
+		?*) ;;
+		*)  break ;;
+	    esac
+	    dig="`Echo -n "$temp" | $dd bs=1 count=1 2>/dev/null`"
+	    temp="`Echo -n "$temp" | $dd bs=1 skip=1 2>/dev/null`"
+	    #$debug "dig=$dig temp=$temp carry=$carry"
+	    > $tmp
+	    zero | $dd bs=2 count=$dig 2>/dev/null >> $tmp
+	    zero | $dd bs=1 count=$carry 2>/dev/null >> $tmp
+	    IFS="+"
+	    set `$dd if=$tmp bs=1 of=/dev/null 2>&1`
+	    IFS="$saveIFS"
+	    case "$1" in
+		??*) carry="`Echo -n "$1" | $dd bs=1 count=1 2>/dev/null`"
+		     ndig="`Echo -n "$1" | $dd bs=1 skip=1 2>/dev/null`"
+		     ;;
+		?)   carry=0
+		     ndig="$1"
+		     ;;
+		*)   carry=0
+		     ndig=0
+		     ;;
+	    esac
+	    #$debug "($1) ==> carry=$carry ndig=$ndig"
+	    result="$result$ndig"
+	done
+	case "$carry" in
+	    0) ;;
+	    *) result="$result$carry" ;;
+	esac
+    done
+    reverse "$result"
+}
+
+# INTERCAL operators
+
+f_interleave () {
+    res="$1"
+    num1="$2"
+    num2="$3"
+    $debug "f_interleave($res,$num1,$num2)"
+    case "$num1" in
+	????????????????)
+	    ;;
+	????????????????0000000000000000)
+	    num1="`Echo "$num1" | $dd bs=1 count=16 2>/dev/null`"
+	    ;;
+	*)
+	    Echo "Too many spots" 2>&1
+	    return 1
+	    ;;
+    esac
+    case "$num2" in
+	????????????????)
+	    ;;
+	????????????????0000000000000000)
+	    num2="`Echo "$num2" | $dd bs=1 count=16 2>/dev/null`"
+	    ;;
+	*)
+	    Echo "Too many spots" 2>&1
+	    return 1
+	    ;;
+    esac
+    val=''
+    for bits in 0 1 2 3 4 5 6 7 8 9 A B C D E F
+    do
+	dig1="`Echo -n "$num1" | $dd bs=1 count=1 2>/dev/null`"
+	num1="`Echo -n "$num1" | $dd bs=1 skip=1 2>/dev/null`"
+	dig2="`Echo -n "$num2" | $dd bs=1 count=1 2>/dev/null`"
+	num2="`Echo -n "$num2" | $dd bs=1 skip=1 2>/dev/null`"
+	val="$val$dig2$dig1"
+    done
+    $debug "==> $val"
+    eval $res=$val
+    return 0
+}
+
+f_select () {
+    res="$1"
+    num1="$2"
+    num2="$3"
+    $debug "f_select($res,$num1,$num2)"
+    case "$num2" in
+	????????????????)
+	    case "$num1" in
+		????????????????)
+		    ;;
+		????????????????????????????????)
+		    num1="`Echo "$num1" | $dd bs=1 count=16 skip=16 2>/dev/null`"
+		    ;;
+	    esac
+	    ;;
+	????????????????????????????????)
+	    case "$num1" in
+		????????????????)
+		    num1="${num1}0000000000000000"
+		    ;;
+		????????????????????????????????)
+		    ;;
+	    esac
+	    ;;
+    esac
+    val=''
+    end=''
+    while true
+    do
+	case "$num1" in
+	    ?*) ;;
+	    *) break ;;
+	esac
+	dig1="`Echo -n "$num1" | $dd bs=1 count=1 2>/dev/null`"
+	num1="`Echo -n "$num1" | $dd bs=1 skip=1 2>/dev/null`"
+	dig2="`Echo -n "$num2" | $dd bs=1 count=1 2>/dev/null`"
+	num2="`Echo -n "$num2" | $dd bs=1 skip=1 2>/dev/null`"
+	case "$dig2" in
+	    0) end="${end}0" ;;
+	    1) val="${val}$dig1" ;;
+	esac
+	$debug "loop($dig1,$num1; $dig2,$num2; $val; $end)"
+    done
+    $debug "==> $val$end"
+    eval $res=$val$end
+    return 0
+}
+
+f_or () {
+    unary "$1" "$2" 0 1 1 1
+}
+
+f_xor () {
+    unary "$1" "$2" 0 1 1 0
+}
+
+f_and () {
+    unary "$1" "$2" 0 0 0 1
+}
+
+unary () {
+    $debug "unary($1,$2,$3$4$5$6)"
+    res="$1"
+    num="$2"
+    d1="$3"
+    d2="$4"
+    d3="$5"
+    d4="$6"
+    case "$num" in
+	0*) num="${num}0" ;;
+	1*) num="${num}1" ;;
+	*)  Echo "Something bad happened, bit value is wrong" >&2 ; return 1 ;;
+    esac
+    val=''
+    while true
+    do
+	case "$num" in
+	    ?) break ;;
+	esac
+	dig="`Echo -n "$num" | $dd bs=1 count=2 2>/dev/null`"
+	num="`Echo -n "$num" | $dd bs=1 skip=1 2>/dev/null`"
+	case "$dig" in
+	    00) val="${val}$d1" ;;
+	    01) val="${val}$d2" ;;
+	    10) val="${val}$d3" ;;
+	    11) val="${val}$d4" ;;
+	esac
+	$debug "unary loop($dig,$num,$val)"
+    done
+    eval $res="$val"
+}
+
+# the main program
+
+debug=false
+Echo -n "? "
+while read line
+do
+    case "$line" in
+	debug) debug=Echo; Echo -n "? "; continue ;;
+	?*) ;;
+	*)  Echo -n "?? "
+	    continue
+	    ;;
+    esac
+    text="$line"
+    parse
+    case "$result" in
+	*?) case "$text" in
+		?*) Echo "Parse error just before $text"
+		    ;;
+		*)  num2wimp "$result"
+		    Echo "$line -> $result"
+		    ;;
+	    esac
+	    ;;
+	*)  Echo "Something went wrong" ;;
+    esac
+    Echo -n "? "
+done
+

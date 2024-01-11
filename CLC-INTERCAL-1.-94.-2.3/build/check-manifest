@@ -1,0 +1,244 @@
+#!/usr/bin/perl -w
+
+# this script checks if the MANIFEST file is correct; it is needed by
+# the CLC-INTERCAL build process
+
+# This file is part of CLC-INTERCAL
+
+# Copyright (c) 2023 Claudio Calvelli, all rights reserved.
+
+# CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+# and distribute it is granted provided that the conditions set out in the
+# licence agreement are met. See files README and COPYING in the distribution.
+
+use strict;
+#use Text::Glob qw(glob_to_regex_string);
+use Getopt::Long;
+use File::Spec;
+use FindBin '$Bin';
+
+use vars qw($VERSION $PERVERSION);
+($VERSION) = ($PERVERSION = "CLC-INTERCAL build/check-manifest 1.-94.-2.3") =~ /\s(\S+)$/;
+
+my $verbose = 0;
+my $git = 0;
+my $topdir;
+my $subdir = '';
+my $list_only = 0;
+Getopt::Long::Configure qw(no_ignore_case auto_abbrev permute bundling);
+GetOptions(
+    'directory|d=s' => \$topdir,
+    'git|g'         => \$git,
+    'list-only|l'   => \$list_only,
+    'subdir|s=s'    => \$subdir,
+    'verbose|v'     => \$verbose,
+) && ! @ARGV or die "Usage: $0 [-vg]\n";
+
+defined $topdir or ($topdir = $Bin) =~ s|/[^/]+$||;
+chdir $topdir or die "$topdir: $!\n";
+
+my $ignore_case = File::Spec->case_tolerant();
+
+# find out what packages are included in this
+my $ddsh_suffix = 'ddsh';
+my $tar_suffix = 'tar';
+my $gz_suffix = 'gz';
+
+my ($absdir, $absfile, $reldir, $relfile);
+{
+    my @absdir = (quotemeta('.git'));
+    my (@absfile, @reldir, @relfile);
+    if (open(GI, '<', '.gitignore')) {
+	push @absfile, quotemeta('.gitignore');
+	while (<GI>) {
+	    chomp;
+	    $_ eq '' and next;
+	    $_ eq '/' and next;
+	    /^#/ and next;
+	    if (s|^/|| || m|/.|) {
+		# absolute path
+		if (s|/$||) {
+		    push @absdir, glob_to_regex_string($_);
+		} else {
+		    push @absfile, glob_to_regex_string($_);
+		}
+	    } else {
+		# relative path
+		if (s|/$||) {
+		    push @reldir, glob_to_regex_string($_);
+		} else {
+		    push @relfile, glob_to_regex_string($_);
+		}
+	    }
+	}
+	close GI;
+    }
+    if (@absdir) {
+	$absdir = join('|', @absdir);
+	$absdir = qr/^(?:$absdir)$/;
+    }
+    if (@absfile) {
+	$absfile = join('|', @absfile);
+	$absfile = qr/^(?:$absfile)$/;
+    }
+    if (@reldir) {
+	$reldir = join('|', @reldir);
+	$reldir = qr/^(?:$reldir)$/;
+    }
+    if (@relfile) {
+	$relfile = join('|', @relfile);
+	$relfile = qr/^(?:$relfile)$/;
+    }
+}
+
+my (%list);
+my $status = 0;
+check_dir($subdir);
+$git and check_git();
+if ($verbose) {
+    my $prefix = $subdir;
+    $prefix eq '' or $prefix .= '/';
+    my $preflen = length $prefix;
+    for my $f (sort keys %list) {
+	substr($f, 0, $preflen) eq $prefix or next;
+	print substr($f, $preflen), "\n";
+    }
+}
+exit $status;
+
+sub check_git {
+    open(GIT, '-|', 'git', 'ls-files', $subdir eq '' ? () : $subdir) or die "git: $!\n";
+    while (<GIT>) {
+	chomp;
+	$_ eq '.gitignore' and next;
+	if (! exists $list{$_}) {
+	    print STDERR "$_ is in git but not in a MANIFEST\n";
+	    $status = 1;
+	}
+	$list{$_} = 1;
+    }
+    close GIT;
+    for my $f (sort keys %list) {
+	$f and next;
+	print STDERR "$f is in a MANIFEST but not in git\n";
+	$status = 1;
+    }
+}
+
+sub check_dir {
+    my ($subpath) = @_;
+    my $relpath = $subpath eq '' ? '' : "$subpath/";
+    my $dirpath = $subpath eq '' ? '.' : $subpath;
+    open(MANIFEST, '<', "${relpath}MANIFEST")
+	or die "$dirpath: Sorry, I can't work without a MANIFEST\n";
+    my %files = ();
+    my %subdirs = ();
+    while (<MANIFEST>) {
+	s/^#SICK\s+\b//;
+	/^\s*#/ || /^\*S/ and next;
+	if (/^(.*)\.($ddsh_suffix|$tar_suffix)\.$gz_suffix\s+(\S+)$/) {
+	    my ($name, $suffix, $path) = ($1, $2, $3);
+	    "$name$suffix$path" =~ /[\s'"]/ and die "Invalid file name, please inform maintainer\n";
+	    $subdirs{$path} = undef;
+	} elsif (/^(\S+)/) {
+	    if (lstat "$relpath$1") {
+		if (! -f _) {
+		    print STDERR "$relpath$1: not a regular file\n";
+		    $status = 1;
+		}
+	    } else {
+		print STDERR "$relpath$1: $!\n";
+		$status = 1;
+	    }
+	    $files{$1} = undef;
+	}
+    }
+    close MANIFEST;
+    find_missing($relpath, $dirpath, \%files, \%subdirs);
+    for my $sd (sort keys %subdirs) {
+	check_dir($relpath . $sd);
+    }
+}
+
+sub find_missing {
+    my ($relpath, $dirpath, $files, $subdirs) = @_;
+    my @down;
+    opendir(DIR, $dirpath) or die "$dirpath: $!\n";
+    while (defined (my $ent = readdir DIR)) {
+	$ent eq '.' || $ent eq '..' and next;
+	lstat "$relpath$ent" or die "Hmmm: $relpath$ent: $!\n";
+	if (-d _) {
+	    exists $subdirs->{$ent} and next;
+	    defined $reldir && $ent =~ $reldir and next;
+	    defined $absdir && "$relpath$ent" =~ $absdir and next;
+	    push @down, $ent;
+	} elsif (-f _) {
+	    defined $relfile && $ent =~ $relfile and next;
+	    defined $absfile && "$relpath$ent" =~ $absfile and next;
+	    if (exists $files->{$ent}) {
+		$list{"$relpath$ent"} = undef;
+	    } elsif (! $list_only) {
+		$list{"$relpath$ent"} = undef;
+		print STDERR "$relpath$ent not listed in MANIFEST\n";
+		$status = 1;
+	    }
+#	} else {
+#	    print STDERR "$relpath$ent: not a regular file or a directory\n";
+#	    $status = 1;
+	}
+    }
+    closedir DIR;
+    @down or return;
+    for my $ent (@down) {
+	my $qe = quotemeta($ent);
+	$qe = qr|^$qe/(.*)$|;
+	my %files = map { $_ =~ $qe ? ( $1 => undef ) : () } keys %$files;
+	my %subdirs = map { $_ =~ $qe ? ( $1 => undef ) : () } keys %$subdirs;
+	find_missing("$relpath$ent/", "$relpath$ent", \%files, \%subdirs);
+    }
+}
+
+# simplified glob_to_regex_string sufficient for our needs so we
+# do not need to add Text::Glob as a dependency; note that we always
+# pass a relative path not ending in a slash, an assumtion that the
+# normal Text::Glob can't make
+sub glob_to_regex_string {
+    my ($glob) = @_;
+    my $re = join(quotemeta('/'), map {
+	my $x = $_;
+	my $y = '';
+	while ($x =~ s/^(.*?)([?*\\\[])//) {
+	    my ($prefix, $wc) = ($1, $2);
+	    if ($wc eq '\\') {
+		$y .= quotemeta($prefix . substr($x, 0, 1, ''));
+	    } else {
+		$y .= quotemeta($prefix);
+		if ($wc eq '[') {
+		    my $class = '';
+		    $x =~ s/^(\^)// and $class .= $1;
+		    while ($x =~ s/^(.*?)([\]\\])//) {
+			$class .= $1;
+			if ($2 eq '\\') {
+			    my $c = substr($x, 0, 1, '');
+			    defined $c or last;
+			    $c =~ s/^([\[\\\]^])/\\$1/;
+			} else {
+			    last;
+			}
+		    }
+		    $y .= "[$class]";
+		} elsif ($y ne '') {
+		    $y .= "[^/]";
+		    $wc eq '*' and $y .= '*';
+		} elsif ($wc eq '*') {
+		    $y .= "[^./][^/]*";
+		} else {
+		    $y .= "[^./]";
+		}
+	    }
+	}
+	$y . quotemeta($x);
+    } split(/\/+/, $glob));
+    $ignore_case ? qr/^$re$/i : qr/^$re$/;
+}
+

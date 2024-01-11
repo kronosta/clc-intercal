@@ -1,0 +1,11 @@
+* add configuration (in sickrc) for PID-specific IPv6 multicast groups, so we can send
+  a query to "all our INTERCAL nodes running PID"; obviously, the theft server joins these
+  groups when a new victim announces itself, and leaves them when the victim closes connection;
+  also obviously, there will be a number of unspecified bits to be filled from bits of the PID.
+* t/01io.t - tests for REMOTE filehandles
+* t/03ipv4.t - add a test to use broadcast to locate a theft server
+* t/04ipv6.t - add a test to use multicast to locate a theft server
+* t/07internet.t - STEAL, SMUGGLE, CASE -- may work by starting a theft server and two programs etc;
+  one could use (1) COME FROM .1 to wait until the other robs .1 from it. Then one could also try
+  self-robbing and see what happens. Also remember to test all forms of broadcast.
+

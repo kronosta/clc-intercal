@@ -1,0 +1,13 @@
+PLEASE NOTE: This configuration file adds Curses interface support.
+
+Copyright (c) 2023 Claudio Calvelli, all rights reserved.
+
+CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+and distribute it is granted provided that the conditions set out in the
+licence agreement are met. See files README and COPYING in the distribution.
+
+PERVERSION "CLC-INTERCAL/UI-Curses INTERCAL/Include/UI-Curses.sickrc 1.-94.-2.1"
+
+DO NOTE: Adding a new user interface module
+I CAN #200 SPEAK Curses
+

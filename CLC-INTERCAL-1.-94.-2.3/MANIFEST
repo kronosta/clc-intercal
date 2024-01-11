@@ -1,0 +1,32 @@
+Makefile.PL                              1.-94.-2.3
+MANIFEST
+README.md
+INSTALL.md
+COPYING
+Changes
+announce/1.-94.-2.1
+announce/1.-94.-2.2
+announce/1.-94.-2.3
+bonus/README.md
+bonus/game
+bonus/intercal.ddsh
+bonus/os/Makefile
+bonus/os/.filelist
+bonus/os/design.tex
+bonus/vim/README
+bonus/vim/syntax/intercal.vim
+bonus/vim/syntax/sickrc.vim
+bonus/vim/ftdetect/intercal.vim
+build/all_tests.pl                       1.-94.-2.3
+build/check-manifest                     1.-94.-2.3
+build/make-dist                          1.-94.-2.3
+build/run_makefile_pl                    1.-94.-2.3
+build/run_test.pl                        1.-94.-2.3
+t/00use.t                                1.-94.-2.3
+#SICK Base.tar.gz                        CLC-INTERCAL-Base
+#SICK Docs.tar.gz                        CLC-INTERCAL-Docs
+#SICK ICALC.tar.gz                       CLC-INTERCAL-ICALC
+#SICK INET.tar.gz                        CLC-INTERCAL-INET
+#SICK UI-Line.tar.gz                     CLC-INTERCAL-UI-Line
+#SICK UI-Curses.tar.gz                   CLC-INTERCAL-UI-Curses
+#SICK UI-X.tar.gz                        CLC-INTERCAL-UI-X

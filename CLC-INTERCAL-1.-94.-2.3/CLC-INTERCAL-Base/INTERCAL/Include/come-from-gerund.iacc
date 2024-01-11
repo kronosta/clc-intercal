@@ -1,0 +1,18 @@
+	PLEASE NOTE: THIS FILE, LOADED AFTER sick.io, ENABLES THE "COME FROM
+		     gerund" STATEMENT. IF THIS FILE IS NOT LOADED, SUCH
+		     COME FROMs WILL BE PARSED BUT NOT EXECUTED
+
+Copyright (c) 2006-2008 Claudio Calvelli, all rights reserved.
+
+CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+and distribute it is granted provided that the conditions set out in the
+licence agreement are met. See files README and COPYING in the distribution.
+
+PERVERSION "CLC-INTERCAL/Base INTERCAL/Include/come-from-gerund.iacc 1.-94.-2"
+
+	DO ?TYPE <- ?EXTENSION
+	DO STASH %BA
+	DO %BA <- #2
+	DO %CF <- #1 ¢ '%CF ~ #1'
+	DO RETRIEVE %BA
+	DO GIVE UP

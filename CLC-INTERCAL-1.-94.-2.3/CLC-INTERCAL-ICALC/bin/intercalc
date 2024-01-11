@@ -1,0 +1,2110 @@
+#!/usr/bin/perl -w
+
+# Simple INTERCAL desk calculator
+
+# This file is part of CLC-INTERCAL
+
+# Copyright (c) 2006-2008, 2023 Claudio Calvelli, all rights reserved.
+
+# CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+# and distribute it is granted provided that the conditions set out in the
+# licence agreement are met. See files README and COPYING in the distribution.
+
+require 5.005;
+
+use strict;
+use Getopt::Long;
+use IO::File;
+use Config '%Config';
+
+use vars qw($VERSION $PERVERSION);
+($VERSION) = ($PERVERSION = "CLC-INTERCAL/ICALC bin/intercalc 1.-94.-2.3") =~ /\s(\S+)$/;
+
+use Language::INTERCAL::Exporter '1.-94.-2.3', qw(compare_version has_type);
+use Language::INTERCAL::Sick '1.-94.-2';
+use Language::INTERCAL::Rcfile '1.-94.-2';
+use Language::INTERCAL::Interface '1.-94.-2';
+use Language::INTERCAL::Server '1.-94.-2';
+use Language::INTERCAL::ReadNumbers '1.-94.-2', qw(roman roman_type);
+use Language::INTERCAL::RegTypes '1.-94.-2.2', qw(REG_spot REG_whp);
+use Language::INTERCAL::Extensions '1.-94.-2.1', qw(load_extension);
+use Language::INTERCAL::ICALC::Extend '1.-94.-2.1', qw(get_frame get_style all_styles);
+use Language::INTERCAL::Interpreter::State '1.-94.-2.3', qw(STATE_SKIP_ONCE STATE_OVERRIDE);
+use Language::INTERCAL::Time '1.-94.-2.3', qw(current_time);
+
+# if the INET extension is installed, we use it; if not, well, we don't
+my $theft = 0;
+eval {
+    require Language::INTERCAL::INET::Extend;
+    import Language::INTERCAL::INET::Extend '1.-94.-2.1',
+	qw(theft_server theft_default_server theft_callback);
+    load_extension('INET');
+    $theft = 1;
+};
+
+# minimum version of intercalc which can run objects we generate
+my $min_version = '1.-94.-2.2';
+
+# minimum version of saved object which contains ONCE information
+my $once_version = '1.-94.-2.2';
+
+my %roman_ok = map { ( roman_type($_) => 1 ) } qw(CLC ARCHAIC WIMPMODE);
+
+my %object_types = (
+    COMPILER  => 'LANGUAGE',
+    BASE      => 'BASE',
+    EXTENSION => 'OPTION',
+    OPTION    => 'OPTION',
+    POSTPRE   => undef,
+);
+
+my %menu_defs = (
+    LANGUAGE  => [ 'Language', \&_change_language, 0 ],
+    BASE      => [ 'Base',     \&_change_base,     0 ],
+    OPTION    => [ 'Options',  \&_toggle_option,   1 ],
+);
+
+my %escape_defs = (
+    'a'  => [\&_about,           undef,      undef,  undef],
+    'b'  => [\&_change_base,     'BASE',     undef,  'bases'],
+    'c'  => [\&_sickrc,          undef,      undef,  undef],
+    'g'  => [\&_give_up,         undef,      undef,  undef],
+    'h'  => [\&_history,         '0',        undef,  undef],
+    'l'  => [\&_change_language, 'LANGUAGE', '+',    'languages'],
+    'm'  => [\&_change_mode,     '0',        undef,  undef],
+    'o'  => [\&_toggle_option,   'OPTION',   undef,  'options'],
+    'r'  => [\&_read_or_readas,  '0',        undef,  undef],
+    't'  => [\&_trace,           '0',        undef,  undef],
+    'v'  => [\&_version,         undef,      undef,  undef],
+    'w'  => [\&_write_file,      '',         undef,  undef],
+    '?'  => [\&_help,            undef,      undef,  undef],
+    # secret undocumented escape to be used in an undocumented way
+    "\0" => [\&_undocumented,    undef,      undef,  undef],
+);
+
+if (defined &Getopt::Long::Configure) {
+    Getopt::Long::Configure qw(no_ignore_case auto_abbrev permute bundling);
+} else {
+    $Getopt::Long::ignorecase = 0;
+    $Getopt::Long::autoabbrev = 1;
+    $Getopt::Long::order = $Getopt::Long::PERMUTE;
+    $Getopt::Long::bundling = 1;
+}
+
+my $rcfile = new Language::INTERCAL::Rcfile;
+my $compiler = new Language::INTERCAL::Sick($rcfile);
+$compiler->interpreter('State');
+my $setoption = sub { $compiler->setoption(@_) };
+my $language = undef;
+my @options = ();
+my $mode = undef;
+my $user_interface = '';
+my $history = 5;
+my @history = ();
+my $command = '';
+
+GetOptions(
+    # User Interface Options
+    'graphic|X'     => sub { $user_interface = 'X' },
+    'curses|c'      => sub { $user_interface = 'Curses' },
+    'line'          => sub { $user_interface = 'Line' },
+    'batch'         => sub { $user_interface = 'None' },
+    'interface|i=s' => \$user_interface,
+    # source language and compile options
+    'bug=i'         => $setoption,
+    'ubug=i'        => $setoption,
+    'include|I=s'   => sub { $rcfile->setoption(@_) },
+    'language|l=s'  => \$language,
+    'option|o=s'    => \@options,
+    'mode|m=s'      => \$mode,
+    # misc options
+    'nouserrc'      => sub { $rcfile->setoption('nouserrc', 1) },
+    'nosystemrc'    => sub { $rcfile->setoption('nosystemrc', 1) },
+    'rcfile|r=s'    => sub { $rcfile->setoption(@_) },
+    'rcskip|R=s'    => sub { $rcfile->setoption(@_) },
+    'extension=s'   => sub { load_extension($_[1]) },
+    'interpreter=s' => sub { $compiler->interpreter($_[1]) },
+) or usage();
+
+$rcfile->load;
+
+my $savestate = undef;
+my $current_file = undef;
+if (@ARGV) {
+    @ARGV == 1 or usage();
+    my ($msg, $reload) = load_state($ARGV[0]);
+    print $msg;
+}
+
+my $base = undef;
+my $objects_found = find_objects();
+set_defaults();
+
+my $progname = $0;
+$progname =~ s#^.*/##;
+
+my @about_text = (
+    "About $progname",
+    '',
+    "Distributed with CLC-INTERCAL $VERSION",
+);
+
+my @copyright = split(/\n/, <<EOC);
+Copyright (c) 2006-2008, 2023 Claudio Calvelli <compiler (whirlpool) intercal.org.uk>
+(Please include the word INTERLEAVING in the subject when emailing that
+address, or the email may be ignored)
+
+In addition to the above, permission is hereby granted to use, misuse,
+modify, distribute, break, fix again, etcetera CLC-INTERCAL-$VERSION
+provided that the following conditions are met:
+
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in the
+       documentation and/or other materials provided with the distribution.
+    3. Neither the name of the Author nor the names of its contributors
+       may be used to endorse or promote products derived from this software
+       without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+EOC
+
+my @for = ("Help for $progname");
+
+my @help_text = split(/\n/, <<'EOH');
+For information about CLC-INTERCAL, please RTFM.
+
+For information about the calculator, please press
+keys at random until you figure out what they do.
+
+For any other queries, please ask them somewhere else.
+
+We hope this information helped. Thank you for contacting us.
+EOH
+
+my $server = Language::INTERCAL::Server->new();
+my $ui = Language::INTERCAL::Interface->new($server,
+					    $user_interface,
+					    $rcfile->getitem('SPEAK'));
+$ui->can('set_frame') and $ui->set_frame(get_frame($rcfile, $ui->name));
+if ($ui->can('set_style')) {
+    my @styles = $ui->can('all_styles') ? $ui->all_styles : all_styles;
+    for my $style (@styles) {
+	eval {
+	    my $v = get_style($rcfile, $ui->name, $style);
+	    $v and $ui->set_style($style, $v);
+	};
+    }
+}
+if ($ui->can('use_mouse')) {
+    eval {
+	my $v = $rcfile->getitem('POINT');
+	$ui->use_mouse($v);
+    };
+}
+# for a line-oriented interface, completion works better if we ignore
+# spaces and just suggest the next non-space option; for a window
+# interface this would make the "space" key always disabled so we
+# use a different regexp
+my $remove_space = $ui->has_window ? qr/[^ \S]$/ : qr/\s$/;
+
+my $about_object = undef;
+my $help_object = undef;
+my $trace_object = undef;
+my $history_object = undef;
+
+# End of common initialisations - now run the main loop
+my $running = 1;
+my %calculator;
+_init_calculator();
+my $calcptr = \%calculator;
+my $give_up = 0;
+my $gave_up = 0;
+my $reserved = 0;
+my $memories = undef;
+my $main_window = undef;
+while ($running) {
+    create_calculator();
+    if (! $ui->has_window) {
+	run_linemode();
+    } else {
+	run_windowmode();
+    }
+    if ($calculator{object} && ! defined $savestate && $running) {
+	my $now = current_time();
+	$savestate = $calculator{object}->get_state($now);
+    }
+}
+exit 0;
+
+sub _init_calculator {
+    my $read_object = bless ['', 0], 'ROBJ';
+    my $read_fh = Language::INTERCAL::GenericIO->new('OBJECT', 'r',
+						     $read_object);
+    $calculator{read_object} = $read_object;
+    $calculator{read_fh} = $read_fh;
+    my $write_data = '';
+    my $write_object = bless \$write_data, 'WOBJ';
+    my $write_fh = Language::INTERCAL::GenericIO->new('OBJECT', 'w',
+						      $write_object);
+    $calculator{write_fh} = $write_fh;
+    my $trace_object = bless ['', 0], 'TOBJ';
+    my $trace_fh = Language::INTERCAL::GenericIO->new('OBJECT', 'r',
+						      $trace_object);
+    $calculator{trace_object} = $trace_object;
+    $calculator{trace_fh} = $trace_fh;
+    $calculator{memory} = [];
+}
+
+sub run_linemode {
+    $| = 1;
+    $ui->complete(\&_complete);
+    my $stdread = $ui->stdread;
+    my $prompt = $ui->is_interactive || $ui->is_terminal ? 'INTERCALC> ' : '';
+    &{$calculator{finish}}(0) if exists $calculator{finish};
+    $calculator{running} = 1;
+    while ($calculator{running}) {
+	if (exists $calculator{is_wimp} && $calculator{is_wimp}) {
+	    my $msg = make_wimp();
+	    my $len = 0;
+	    for my $l (@$msg) {
+		$len = length $l if $len < length $l;
+	    }
+	    my $dash = '=' x $len;
+	    $stdread->read_text("$_\n") for ('', $dash, '', @$msg, '', $dash);
+	    $calculator{is_wimp} = 0;
+	}
+	my $line = $ui->getline($prompt);
+	if (defined $line && $line ne '') {
+	    chomp $line;
+	    next unless $line =~ /\S/;
+	    # check for escapes
+	    if ($line =~ s/^\`\s*//) {
+		my $res = eval { process_escape($line); };
+		$gave_up = $give_up = 0 if $@;
+		$stdread->read_text($@ ? $@ : $res);
+	    } else {
+		$command = $line;
+		_calculate();
+	    }
+	} else {
+	    _stop_calculator();
+	}
+    }
+}
+
+sub run_windowmode {
+    $main_window and $ui->close($main_window);
+    my @menus = make_menus($ui);
+    my @interface = make_interface(1);
+    $main_window =
+	$ui->window('Calculator', \&_give_up, \@interface,
+		    \@menus, \&_after_action);
+    if ($calculator{has_memory}) {
+	$ui->set_text("memory$_", '') for (1..$history, '');
+    }
+    if (@history) {
+	my $hp = 0;
+	my $cmd = 0;
+	for my $hl (@history) {
+	    last if $cmd && $hp > $history;
+	    my ($type, $line) = @$hl;
+	    if ($type eq 'c' && ! $cmd) {
+		$cmd = 1;
+		$ui->set_text('command', $line);
+	    }
+	    if ($type eq 'r' && $hp <= $history) {
+		my $index = $hp || '';
+		if ($calculator{has_memory}) {
+		    my $m = '';
+		    $m = $1 if $line =~ s/^(\S+)\s//;
+		    $ui->set_text("memory$index", $m);
+		}
+		$ui->set_text("display$index", $line);
+		$hp++;
+	    }
+	}
+    }
+    $ui->start();
+    &{$calculator{finish}}(1) if exists $calculator{finish};
+    _clear_status();
+    _enable_keys();
+    _tick_menus();
+    if (exists $calculator{is_wimp} && $calculator{is_wimp}) {
+	my $wimp = undef;
+	_popup(\$wimp, make_wimp(), [], 'WIMP', 0);
+	$calculator{is_wimp} = 0;
+    }
+    $ui->run;
+}
+
+sub create_calculator {
+    if ($mode =~ /^oic(\d+)?$/i) {
+	if ($1) {
+	    $memories = $1;
+	} elsif (! $memories) {
+	    $memories = 100;
+	}
+	my $digits = length($memories - 1);
+	bless $calcptr, 'OIC';
+	$calculator{nmems} = $memories;
+	if (@{$calculator{memory}} < $memories) {
+	    push @{$calculator{memory}},
+		(0) x ($memories - @{$calculator{memory}});
+	}
+	$calculator{digits} = $digits;
+	$calculator{format} = "m%0${digits}d";
+	$calculator{regex} = qr/^m(\d{1,$digits})/i;
+	$calculator{has_memory} = 1;
+	$calculator{mode} = 'oic';
+	$calculator{display_size} = 40;
+	delete $calculator{finish};
+    } else {
+	$mode =~ /^(?:full|expr)$/i or die "Invalid mode $mode\n";
+	$mode = lc($mode);
+	bless $calcptr, 'INC';
+	$calculator{has_memory} = 0;
+	$calculator{mode} = $mode;
+	$calculator{display_size} = 48;
+	$calculator{finish} = \&_finish,
+	$calculator{cache} = {};
+    }
+}
+
+sub load_state {
+    my ($file) = @_;
+    my ($data, $m, $l, $b, $v, @h, @o);
+    eval {
+	open(STATE, '<', $file) or die "$file: $!\n";
+	while (1) {
+	    my $line = <STATE>;
+	    defined $line or die "Invalid object: no magic\n";
+	    last if $line =~ /__INTERCALC__STATE__/;
+	}
+	while (<STATE>) {
+	    chomp;
+	    /DATA/ and last;
+	    /MODE\s+(.*)$/ and $m = $1;
+	    /LANG\s+(.*)$/ and $l = $1;
+	    /BASE\s+(.*)$/ and $b = $1;
+	    /VERS\s+(.*)$/ and $v = $1;
+	    /OPTS\s+(.*)$/ and push @o, $1;
+	    /HIST\s+(\S+)\s+(.*)$/ and push @h, [$1, $2];
+	}
+	local $/ = undef;
+	$data = <STATE>;
+	close STATE;
+	$data eq '' && lc($m) ne 'oic'
+	    and die "Invalid object: seems to be truncated\n";
+    };
+    return ($@, 0) if $@;
+    if (defined $v) {
+	compare_version($v, $VERSION) <= 0
+	    or die "This calculator ($VERSION) is too old to load the object (required $v)";
+    }
+    # we assume that a missing version is an old version
+    if (! defined $v || compare_version($v, $once_version) < 0) {
+	# convert this state to the current version
+	eval {
+	    my $ob = Language::INTERCAL::Interpreter::State->new();
+	    my $now = current_time();
+	    $ob->set_state($data, STATE_SKIP_ONCE | STATE_OVERRIDE, $now);
+	    $now = current_time();
+	    $savestate = $ob->get_state($now);
+	};
+	return ($@, 0) if $@;
+    } else {
+	$savestate = $data;
+    }
+    $mode = $m;
+    $language = $l;
+    @options = @o;
+    $base = $b;
+    delete $calculator{need_reload};
+    $current_file = $file;
+    @history = @h;
+    $history_object and _history_trace('', 0, 1);
+    $trace_object and _history_trace('', 1, 1);
+    $file =~ s/^.*\///;
+    ("Loaded state from $file\n", 1);
+}
+
+sub save_state {
+    my ($file, $force) = @_;
+    eval {
+	my $fm = $force ? O_TRUNC : O_EXCL;
+	my $fh = IO::File->new($file, O_WRONLY | O_CREAT | $fm, 0777)
+	    or die "$file: $!\n";
+	print $fh $Config{sharpbang}, $Config{sh}, "\n" or die "$file: $!\n"
+	    if $Config{sharpbang};
+	my $p = $0;
+	$p =~ s/^.*blib\/script//;
+	$p =~ s/'/\\'/g;
+	print $fh <<EOF or die "$file: $!\n";
+# Generated by intercalc, part of CLC-INTERCAL $VERSION
+# Execute this program to restart the calculator
+# Do not attempt to edit if you value your sanity
+
+# Note: this program runs under $Config{sh} and then calls the real calculator
+# executable - this is because some systems can't use an interpreted program as
+# an interpreter; you can, of course, just run "intercalc FILENAME"
+
+exec '$^X' -S -w '$p' \$0
+exit 1
+
+__INTERCALC__STATE__
+MODE $mode
+VERS $min_version
+EOF
+	if ($calculator{loaded}) {
+	    print $fh "BASE $calculator{loaded}{BASE}\n" or die "$file: $!\n";
+	    print $fh "LANG $calculator{loaded}{LANGUAGE}\n" or die "$file: $!\n";
+	    print $fh "OPTS $_\n" for keys %{$calculator{loaded}{OPTION}};
+	} else {
+	    print $fh "LANG $language\n" or die "$file: $!\n";
+	    print $fh "BASE $base\n" or die "$file: $!\n";
+	    print $fh "OPTS $_\n" or die "$file: $!\n" for @options;
+	}
+	print $fh "HIST $_->[0] $_->[1]\n" or die "$file: $!\n" for @history;
+	print $fh "DATA\n" or die "$file: $!\n";
+	if ($calculator{object}) {
+	    my $now = current_time();
+	    print $fh $calculator{object}->get_state($now) or die "$file: $!\n";
+	}
+	close $fh;
+    };
+    return $@ if $@;
+    $current_file = $file;
+    $file =~ s/^.*\///;
+    "State saved to $file\n";
+}
+
+sub set_defaults {
+    if (! defined $language) {
+	# see if they have a default language - and use any default options
+	# specified with it if they don't have any on the command line
+	eval {
+	    $language = 'sick';
+	    my @o;
+	    ($language, @o) = @{$rcfile->getitem('CALCULATE')};
+	    @options or @options = @o;
+	};
+    }
+
+    if (! defined $mode) {
+	# see if they have a default mode
+	eval {
+	    $mode = 'full';
+	    $mode = $rcfile->getitem('OPERATE');
+	};
+    }
+
+    my %base = map { ($_ => 1) } @{$objects_found->{BASE}};
+    my @base = grep { exists $base{$_} } @options;
+    if (@base) {
+	$base = pop @base;
+	@options = grep { ! exists $base{$_} } @options;
+    } else {
+	($base) = sort { $a <=> $b } @{$objects_found->{BASE}};
+    }
+}
+
+sub make_wimp {
+    my $ugly = 69 + int(rand 65467);
+    my $beautiful = roman($ugly, roman_type('CLC'));
+    [split(/\n/, <<EOH)];
+You have requested the 'wimp' compiler option. This means that
+the display output will use those ugly digits where you could
+have some beautiful Roman numerals instead.
+
+Compare the ugly $ugly with the beautiful $beautiful.
+
+It also means that you are a WIMP WIMP WIMP WIMP.
+
+As a penance, write "I AM A WIMP" M (sorry, 1000) times.
+EOH
+}
+
+sub make_interface {
+    my ($complete) = @_;
+    my @interface = ();
+    $complete and push @interface, (
+	'vstack', border => 2, data =>
+	# title
+	['hstack', data =>
+	 ['text', value => "CLC-INTERCAL $VERSION", align => 'c'],
+	],
+	# history and display
+	['vstack', data =>
+	 (map {
+	     ['hstack', data =>
+	      ($calculator{has_memory}
+		 ? ['text', value => '', size => 1 + $calculator{digits},
+		    align => 'l', name => "memory$_"]
+		 : ()),
+	      ['text', value => ' ' x $calculator{display_size},
+	       align => 'r', name => "display$_"],
+	     ],
+	 } (reverse (1..$history)), ''),
+	],
+    );
+    if ($calculator{mode} eq 'oic') {
+	$complete and push @interface, (
+	    # command
+	    ['hstack', data =>
+	     ['text', value => '', align => 'l', size => 32, name => 'command'],
+	    ],
+	);
+	push @interface, (
+	    # keyboard
+	    ['table', columns => 4, border => 2, data =>
+	     # keyboard - row 1
+	     ['key', name => 'Give Up', key => [qw(g G)], action => \&_give_up],
+	     'l',
+	     ['key', name => 'About', key => [qw(a A)], action => \&_about],
+	     'l',
+	     # keyboard - row 2
+	     ['key', name => '7', key => '7', action => \&_addkey],
+	     ['key', name => '8', key => '8', action => \&_addkey],
+	     ['key', name => '9', key => '9', action => \&_addkey],
+	     ['key', name => '?', key => [qw(? h H)], action => \&_help],
+	     # keyboard - row 3
+	     ['key', name => '4', key => '4', action => \&_addkey],
+	     ['key', name => '5', key => '5', action => \&_addkey],
+	     ['key', name => '6', key => '6', action => \&_addkey],
+	     ['key', name => '<-', key => ["\cH", 'Left', 'BackSpace'], action => \&_delkey],
+	     # keyboard - row 4
+	     ['key', name => '1', key => '1', action => \&_addkey],
+	     ['key', name => '2', key => '2', action => \&_addkey],
+	     ['key', name => '3', key => '3', action => \&_addkey],
+	     ['key', name => 'C', key => [qw(c C)], action => \&_clear],
+	     # keyboard - row 5
+	     ['key', name => '.', key => '.', action => \&_addkey],
+	     ['key', name => '0', key => '0', action => \&_addkey],
+	     ['key', name => '-', key => '-', action => \&_addkey],
+	     ['key', name => 'M', key => [qw(m M)], action => \&_addkey],
+	    ],
+	);
+    } elsif ($calculator{mode} eq 'expr') {
+	$complete and push @interface, (
+	    # command
+	    ['hstack', data =>
+	     ['text', value => '', align => 'l', size => 48, name => 'command'],
+	    ],
+	);
+	push @interface, (
+	    # keyboard
+	    ['table', border => 2, columns => 7, data =>
+	     (map {
+		 ['key',
+		  name => $_,
+		  key => /[a-z]/i ? [lc($_), uc($_)] : $_,
+		  action => \&_addkey]
+	     } (
+		 qw(. < - S U B Y),               # row 1
+		 qw(: / 7 8 9 '), "\xa2",         # row 2
+		 ',', qw(\ 4 5 6 " &),            # row 3
+		 qw(; $ 1 2 3 ! V),               # row 4
+		 qw(@ ~ * 0), '#', qw(+), "\xa5", # row 5
+	     )),
+	     # row 6
+	     ['key', name => 'Do It', key => ["\cJ", "\cM", qw(Enter Return Linefeed d D)], action => \&_calculate],
+	     'l',
+	     ['key', name => 'Give Up', key => [qw(g G)], action => \&_give_up],
+	     'l',
+	     'l',
+	     ['key', name => '^', key => '^', action => \&_addkey],
+	     ['key', name => '?', key => '?', action => \&_addkey],
+	     # row 7
+	     ['key', name => 'Clear', key => [qw(c C)], action => \&_clear],
+	     'l',
+	     ['key', name => 'backspace', key => ["\cH", 'Left', 'BackSpace'], action => \&_delkey],
+	     'l',
+	     'l',
+	     ['key', name => '%', key => '%', action => \&_addkey],
+	     ['key', name => '|', key => '|', action => \&_addkey],
+	     # row 8
+	     ['key', name => 'Help', key => [qw(h H)], action => \&_help],
+	     'l',
+	     ['key', name => 'About', key => [qw(a A)], action => \&_about],
+	     'l',
+	     'l',
+	     ['key', name => 'space', key => ' ', action => \&_addkey],
+	     'l',
+	    ],
+	);
+    } else {
+	$complete and push @interface, (
+	    # command
+	    ['hstack', data =>
+	     ['text', value => '', align => 'l', size => 49, name => 'command'],
+	    ],
+	);
+	push @interface, (
+	    # keyboard
+	    ['table', border => 2, columns => 8, data =>
+	     (map {
+		 ['key',
+		  name => $_,
+		  key => /[a-z]/i ? [lc($_), uc($_)] : $_,
+		  action => \&_addkey]
+	     } (
+		 qw(. 0 1 2 3 4), '#', qw(<),
+		 qw(: 5 6 7 8 9 + -),
+		 ',', qw(A B C D E ' "),
+		 qw(; F G H I J), '(', ')',
+		 qw(@ K L M N O [ ]),
+		 qw(% P Q R S T ! *),
+		 qw(^ U V W X Y & |),
+		 qw($ Z / \ ~), "\xa2", "\xa5", qw(?),
+	     )),
+	     ['key', name => 'F1: Help', key => 'F1', action => \&_help],
+	     'l',
+	     ['key', name => 'space', key => ' ', action => \&_addkey],
+	     'l',
+	     ['key', name => 'backspace', key => ["\cH", 'Left', 'BackSpace'], action => \&_delkey],
+	     'l',
+	     ['key', name => 'F2: About', key => 'F2', action => \&_about],
+	     'l',
+	     ['key', name => 'F3: Give Up', key => 'F3', action => \&_give_up],
+	     'l',
+	     ['key', name => 'F4: Clear', key => 'F4', action => \&_clear],
+	     'l',
+	     ['key', name => 'F5: Do It', key => ["\cJ", "\cM", qw(Enter Return Linefeed F5 =)], action => \&_calculate],
+	     'l',
+	     ['key', name => 'F6: Res\'d', key => 'F6', action => \&_reserved],
+	     'l',
+	    ],
+	);
+    }
+    @interface;
+}
+
+sub find_objects {
+    my %of = ();
+    my $code = sub {
+	my ($name, $file, $type, $object) = @_;
+	defined $type or $type = '';
+	exists $object_types{uc($type)} or return;
+	my $ot = $object_types{uc($type)};
+	defined $ot or return;
+	$of{$ot}{$name} = 1;
+    };
+    $compiler->all_objects($code, 1);
+    my %ol = map { ($_ => [sort keys %{$of{$_}}]) } keys %of;
+    $ol{MODE} = [qw(Expr Full OIC)];
+    return \%ol;
+}
+
+sub process_escape {
+    my ($line) = @_;
+    $line =~ s/^(.)\s*// or die "Invalid escape\n";
+    my $esc = lc($1);
+    exists $escape_defs{$esc} or die "Invalid escape `$esc\n";
+    $line =~ s/\s+$//;
+    my ($action, $list, $term, $names) = @{$escape_defs{$esc}};
+    if ($line ne '' && ! defined $list) {
+	die "Escape `$esc does not take arguments\n";
+    }
+    my $menu = $names;
+    my $multi = 0;
+    if ($list) {
+	my $_a;
+	($menu, $_a, $multi) = @{$menu_defs{$list}};
+    }
+    if ($line eq '' && defined $list) {
+	$list eq '' and die "Escape `$esc requires an argument\n";
+	if ($list) {
+	    my $loaded = $calculator{need_reload}
+		      || $calculator{loaded}
+		      || {};
+	    my @l = map {
+		my $star =
+		    ($multi ? (exists $loaded->{$list}{$_})
+			    : ($_ eq ($loaded->{$list} || '')))
+		    ? '*'
+		    : '';
+		$star . $_;
+	    } @{$objects_found->{$list}};
+	    return "Available $names: " . join(', ', @l) . "\n";
+	}
+    }
+    if ($list) {
+	my $n = lc($list);
+	my $data = $line;
+	if (defined $term) {
+	    my $i = index($line, $term);
+	    $data = substr($line, 0, $i) if $i >= 0;
+	}
+	grep { $data eq $_ } @{$objects_found->{$list}}
+	    or return "Invalid $n: $data\n";
+    }
+    $action->($ui, $menu, $line);
+}
+
+sub make_menus {
+    my ($ui) = @_;
+    my @menus = (
+	[ File =>
+	  [ 'Write In',      action => \&_write,       enabled => 1 ],
+	  [ 'Read Out',      action => \&_read,        enabled => 0 ],
+	  [ 'Read As',       action => \&_read_as,     enabled => 1 ],
+	  [ 'Give Up',       action => \&_give_up,     enabled => 1 ],
+	],
+	[ Edit =>
+	  [ 'Backspace',     action => \&_delkey,      enabled => 0, ],
+	  ($ui->can_paste
+	   ? ([ 'Paste',     action => \&_paste,       enabled => 1, ])
+	   : ()
+	  ),
+	  [ 'Save settings', action => \&_sickrc,      enabled => 1 ],
+	],
+    );
+    if (lc($calculator{mode}) ne 'oic') {
+	for my $key (qw(LANGUAGE BASE OPTION)) {
+	    exists $menu_defs{$key} or next;
+	    my ($name, $action, $multi) = @{$menu_defs{$key}};
+	    push @menus,
+		[ $name =>
+		  map {
+		      [ $_, action => $action, enabled => 1, ticked => 0, ]
+		  } @{$objects_found->{$key}},
+		];
+	}
+    }
+    push @menus,
+	[ Mode =>
+	  map {
+	      my $ticked = lc($_) eq lc($mode);
+	      [ $_, action => \&_change_mode, enabled => 1, ticked => $ticked ]
+	  } @{$objects_found->{MODE}},
+	],
+	[ Window =>
+	  [ 'About',         action => \&_about,       enabled => 1 ],
+	  [ 'Help',          action => \&_help,        enabled => 1 ],
+	  [ 'History',       action => \&_history_w,   enabled => 1 ],
+	  [ 'Trace',         action => \&_trace_w,     enabled => 1 ],
+	];
+    @menus;
+}
+
+sub _tick_menus {
+    if (lc($calculator{mode}) ne 'oic') {
+	for my $key (qw(LANGUAGE BASE OPTION)) {
+	    exists $menu_defs{$key} or next;
+	    my $loaded = $calculator{loaded}{$key};
+	    my ($name, $action, $multi) = @{$menu_defs{$key}};
+	    for my $obj (@{$objects_found->{$key}}) {
+		my $t = $multi ? (exists $loaded->{$obj}) : ($obj eq $loaded);
+		$ui->tick_menu($t, $name, $obj);
+	    }
+	}
+    }
+    for my $obj (@{$objects_found->{MODE}}) {
+	$ui->tick_menu(lc($mode) eq lc($obj), 'Mode', $obj);
+    }
+}
+
+sub _finish {
+    my ($haswindow) = @_;
+    my $status = $haswindow
+	? sub { _status($_[0]); $ui->update() }
+	: sub { $ui->stdread->read_text(_convert_overpunch($_[0]) . "\n") };
+    my $msg = 'Loading';
+    if ($calculator{object} && ! $calculator{full_restart}) {
+	my $loaded = $calculator{need_reload} || $calculator{loaded};
+	$language = $loaded->{LANGUAGE};
+	$base = $loaded->{BASE};
+	$calculator{loaded} = {
+	    LANGUAGE => $language,
+	    BASE => $base,
+	    OPTION => $loaded->{OPTION},
+	};
+	delete $calculator{need_reload};
+	delete $calculator{full_restart};
+	my $obj = $calculator{object};
+	($calculator{s_line}) =
+	    $obj->getreg($calculator{mode} eq 'full' ? 'FS' : 'ES');
+	return;
+    }
+    if ($calculator{need_reload}) {
+	$language = $calculator{need_reload}{LANGUAGE};
+	$base = $calculator{need_reload}{BASE};
+	@options = keys %{$calculator{need_reload}{OPTION}};
+	delete $calculator{need_reload};
+	delete $calculator{full_restart};
+	$msg = 'Reloading';
+    }
+    delete $calculator{full_restart};
+    $status->("$msg compiler (" . join(', ', $language, $base, @options) . ")");
+    my $old_object = $calculator{object};
+    eval {
+	$compiler->reset();
+	my $old_server;
+	$theft && $old_object and $old_server = theft_server($old_object);
+	delete $calculator{object};
+	$calculator{loaded} = {
+	    LANGUAGE => undef,
+	    BASE => undef,
+	    OPTION => {},
+	};
+	$calculator{trace_object}->enable(0);
+	$compiler->setoption('trace_fh', $calculator{trace_fh});
+	$compiler->setoption('trace', 0);
+	$compiler->setoption('preload_callback', [\&_preload_callback]);
+	$compiler->setoption('default_charset', $_)
+	    for $rcfile->getitem('WRITE');
+	$compiler->setoption('default_backend', 'Run');
+	$compiler->clearoption('preload');
+	$compiler->setoption('preload', $language);
+	$compiler->setoption('preload', $base);
+	$compiler->setoption('preload', $_) for @options;
+	$compiler->source('null.iacc');
+	$compiler->server($server);
+	$theft and theft_default_server($old_server);
+	$compiler->load_objects();
+	delete $calculator{need_reload};
+	my $obj = $compiler->get_object('null.iacc')
+	    or die "Internal error: no compiler object\n";
+	exists $calculator{loaded}{LANGUAGE}
+	    or die "Internal error: no compiler loaded\n";
+	$calculator{loaded}{BASE}
+	    or _preload_callback($compiler, $base);
+	exists $calculator{loaded}{OPTION}
+	    or $calculator{loaded}{OPTION} = {};
+	# we need to run null.iacc (even though it doesn't do anything)
+	# to initialise the interpreter
+	$obj->start(0)->run()->stop;
+	$calculator{object} = $obj;
+	$calculator{parser} = $obj->{object}->parser(1);
+	($calculator{s_space}) = $obj->getreg('SS');
+	($calculator{s_statement}) = $obj->getreg('PS');
+	($calculator{s_line}) =
+	    $obj->getreg($calculator{mode} eq 'full' ? 'FS' : 'ES');
+	$obj->setreg('ORFH', $calculator{read_fh}, REG_whp);
+	$obj->setreg('OSFH', $calculator{read_fh}, REG_whp);
+	$obj->setreg('OWFH', $calculator{write_fh}, REG_whp);
+	$obj->setreg('TRFH', $calculator{trace_fh}, REG_whp);
+	$theft and theft_callback($obj, \&_being_robbed);
+	my ($rt) = $obj->getreg('RT');
+	if (! exists $roman_ok{$rt}) {
+	    $obj->setreg('RT', 'CLC', REG_spot);
+	}
+	$calculator{is_wimp} = 1
+	    if ! exists $calculator{is_wimp} && ($obj->getreg('WT'))[0];
+	if ($savestate) {
+	    my $now = current_time();
+	    $obj->set_state($savestate, STATE_OVERRIDE, $now);
+	    # $obj->set_state($savestate, 0, $now);
+	    $savestate = undef;
+	}
+	$obj->record_grammar(1);
+	$calculator{trace_object}->enable(1);
+	$status->("Done \L$msg compiler");
+    };
+    if ($@) {
+	my $e = $haswindow ? _shorten($@) : $@;
+	$status->($e);
+	if ($old_object) {
+	    $calculator{object} = $old_object;
+	} else {
+	    sleep 2 if $ui->has_window;
+	    exit 1;
+	}
+    }
+}
+
+sub _shorten {
+    my ($e) = @_;
+    # make the message as short as possible to fit in the status line
+    $e =~ s/\s+/ /g;
+    $e =~ s/^ //;
+    $e =~ s/[ \.]+$//;
+    $e =~ s/undefined subroutine &(?:main::|Language::INTERCAL::)?(\S+)/&$1?/i;
+    $e =~ s/called at \S*\/Language\/INTERCAL\//at /i
+	or $e =~ s/ at \S*\// at /i;
+    $e =~ s/Language::INTERCAL:://g;
+    $e =~ s/main:://g;
+    $e =~ s/via package/in/g;
+    $e =~ s/ line /:/g;
+    $e;
+}
+
+sub _preload_callback {
+    my ($compiler, $file, $fn, $ct) = @_;
+    exists $object_types{uc($ct)}
+	or die "Invalid object type ($ct) for intercalc\n";
+    my $rt = $object_types{uc($ct)};
+    defined $rt or return;
+    exists $menu_defs{$rt} or return;
+    my ($name, $action, $multi) = @{$menu_defs{$rt}};
+    if ($multi) {
+	$calculator{loaded}{$rt}{$file} = 1;
+    } else {
+	$calculator{loaded}{$rt} = $file;
+    }
+}
+
+sub _being_robbed {
+    my ($obj, $type, $reg) = @_;
+    $type = $type =~ /steal/i ? 'stolen' : 'smuggled away';
+    _status("Register $reg has been $type");
+    1;
+}
+
+sub _enable_keys {
+    my $enable_all = $ui->pending_events();
+    $ui->forall('key',
+		sub {
+		    my ($ui, $key, $name, $action) = @_;
+		    $enable_all = 1 if ! $enable_all && $ui->pending_events();
+		    if ($action == \&_addkey) {
+			$name = ' ' if $name eq 'space';
+			$enable_all || defined $calcptr->can_add($name)
+			    ? $ui->enable($key)
+			    : $ui->disable($key);
+			return 1;
+		    }
+		    if ($action == \&_delkey) {
+			$command ne ''
+			    ? $ui->enable($key)
+			    : $ui->disable($key);
+			return 1;
+		    }
+		    if ($action == \&_calculate) {
+			$enable_all || $calcptr->can_run()
+			    ? $ui->enable($key)
+			    : $ui->disable($key);
+			return 1;
+		    }
+		    return 1;
+		});
+    $ui->enable_menu($enable_all || $command ne '', 'Edit', 'Backspace');
+    $ui->enable_menu($enable_all || defined $current_file, 'File', 'Read Out');
+}
+
+sub _paste {
+    $gave_up = $give_up = 0;
+    $ui->do_paste;
+}
+
+sub _popup {
+    my ($object, $list1, $list2, $title, $redo) = @_;
+    $gave_up = $give_up = 0;
+    if ($ui->has_window) {
+	_clear_status();
+	my @inner = ();
+	for my $i (@$list2) {
+	    if (ref $i) {
+		push @inner,
+		    ['text', value => $i->[0] . '  ', align => 'l'],
+		    ['text', value => $i->[1] . '  ', align => 'r'],
+		    ['text', value => $i->[2], align => 'l'];
+	    } else {
+		push @inner,
+		    ['text', value => $i, align => 'l'],
+		    'l',
+		    'l';
+	    }
+	}
+	my $inner = [ 'table', columns => 3, alterable => 1, data => @inner];
+	if (! $$object) {
+	    my $destroy = sub {
+		$$object = undef;
+		$gave_up = $give_up = 0;
+		_clear_status();
+		1;
+	    };
+	    my $close = sub {
+		$ui->close($$object) if $$object;
+		$$object = undef;
+		$gave_up = $give_up = 0;
+		_clear_status();
+	    };
+	    $$object = $ui->window($title, $destroy, [
+		'vstack', border => 2, data =>
+		['vstack', data =>
+		 (map { ['text', value => $_, align => 'c'] } @$list1),
+		 (@$list1 && @$list2 ? (['text', value => '']) : ()),
+		 $inner,
+		 ['text', value => ''],
+		 ['key',
+		  name => 'OK',
+		  key => ["\cJ", "\cM", qw(Enter Return Linefeed)],
+		  action => $close
+		 ],
+		],
+	    ]);
+	} elsif ($redo) {
+	    $ui->alter_data($$object, $inner);
+	}
+	$ui->show($$object);
+    } else {
+	my $stdread = $ui->stdread;
+	$stdread->read_text("$_\n") for @$list1;
+	$stdread->read_text("\n") if @$list1 && @$list2;
+	$stdread->read_text("$_\n") for @$list2;
+    }
+}
+
+sub _stop_calculator {
+    $calculator{running} = $running = 0;
+    $ui->stop if $ui->has_window;
+}
+
+sub _restart_calculator {
+    my ($full_restart) = @_;
+    $calculator{running} = 0;
+    $calculator{full_restart} = 1 if $full_restart;
+    $running = 1;
+    $ui->stop if $ui->has_window;
+}
+
+sub _about {
+    _popup(\$about_object, \@about_text, \@copyright, 'About', 0);
+    '';
+}
+
+sub _help {
+    _popup(\$help_object, \@for, \@help_text, 'Help', 0);
+    '';
+}
+
+sub _reserved {
+    $gave_up = $give_up = 0;
+    $reserved++;
+    $reserved == 1 and return "That key is reserved. Don't press it again";
+    $reserved == 2 and return "I really mean it. Don't press that key";
+    $reserved > 2 and do {
+	_status("Well, you've asked for it. Didn't I tell you?");
+	$ui->update();
+	_stop_calculator();
+    };
+    '';
+}
+
+sub _undocumented {
+    my @interface = make_interface(0);
+    my $interface = _convert(\@interface);
+    "undocumented data: " . $interface . "\n";
+}
+
+sub _convert {
+    my ($item) = @_;
+    defined $item or return "u";
+    if (ref $item) {
+	has_type($item, 'ARRAY')
+	    and return "a(" . join(' ', map { _convert($_) } @$item) . ")";
+	has_type($item, 'CODE')
+	    and return "c";
+	die "Type not understood: $item\n";
+    } else {
+	$item =~ s/([%\(\)\000- \177-\377])/sprintf("%%%03d", ord($1))/ge;
+	return "d$item";
+    }
+}
+
+sub _version {
+    "INTERCALC (CLC-INTERCAL $VERSION)\n";
+}
+
+sub _give_up {
+    if ($give_up > time) {
+	_stop_calculator();
+	return '';
+    }
+    $give_up = time + 30;
+    # XXX arrange for something to remove the message in 30 seconds
+    "Do that again to really GIVE UP\n";
+}
+
+sub _after_action {
+    my ($ui, $res, $menu_name, $menu_entry) = @_;
+    defined $res && $res ne '' and _status(_shorten($res));
+}
+
+sub _sickrc {
+    my ($ui, $menu_name, $menu_entry) = @_;
+    $gave_up = $give_up = 0;
+    $rcfile->putitem('CALCULATE', [$language, $base, @options]);
+    $rcfile->putitem('OPERATE', $mode);
+    my $to = $rcfile->save(undef, 0);
+    return "Settings saved to $to\n";
+}
+
+sub _read_or_readas {
+    my ($ui, $menu_name, $menu_entry) = @_;
+    $gave_up = $give_up = 0;
+    $menu_entry eq '' and return _read($ui, $menu_name, $menu_entry);
+    return save_state($menu_entry, 0);
+}
+
+sub _read {
+    my ($ui, $menu_name, $menu_entry) = @_;
+    $gave_up = $give_up = 0;
+    defined $current_file
+	or return "Cannot read out without a file name\n";
+    return save_state($current_file, 1);
+}
+
+sub _read_as {
+    my ($ui, $menu_name, $menu_entry) = @_;
+    $gave_up = $give_up = 0;
+    my $new = $current_file || '';
+    my $file = $ui->file_dialog("Read AS", $new, "Read it", "Give up");
+    defined $file or return '';
+    return save_state($file, 0);
+}
+
+sub _write {
+    my ($ui, $menu_name, $menu_entry) = @_;
+    $gave_up = $give_up = 0;
+    my $file = $ui->file_dialog("Write In", undef, "Write it", "Give up");
+    defined $file or return '';
+    return _write_file($ui, $menu_name, $file);
+}
+
+sub _write_file {
+    my ($ui, $menu_name, $menu_entry) = @_;
+    $gave_up = $give_up = 0;
+    my ($ret, $reload) = load_state($menu_entry);
+    _restart_calculator(1) if $reload;
+    $ret;
+}
+
+sub _history {
+    my ($ui, $menu_name, $menu_entry) = @_;
+    _history_trace($menu_entry, 0, 0);
+}
+
+sub _history_w {
+    my ($ui, $menu_name, $menu_entry) = @_;
+    _history_trace('', 0, 0);
+}
+
+sub _trace {
+    my ($ui, $menu_name, $menu_entry) = @_;
+    _history_trace($menu_entry, 1, 0);
+}
+
+sub _trace_w {
+    my ($ui, $menu_name, $menu_entry) = @_;
+    _history_trace('', 1, 0);
+}
+
+sub _convert_overpunch {
+    my @o = map { (my $x = $_) =~ s/\x08/^H/g; $x } @_;
+    wantarray ? @o : $o[0];
+}
+
+sub _history_trace {
+    my ($size, $with_trace, $redo) = @_;
+    $gave_up = $give_up = 0;
+    my $object;
+    if ($ui->has_window) {
+	$object = $with_trace ? \$trace_object : \$history_object;
+	return if $redo && ! $$object;
+	return if ! $redo && $$object;
+    }
+    if ($size) {
+	$size =~ /^(\d+)/ or return "Invalid number $size\n";
+    }
+    my @lines = ();
+    my $fmt = "%s%$calculator{display_size}s     %s\n";
+    my $read_lines = $ui->has_window
+		   ? sub { push @lines, @_ }
+		   : sub { $ui->stdread->read_text($_ . "\n") for @_ };
+    my $read_mult = $ui->has_window
+		  ? sub { push @lines, [@_] }
+		  : sub { $ui->stdread->read_text(sprintf $fmt, @_) };
+    $read_lines->("Command history" .
+		  ($with_trace ? " and trace information" : ''));
+    $read_lines->("(Note that you need to enable the \"trace\" " .
+		  "option to see trace information)")
+	if $with_trace && ! exists $calculator{loaded}{OPTION}{trace};
+    my @title = @lines;
+    @lines = ();
+    my $calculation = '';
+    my @trace = ();
+    my $OK = $with_trace ? '' : 'OK';
+    for my $hl (@history, ['c']) {
+	my ($type, $line) = @$hl;
+	if ($type eq 'c') {
+	    if ($size ne '') {
+		$size--;
+		last if $size < 0;
+	    }
+	    if ($calculation ne '' || $with_trace) {
+		$read_lines->(_convert_overpunch(@trace));
+		@trace = ();
+		next if $with_trace && ! defined $line;
+		$calculation = $line if $with_trace;
+		my $memory = '';
+		$memory = ' ' x (1 + $calculator{digits})
+		    if $calculator{has_memory};
+		$read_mult->(_convert_overpunch($memory, $OK, $calculation));
+	    }
+	    $calculation = $with_trace ? '' : $line;
+	} elsif ($type eq 'r') {
+	    my $memory = '';
+	    $memory = $1 if $calculator{has_memory} && $line =~ s/^(\S+)\s//;
+	    $read_mult->(_convert_overpunch($memory, $line, $calculation));
+	    $calculation = '';
+	} elsif ($type eq 't' && $with_trace) {
+	    unshift @trace, $line;
+	}
+    }
+    if ($ui->has_window) {
+	_popup($object, \@title, \@lines,
+	       $with_trace ? 'Trace' : 'History', $redo);
+    }
+    '';
+}
+
+#sub _redo_history {
+#    my ($object, $with_trace) = @_;
+#    $ui->start_alter($object);
+#    my $calculation = '';
+#    my @trace = ();
+#    my $OK = $with_trace ? '' : 'OK';
+#    for my $hl (@history, ['c']) {
+#	my ($type, $line) = @$hl;
+#	if ($type eq 'c') {
+#	    if ($calculation ne '' || $with_trace) {
+#		$ui->augment($object, 0, @trace) if @trace;
+#		@trace = ();
+#		next if $with_trace && ! defined $line;
+#		$calculation = $line if $with_trace;
+#		my $memory = '';
+#		$memory = ' ' x (1 + $calculator{digits})
+#		    if $calculator{has_memory};
+#		$ui->augment($object, 1, $memory, $OK, $calculation);
+#	    }
+#	    $calculation = $with_trace ? '' : $line;
+#	} elsif ($type eq 'r') {
+#	    my $memory = '';
+#	    $memory = $1 if $calculator{has_memory} && $line =~ s/^(\S+)\s//;
+#	    $ui->augment($object, 1, $memory, $line, $calculation);
+#	    $calculation = '';
+#	} elsif ($type eq 't' && $with_trace) {
+#	    unshift @trace, $line;
+#	}
+#    }
+#    $ui->end_alter($object);
+#}
+
+sub _change_mode {
+    my ($ui, $menu_name, $menu_entry) = @_;
+    $gave_up = $give_up = 0;
+    if ($menu_entry eq '') {
+	die "Internal error: no menu entry\n" if $ui->has_window;
+	my @mode = map { lc($mode) eq lc($_) ? "*$_" : $_ } qw(OIC Expr Full);
+	return "Available modes: " . join(', ', @mode) . "\n";
+    }
+    return '' if $mode eq lc($menu_entry);
+    return "Invalid mode: $menu_entry\n"
+	if $menu_entry !~ /^(?:oic\d*|expr|full)$/i;
+    if ($ui->has_window) {
+	$ui->forall('menu', $menu_name, sub {
+	    my ($_ui, $name, $entry, $menu, $item) = @_;
+	    $_ui->tick_menu($menu_entry eq $entry, $name, $entry);
+	    1;
+	});
+    }
+    $mode = lc($menu_entry);
+    _restart_calculator(0);
+    "Mode changed to $mode\n";
+}
+
+sub _change_base {
+    my ($ui, $menu_name, $menu_entry) = @_;
+    $gave_up = $give_up = 0;
+    if ($ui->has_window) {
+	$ui->forall('menu', $menu_name, sub {
+	    my ($_ui, $name, $entry, $menu, $item) = @_;
+	    $_ui->tick_menu($menu_entry eq $entry, $name, $entry);
+	    1;
+	});
+    }
+    if ($menu_entry ne $calculator{loaded}{BASE}) {
+	$calculator{loaded}{BASE} = $menu_entry;
+	$calculator{object}->setreg('%BA', $menu_entry, REG_spot);
+	$base = $menu_entry;
+    }
+    "Base changed to $menu_entry\n";
+}
+
+sub _change_language {
+    my ($ui, $menu_name, $menu_entry) = @_;
+    $gave_up = $give_up = 0;
+    my ($newlang, @opts, $change_opts);
+    if ($menu_entry =~ s/^(\w+)\s*\+\s*//) {
+	$newlang = $1;
+	if ($menu_entry =~ /\S/) {
+	    @opts = split(/\s+/, $menu_entry);
+	} else {
+	    @opts = ();
+	}
+	my $loaded = $calculator{need_reload} || $calculator{loaded};
+	for my $o (@opts) {
+	    next if exists $loaded->{OPTION}{$o};
+	    $change_opts = 1;
+	    last;
+	}
+	if (! $change_opts) {
+	    my %o = map { ($_ => 1) } @opts;
+	    for my $o (keys %{$loaded->{OPTION}}) {
+		next if exists $o{$o};
+		$change_opts = 1;
+		last;
+	    }
+	}
+    } else {
+	$newlang = $menu_entry;
+	@opts = ();
+	$change_opts = 0;
+    }
+    if ($ui->has_window) {
+	$ui->forall('menu', $menu_name, sub {
+	    my ($_ui, $name, $entry, $menu, $item) = @_;
+	    $_ui->tick_menu($newlang eq $entry, $name, $entry);
+	    1;
+	});
+    }
+    my $opts = '';
+    if ($change_opts) {
+	$calculator{full_restart} = 1;
+	_need_reload('LANGUAGE', $newlang, 'OPTION', @opts);
+	$opts = ' (' . join(', ', @opts) . ')';
+    } elsif ($newlang ne $calculator{loaded}{LANGUAGE}) {
+	$calculator{full_restart} = 1;
+	_need_reload('LANGUAGE', $newlang);
+    }
+    "Language changed to $newlang$opts\n";
+}
+
+sub _toggle_option {
+    my ($ui, $menu_name, $menu_entry) = @_;
+    $gave_up = $give_up = 0;
+    $calculator{full_restart} = 1;
+    _need_reload('OPTION', $menu_entry);
+    if ($ui->has_window) {
+	my $t = exists $calculator{need_reload}{'OPTION'}{$menu_entry};
+	$ui->tick_menu($t, $menu_name, $menu_entry);
+    }
+    "Option $menu_entry has been " .
+    (exists $calculator{need_reload}{OPTION}{$menu_entry}
+     ? "added"
+     : "removed") .
+    "\n";
+}
+
+sub _need_reload {
+    my ($type, $name, $othertype, @othernames) = @_;
+    if (! $calculator{need_reload}) {
+	my %r = ();
+	for my $t (keys %{$calculator{loaded}}) {
+	    my $v = $calculator{loaded}{$t};
+	    if (ref $v) {
+		my %h = ();
+		$h{$_} = 1 for keys %$v;
+		$r{$t} = \%h;
+	    } else {
+		$r{$t} = $v;
+	    }
+	}
+	$calculator{need_reload} = \%r;
+    }
+    if (ref $calculator{need_reload}{$type}) {
+	if (exists $calculator{need_reload}{$type}{$name}) {
+	    delete $calculator{need_reload}{$type}{$name};
+	} else {
+	    $calculator{need_reload}{$type}{$name} = 1;
+	}
+    } else {
+	$calculator{need_reload}{$type} = $name;
+    }
+    if (defined $othertype) {
+	$calculator{need_reload}{$othertype} = {
+	    map { ($_ => 1) } @othernames,
+	};
+    }
+    _restart_calculator(0);
+}
+
+sub _clear {
+    $gave_up = $give_up = 0;
+    _clear_status();
+    $command = '';
+    $ui->set_text('command', '');
+    _enable_keys();
+    ''
+}
+
+sub _addkey {
+    my ($key) = @_;
+    $gave_up or $give_up = 0;
+    $key = ' ' if $key eq 'space';
+    my $ok = $calcptr->can_add($key);
+    if (defined $ok) {
+	if (ref $ok) {
+	    $command .= $$ok;
+	    _calculate();
+	    return;
+	} else {
+	    $command .= $ok;
+	    _enable_keys();
+	}
+    }
+    _clear_status();
+    ''
+}
+
+sub _calculate {
+    my $c = $command;
+    my $i = $ui->has_window;
+    if ($c eq '') {
+	_clear_status() if $i;
+	$gave_up = $give_up = 0;
+    } else {
+	my ($calculation, $memory, $scroll, $gu, @result) = $calcptr->run($c);
+	if ($gu) {
+	    push @result, grep { $_ ne '' } main::_give_up();
+	    $gave_up = 1;
+	} else {
+	    $gave_up = $give_up = 0;
+	}
+	$command = '';
+	$ui->set_text('command', $calculation) if $i;
+	my $orig_calc = $calculation;
+	my $saveit = ! $scroll;
+	for my $result (@result) {
+	    $result =~ s/\s+$//;
+	    $result =~ s/\n/ /g;
+	    my $histline = $calculator{has_memory}
+			 ? join(' ', $memory, $result)
+			 : $result;
+	    if ($saveit) {
+		unshift @history, ['r', $histline];
+		$saveit = 0;
+	    }
+	    if (exists $calculator{skip_scroll}) {
+		delete $calculator{skip_scroll};
+	    } else {
+		if ($i) {
+		    for (my $h = $history; $h >= 1; $h--) {
+			my $ph = $h == 1 ? '' : $h - 1;
+			$ui->set_text("display$h", $ui->get_text("display$ph"));
+			$ui->set_text("memory$h", $ui->get_text("memory$ph"))
+			    if $calculator{has_memory};
+		    }
+		}
+	    }
+	    if ($i) {
+		$ui->set_text('display', $result);
+		$ui->set_text('memory', $memory) if $calculator{has_memory};
+	    } else {
+		my $l = sprintf "%s%$calculator{display_size}s     %s\n",
+				$calculator{has_memory} ? $memory : '',
+			        $result, $calculation;
+		$ui->stdread->read_text(_convert_overpunch($l));
+	    }
+	    $memory = $calculation = '';
+	}
+	unshift @history, ['c', $orig_calc];
+	$calculator{skip_scroll} = 1 if $scroll;
+    }
+    if ($i) {
+	$history_object and _history_trace('', 0, 1);
+	$trace_object and _history_trace('', 1, 1);
+	_enable_keys();
+    }
+    ''
+}
+
+sub _delkey {
+    $gave_up = $give_up = 0;
+    _clear_status();
+    $command =~ s/.$//;
+    $ui->set_text('command', $command);
+    _enable_keys();
+    ''
+}
+
+sub _clear_status {
+    $ui->set_text('command', $command);
+    if ($calculator{skip_scroll}) {
+	$calculator{skip_scroll} = 0;
+	$ui->set_text("display", '');
+	$ui->set_text("memory", '') if $calculator{has_memory};
+    }
+}
+
+sub _status {
+    my ($msg) = _convert_overpunch($_[0]);
+    if ($ui->has_window) {
+	$msg =~ s/\n$//;
+	$ui->set_text('command', $msg);
+	$ui->update();
+    } else {
+	$msg .= "\n" unless $msg =~ /\n$/;
+	$ui->stdread->read_text($msg);
+    }
+    '';
+}
+
+sub _complete {
+    my ($text) = @_;
+    my $T = $text;
+    if ($T =~ s/^(\s*`\s*)//) {
+	my $p = $1;
+	if ($T eq '') {
+	    return grep { $_ ne "\0" } keys %escape_defs;
+	}
+	my $c = substr($T, 0, 1, '');
+	$p .= $c;
+	$T =~ s/^(\s+)// and $p .= $1;
+	exists $escape_defs{$c} or return ();
+	my ($code, $list, $term, $names) = @{$escape_defs{$c}};
+	defined $list or return ();
+	if ($list) {
+	    if (defined $term) {
+		my $i = index($T, $term);
+		if ($i >= 0) {
+		    $T = substr($T, $i + 1);
+		    $T =~ s/^.*\s+//;
+		    $list = 'OPTION';
+		    $term = ' ';
+		}
+	    }
+	    my @l = map {
+		substr($_, length $T);
+	    } grep {
+		substr($_, 0, length $T) eq $T;
+	    } @{$objects_found->{$list}};
+	    if (defined $term && @l == 1 && $l[0] eq '') {
+		push @l, $term;
+	    }
+	    return @l;
+	} elsif ($c eq 'h' || $c eq 't') {
+	    return (0..9);
+	} elsif ($c eq 'm') {
+	    return (0..9) if $T =~ /^oic/i;
+	    my @l = grep {
+		lc(substr($_, 0, length $T)) eq lc($T);
+	    } @{$objects_found->{MODE}};
+	    return map { substr($_, length $T) } @l;
+	} elsif ($c eq 'r' || $c eq 'w') {
+	    return ([$p, $T]); # "attempt filename completion on $T"
+	}
+	return ();
+    } else {
+	return $calcptr->complete($text);
+    }
+}
+
+sub usage {
+    (my $p = $0) =~ s#^.*/##;
+    die "Usage: $p [-alphabet] [files]\n";
+}
+
+package INC;
+
+use Language::INTERCAL::Interpreter qw(IFLAG_norecompile IFLAG_clearcache);
+
+sub can_add {
+    my ($inc, $key) = @_;
+    my ($ok, $cpl, $kcpl) = _check($inc, $command);
+    $kcpl && exists $kcpl->{$key} ? $key : undef;
+}
+
+sub _check {
+    my ($inc, $line) = @_;
+    return (0, {}) if $@;
+    return @{$inc->{cache}{$line}} if exists $inc->{cache}{$line};
+    my $run = 0;
+    my $cpl = {};
+    my $kcpl = {};
+    eval {
+	my ($l, $c) = $inc->{parser}->compile($inc->{s_line}, $line, 0,
+					      $inc->{s_space}, 0);
+	$run = grep { $_->[1] == length($line) } @$l;
+	my %cpl = ();
+	my %kcpl = ();
+	for my $cpl (@$c) {
+	    $cpl =~ $remove_space and next;
+	    $cpl{$cpl} = 1;
+	    $kcpl{substr($cpl, 0, 1)} = 1;
+	}
+	$cpl = \%cpl;
+	$kcpl = \%kcpl;
+    };
+    $inc->{cache}{$line} =  [$run, $cpl, $kcpl];
+    return @{$inc->{cache}{$line}};
+}
+
+sub can_run {
+    my ($inc) = @_;
+    my ($ok, $cpl, $kcpl) = _check($inc, $command);
+    $ok;
+}
+
+sub complete {
+    my ($inc, $text) = @_;
+    my ($ok, $cpl, $kcpl) = _check($inc, $text);
+    return $cpl ? (keys %$cpl) : ();
+}
+
+sub run {
+    my ($inc, $oline) = @_;
+    my @result;
+    my $gave_up;
+    eval {
+	my $line = $oline;
+	my ($l) = $inc->{parser}->compile($inc->{s_line}, $line, 0,
+					  $inc->{s_space}, 0);
+	die "Syntax error\n" unless @$l;
+	my @l = map { $_->[3] } grep { $_->[1] == length $line } @$l;
+	die "Syntax error\n" unless @l;
+	my $pos = length $line;
+	my $line_g = $line . "\nDO GIVE UP";
+	my ($g) = $inc->{parser}->compile($inc->{s_statement},
+					  $line_g, $pos,
+					  $inc->{s_space}, 0);
+	my @g = map { $_->[3] } @$g;
+	$inc->{object}->object->clear_code;
+	$inc->{object}->object->unit_code(0, $line, $pos, \@l);
+	push @l, @g;
+	my $real_code =
+	    length(($inc->{object}->object->unit_code(0, $line_g, length($line_g), \@l))[2]);
+	@{$inc->{read_object}} = ('', 1);
+	$inc->{object}->start(IFLAG_norecompile | IFLAG_clearcache)->run()->stop();
+	my $gave_up = $inc->{object}->gave_up;
+	$gave_up = defined $gave_up && $real_code == $gave_up;
+	$inc->{cache} = {} if $inc->{invalidate};
+	$inc->{read_object}[1] = 0;
+	@result = grep { /./ } split(/\n+/, $inc->{read_object}[0]);
+    };
+    push @result, $@ if $@;
+    for (@result) {
+	$_ = main::_shorten($_) if /\*\d{3}/ && $ui->has_window;
+    }
+    my $scroll = 0;
+    unless (@result) {
+	push @result, 'OK';
+	$scroll = 1;
+    }
+    ($oline, '', $scroll, $gave_up, @result);
+}
+
+package OIC;
+
+sub run {
+    my ($oic, $line) = @_;
+    my $calculation = '';
+    my $memory = ' ' x (1 + $oic->{digits});
+    my @result = ();
+    eval {
+	$line =~ s/\s+//g;
+	$calculation = '(';
+	my $a = _extract_oic($oic, \$line, \$calculation);
+	die "Missing number\n" if $a eq '';
+	$calculation .= ' - ';
+	my $b = _extract_oic($oic, \$line, \$calculation);
+	die "Missing number\n" if $b eq '';
+	$calculation .= ') / ';
+	my $c = _extract_oic($oic, \$line, \$calculation);
+	die "Missing number\n" if $c eq '';
+	$line =~ s/$oic->{regex}//
+	    or die "Invalid result: $line\n";
+	$1 >= $oic->{nmems}
+	    and die "Invalid memory $1\n";
+	my $m = $1;
+	$memory = sprintf $oic->{format}, $m;
+	my $result = ($a - $b) / $c;
+	$oic->{memory}[$m] = $result;
+	push @result, $result;
+	$line eq '' or die "Extra data after line: $line\n";
+    };
+    push @result, $@ if $@;
+    ($calculation, $memory, 0, 0, @result);
+}
+
+sub _extract_oic {
+    my ($oic, $line, $calculation) = @_;
+    if ($$line =~ s/$oic->{regex}//) {
+	$1 >= $oic->{nmems}
+	    and die "Invalid memory $1\n";
+	$$calculation .= sprintf $oic->{format}, $1;
+	return $oic->{memory}[$1];
+    }
+    if ($$line =~ s/^(-?\d+\.\d*|-?\d*\.\d+|-?\d+)//) {
+	$$calculation .= $1;
+	return $1;
+    }
+    die "Invalid syntax: $$line\n";
+}
+
+sub _check {
+    my ($oic, $c, $key) = @_;
+    my $l = $c . $key;
+    for (1..3) {
+	my $r = '';
+	last if $l =~ s/^(?:-\.?|\.|m)$//i;
+	eval { _extract_oic($oic, \$l, \$r) };
+	return undef if $@;
+	return $key if $l eq '';
+    }
+    if ($l ne '') {
+	$l =~ s/^m//i or return undef;
+	$l =~ /^\d*$/ or return undef;
+	return \$key if length($l) == $oic->{digits};
+    }
+    return $key;
+}
+
+sub can_add {
+    my ($oic, $key) = @_;
+    _check($oic, $command, $key);
+}
+
+sub complete {
+    my ($oic, $text) = @_;
+    grep { defined _check($oic, $text, $_) } (0..9, '-', '.', 'm');
+}
+
+sub can_run {
+    my ($oic) = @_;
+    my $ok = _check($oic, $command, '');
+    defined $ok && ref $ok;
+}
+
+package WOBJ;
+
+sub write {
+    my ($wobj, $size) = @_;
+    while (1) {
+	return '' if ! defined $$wobj;
+	return substr($$wobj, 0, $size, '') if length $$wobj >= $size;
+	my $l = $ui->getline("DATA: ");
+	if (defined $l && $l ne '') {
+	    $$wobj .= $l;
+	} else {
+	    $l = $$wobj;
+	    $$wobj = '';
+	    return $l;
+	}
+    }
+}
+
+package ROBJ;
+
+sub read {
+    my ($robj, $line) = @_;
+    if ($robj->[1]) {
+	# during actual command execution
+	$robj->[0] .= $line;
+    } else {
+	# asynchronous read, probably from a stolen filehandle
+	main::_status($line);
+    }
+}
+
+package TOBJ;
+
+sub read {
+    my ($tobj, $line) = @_;
+    $tobj->[1] or return;
+    $tobj->[0] .= $line;
+    my $sr = $ui->has_window ? undef : $ui->stdread;
+    while ($tobj->[0] =~ s/^(.*?)\n//) {
+	unshift @history, ['t', $1] if $1 ne '';
+	if ($sr) {
+	    $sr->read_text($1 . "\n");
+	} elsif ($trace_object) {
+	    main::_history_trace('', 1, 1);
+	}
+    }
+}
+
+sub enable {
+    my ($tobj, $yes) = @_;
+    $tobj->[1] = $yes;
+}
+
+__END__
+
+=pod
+
+=head1 NAME
+
+intercalc - CLC-INTERCAL desk calculator
+
+=head1 SYNOPSIS
+
+B<intercalc> [options]
+
+=head1 DESCRIPTION
+
+B<intercalc> is a simple desk calculator, allowing the user to
+enter INTERCAL statements (to see what they do) and expressions
+(to see what value they produce); it uses an interpreter object
+from CLC-INTERCAL to provide immediate feedback.
+
+The desk calculator accepts several options, some of which are documented here.
+
+=head2 User Interface Options
+
+=over 4
+
+=item B<-X> / B<--graphic>
+
+Enters X-based graphical user interface. Requires Perl-GTK. This is the
+default if Perl-GTK is installed, the environment variable I<$DISPLAY> is
+set and the opening of the X display succeeds.
+
+=item B<-c> / B<--curses>
+
+Enters full screen, curses-based interface. This is the default if the
+X based interface cannot be started, the environment variable I<$TERM>
+is set and the terminal name is known.
+
+=item B<--line>
+
+Enters the line-mode user interface. This is the default if the X based
+and the curses based interfaces do not work.
+
+In this mode, the program executes each line from standard input according
+to the current mode and language, and prints results to standard output.
+A line starting with a backspark is interpreted as a command to the
+calculator. Use backspark-g to GIVE UP (you'll need to do it twice), or
+backspark-h to display the ehm, help page. Things which are available
+via menu entries on the Curses and X interfaces are also available via
+the backspark. For now, you can refer to the source code for a list.
+
+Command-line editing and command history is provided by the readline
+library. Command completion works if the underlying compiler supports it
+(the compilers provided with the distributions do).
+
+=item B<--batch>
+
+Avoids entering interactive mode. This is the default if the standard
+input and output are not connected to a terminal and the X based interface
+cannot be started. This mode is very similar to the line mode except that
+command-line editing and command history are not implemented. Backspark
+escapes work just the same.
+
+=item B<-i>I<type> / B<--interface>=I<type>
+
+Selects the user interface I<type>. Currently, only I<X>, I<Curses>,
+I<Line> and I<None> are defined, but more can be installed as compiler
+plug-ins. If the interface selected is I<None>, B<intercalc> will work in
+batch mode. In addition, an empty string will reinstate the default
+behaviour.
+
+=back
+
+=head2 Source language and compilation options
+
+=over 4
+
+=item B<--bug>=I<number>
+
+Selects a different probability for the compiler bug. The compiler bug is
+implemented by initialising the compiler's state with the required probability:
+when a statement is compiled (usually at runtime), a "BUG" instruction is
+emitted with the required probability. The default is 1%.
+
+=item B<--ubug>=I<number>
+
+Selects a probability for the unexplainable compiler bug. This is the compiler
+bug which occurs when the probability of a (explainable) compiler bug is zero.
+Only wimps would use this option. The default is 0.01%.
+
+=item B<-I>I<path> / B<--include>=I<path>
+
+Adds a directory before the standard search path for compiler objects
+and source code. If a file is accessible from the current directory,
+it is never searched in any include path.
+
+If this option is repeated, the given paths will be searched in the
+order given, followed by the standard paths.
+
+=item B<-l>I<language> / B<--language>=I<language>
+
+Selects the language to use when interpreting user input. This should
+correspond to the name of a compiler, which is an INTERCAL object
+which was originally built by I<iacc>. Only the expression and
+statement parsers are used, so it is possible to test incomplete
+compilers by loading them into I<intercalc> even if they don't
+work with I<sick>. The default is obtained from the F<sickrc>
+option I<.INTERCALC.LANGUAGE>.
+
+=item -B<-o>I<option> -B<--option>=I<option>
+
+Adds a language option. For example, -B<-o>I<3> selects base 3 calculation,
+and -B<-o>I<wimp> selects wimp mode. If no options are provided, and the
+default language was taken from the F<sickrc> file, the default options
+are taken from the F<sickrc> file. Note that if an option or a language is
+specified on the command line, the F<sickrc> defaults are ignored.
+
+Unlike previous versions of I<intercalc>, this version checks that the
+options make sense in the context of the calculator; for example trying
+to load a compiler as an option will cause an error, but a compiler
+extension will be OK.
+
+=item B<-m>I<mode> / B<--mode>=I<mode>
+
+Select operation mode. Currently, the only valid modes are I<full>,
+I<expr> and I<one>. See L</Operating Modes>. If this is not specified,
+the default is taken from the F<sickrc> option I<..INTERCALC.MODE>.
+
+=item B<--interpreter>=I<module>
+
+Uses an alternative CLC-INTERCAL Interpreter; the selected Interpreter
+must provide methods to access its internal state so that the calculator
+can display results. The default is whichever compatible Interpreter is
+considered the best at the time the program is distributed.
+
+=back
+
+=head2 Misc Options
+
+=over 4
+
+=item B<-r>I<name> / B<--rcfile>=I<name>
+
+Executes commands from file I<name> before starting to accept input.
+This option can be repeated, to execute more than one file. If it is
+not specified, the standard library, the current directory, and the
+current user's home directory are searched for files with name
+F<system.sickrc> or F<.sickrc>, which are then executed. The order
+for this search is: specified library (B<--include>), system library,
+home directory, current directory. This is different from the search
+order used when looking for objects or source code. If a directory
+contains both F<.sickrc> and F<system.sickrc>, the F<system.sickrc>
+is executed first, followed by F<.sickrc>. Also note that if the
+current directory or the home directory appear in the search path
+and contain one of these files, they will be executed twice.
+
+If filenames are explicitly specified, they must be fully qualified:
+the search path is not used to find them.
+
+=item B<--nouserrc>
+
+Prevents loading a user rcfile (.sickrc); also limits loading of
+system.sickrc to the first one found. This option is normally only
+used when testing the installation, to prevent interference from
+previous versions of CLC-INTERCAL.
+
+=item B<--nosystemrc>
+
+Prevents loading system rcfiles (usually in F</etc/sick>) if any exist.
+This option is normally only used during installation, to prevent
+interference from previous versions of CLC-INTERCAL.
+
+=item B<-R>I<verb> / -B<--rcskip>=I<verb>
+
+Makes the program ignore the I<verb> in a sickrc file.
+
+=back
+
+=head1 Operating Modes
+
+The calculator can operate in the following modes:
+
+=over 5
+
+=item full
+Fully functional INTERCAL interpreter.
+
+The calculator can parse and execute any statement or expression.
+
+Statements are compiled as a one-statement program, and executed;
+any register value etc. will be preserved between statements, so
+entering a list of statements is equivalent to running a program
+in which all these statements are executed in sequence.
+
+It is important to note that some statements will not execute in
+the normal manner. For example, a COME FROM will be parsed but
+have no effect, unless it is something like:
+
+    (1) PLEASE COME FROM (1)
+
+which causes the calculator to hang. On the other hand, an ABSTAIN FROM
+or a REINSTATE will work as expected, as will CREATE and DESTROY.
+A GIVE UP does not cause the calculator to terminate. One final
+difference is that comments are not parsed, and therefore you get a
+"Syntax Error" from the calculator rather than a splat *000 from the
+INTERCAL interpreter.
+
+For expressions, the calculator READs OUT the expression's result.
+Any side effects will be remembered, so if the expression contains
+overloads they will remain to haunt the calculator.
+
+=item expr
+INTERCAL expression interpreter
+
+The calculator can only parse expressions or assignments. In either
+case, the calculated values are READ OUT; assignments will also
+store the value to the destination, while expressions will then
+discard the result.
+
+=item oic
+The B<O>ne B<I>nstruction B<C>alculator.
+
+This is something we've made
+up one early morning while discussing desk calculators (as one does).
+It is not INTERCAL at all, in fact it is inspired from the One Instruction
+Set Computer.
+
+The calculator has a number of memories (default 100 - these can be changed
+by appending a number to the operating mode, for example I<oic10> will
+use a 10-memory calculator). These memories are identified by the letter
+B<m> followed by a number; in the default 100-memory version, the first two
+digits after B<m> are the memory, and any subsequent digit forms part
+of the next operand. At the start, all memories are initialised to 0.
+
+Since there is only one operation, there is no need to specify it, so an
+"operation" is a sequence of three operands and a result. The result must
+be a memory, while each operand can be a number or a memory, with the
+limitation that consecutive numbers are acceptable only if the parser can
+determine where one ends and the next one starts. So for example "1-0" is
+two numeric operands, 1 and -0 (aka 0); "1.2.3" is also two operands,
+1.2 and 3; "12" is a single operand, even if you intended it to be two
+operands, 1 and 2, and even if you put spaces: "1 2" is still interpreted
+as the single operand 12.
+
+The operation performed is the difference between the first two operands,
+divided by the third. For example, the three operations:
+
+    7 m01 2 M01
+    1 m02 1 m02
+    m1 .5 m2 m03
+
+will produce results m01=3.5 ((7-0)/2); m02=1 ((1-0)/1); m03=3 ((3.5-.5)/1).
+and will produce the following output if the calculator is running in batch
+mode:
+
+    m01                  3.5     (7 - m01) / 2
+    m02                    1     (1 - m02) / 1
+    m03                    3     (m01 - .5) / m02
+
+=back
+
+=head1 SEE ALSO
+
+The INTERCAL on-line documentation, by running B<intercalc> and finding the
+"help" menu or key (X and Curses) or backspark escape (Line and None).
+

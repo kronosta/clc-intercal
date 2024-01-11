@@ -1,0 +1,182 @@
+PLEASE NOTE: This is the standard "system.sickrc", which has been
+	     automatically installed with CLC-INTERCAL 1.-94.-2.1.
+	     The format is slightly different from previous
+	     escapes, see the online resources or comments in this file.
+
+	     Any definitions here will be augmented by files named
+	     "X.sickrc", where "X" stands for an installed extension
+	     such as INET (INTERNET), ICALC (calculator) and the
+	     various user interfaces.
+
+	     After reading all such files, the system will process
+	     files in the /etc/sick directory to augment or replace
+	     the definitions in here: such files will be processed
+	     in lexycographic order.
+
+	     After such locally-installed system-wide configuration,
+	     the system will look for a file .sickrc in your home
+	     directory, which can also be used to augment and replace
+	     whatever configuration the system ones arrived at.
+
+	     Of course, nobody can stop you modifying this file, if
+	     you really want, but remember that any changes may be
+	     lost if you upgrade to a newer version of CLC-INTERCAL.
+
+PLEASE NOTE: The file format has changed since 1.-94.-2.1, the old
+	     "system.sickrc" cannot be used with 1.-94.-2.1 and newer,
+	     and this one won't work with 1.-94.-2 and older.
+
+Copyright (c) 2006-2008, 2023 Claudio Calvelli, all rights reserved.
+
+CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+and distribute it is granted provided that the conditions set out in the
+licence agreement are met. See files README and COPYING in the distribution.
+
+PERVERSION "CLC-INTERCAL/Base INTERCAL/Include/system.sickrc 1.-94.-2.2"
+
+DO NOTE: Character sets used for guessing, with their priority
+I DON'T WRITE
+I CAN #10 WRITE ASCII
+I CAN #20 WRITE Baudot
+I CAN #30 WRITE EBCDIC
+I CAN #40 WRITE Hollerith
+
+DO NOTE: Default compiler back end
+I CAN PRODUCE Object
+
+DO NOTE: Suffix to parser mapping; this is substantially different from
+	previous escapes and probably even more awkward for humans
+I DON'T UNDERSTAND
+
+PLEASE NOTE: normal compilers
+I CAN UNDERSTAND .iacc
+	AS "CLC-INTERCAL COMPILER"
+	WITH iacc
+I CAN UNDERSTAND .iasm
+	AS "CLC-INTERCAL ASSEMBLER"
+	WITH asm
+I CAN UNDERSTAND .@clc@i
+	AS "CLC-INTERCAL"
+	WITH sick
+	RETRYING .@i
+	IGNORING ick + 1972
+I CAN UNDERSTAND .@c@i
+	AS "C-INTERCAL"
+	WITH ick
+	RETRYING .@i
+	IGNORING sick + 1972
+I CAN UNDERSTAND .1972 + .1972i
+	AS "Traditional INTERCAL"
+	WITH 1972
+PLEASE NOTE: imitating somebody else
+WHEN I IMITATE ick
+I CAN UNDERSTAND .i
+	AS "C-INTERCAL"
+	WITH ick
+WHEN I IMITATE 1972
+I CAN UNDERSTAND .i
+	AS "Traditional INTERCAL"
+	WITH 1972
+PLEASE NOTE: default compiler if nothing else selected one
+I CAN UNDERSTAND .i
+	AS "CLC-INTERCAL"
+	WITH sick
+
+PLEASE NOTE: threaded intercal defaults to "ick" unless another rule matched "sick"
+I CAN UNDERSTAND .@t@i
+	AS "Threaded INTERCAL"
+	WITH ick + thick
+	IGNORING sick
+	RETRYING .@i
+
+PLEASE NOTE: arithmetic base selection
+I CAN UNDERSTAND .@7@i
+	AS "BASE 7"
+	WITH 7
+	IGNORING 2 + 3 + 4 + 5 + 6
+	RETRYING .@i
+I CAN UNDERSTAND .@6@i
+	AS "BASE 6"
+	WITH 6
+	IGNORING 2 + 3 + 4 + 5 + 7
+	RETRYING .@i
+I CAN UNDERSTAND .@5@i
+	AS "BASE 5"
+	WITH 5
+	IGNORING 2 + 3 + 4 + 6 + 7
+	RETRYING .@i
+I CAN UNDERSTAND .@4@i
+	AS "BASE 4"
+	WITH 4
+	IGNORING 2 + 3 + 5 + 6 + 7
+	RETRYING .@i
+I CAN UNDERSTAND .@3@i
+	AS "BASE 3"
+	WITH 3
+	IGNORING 2 + 4 + 5 + 6 + 7
+	RETRYING .@i
+I CAN UNDERSTAND .@2@i
+	AS "BASE 2"
+	WITH 2
+	IGNORING 3 + 4 + 5 + 6 + 7
+	RETRYING .@i
+
+PLEASE NOTE: other compiler options
+I CAN UNDERSTAND .@d@i
+	AS "BITWISE DIVISION"
+	WITH bitwise-divide
+	RETRYING .@i
+I CAN UNDERSTAND .@g@i
+	AS "COME FROM GERUND"
+	WITH come-from-gerund
+	RETRYING .@i
+WHEN I IMITATE sick
+I CAN UNDERSTAND .@h@i
+	AS "CLASS HELPERS"
+	WITH class-helpers
+	RETRYING .@i
+WHEN I IMITATE sick
+I CAN UNDERSTAND .@l@i
+	AS "COMPUTED LABELS"
+	WITH computed-labels
+	RETRYING .@i
+WHEN I IMITATE sick
+I CAN UNDERSTAND .@n@i
+	AS "NEXT"
+	WITH next
+	RETRYING .@i
+I CAN UNDERSTAND .@s@i
+	AS "SYSCALL"
+	WITH syscall
+	RETRYING .@i
+I CAN UNDERSTAND .@w@i
+	AS "WIMP MODE"
+	WITH wimp
+	RETRYING .@i
+
+PLEASE NOTE: Default user interfaces
+I DON'T SPEAK
+I CAN #65535 SPEAK None
+DO NOTE that installing interface modules will add to this
+
+PLEASE NOTE: Search path for C-INTERCAL libraries
+I DON'T SCAN
+I CAN SCAN /usr/share/ick*
+I CAN SCAN /usr/local/share/ick*
+
+PLEASE NOTE: Adding libraries to C-INTERCAL programs; floatlib must come before syslib
+I DON'T GLUE
+I CAN GLUE floatlib.i TO THE END OF THE PROGRAM
+      WHEN COMPILER IS ick
+       AND BASE IS 2
+       AND PROGRAM USES UNDEFINED LABELS BETWEEN 5000 AND 5999
+I CAN GLUE syslib.i TO THE END OF THE PROGRAM
+      WHEN COMPILER IS ick
+       AND BASE IS 2
+       AND PROGRAM USES UNDEFINED LABELS BETWEEN 1000 AND 1999
+I CAN GLUE syslib@.@i AND IF OPTIMISED syslib.o.io TO THE END OF THE PROGRAM
+      WHEN COMPILER IS ick
+       AND BASE IS @
+       AND BASE IS NOT 2
+       AND PROGRAM USES UNDEFINED LABELS BETWEEN 1000 AND 1999
+

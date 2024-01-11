@@ -1,0 +1,955 @@
+Changes from CLC-INTERCAL 1.-94.-2.2 to 1.-94.-2.3
+
+* Rewrote some of the Number module to work properly on 32 bit processors
+  when perl is built without any form of 64 bit integers.  The algorithms
+  employed would work correctly on 32 bit integers if ignoring the
+  overflows like C does. Unfortunately perl does not ignore the overflow
+  but convert the numbers to floating-point with loss of the lowest
+  significant bits, just the bits we need to keep.
+
+* Added a mechanism to generated modules to report the highest version
+  number between the code and the data used to generate; this means that
+  another module can ask for a minimum version of the data even if the
+  code is older (this applies to things like ByteCode which is generated
+  from the list of opcodes and some code which doesn't change often).
+
+* Added a mechanism to allow optional packages to specify alternative
+  modules at build time. Currently, only the INET extension uses it,
+  to select a way to get the network interfaces depending on what's
+  installed and what works on a particular system; other extensions
+  may use it in future, and there's a possibility of using it in
+  Base to install system-specific optimised modules.
+
+* Also removed all the things specific to the Docs package in the build
+  system, and moved them to the Docs package itself. When installing it,
+  it will extend the build system found in the Base package.
+
+* Updated the Interpreter's state to allow extra information in registers,
+  with Interpreter::State able to load saved state with and without the
+  new information (but always including all information when saving state).
+  This has space for the soon-to-be-implemented trickle down mechanism.
+
+* Discovered and fixed an issue with quantum grammar operations (create,
+  destroy, convert and swap) which didn't share changes between entangled
+  states; in the non-quantum case, all thread share the same state, and
+  changes made by one thread weren't visible to any other threads; in
+  the quantum case things are more complicated but still changes need
+  to be shared between some sets of states ando not shared with others,
+  while the previous implementation never shared anything.
+
+* Implemented the promised (threatened) TRICKLE DOWN structure.
+
+Changes from CLC-INTERCAL 1.-94.-2.1 to 1.-94.-2.2
+
+* Implemented the "road closures" which are a generatlisation of
+  ABSTAIN FROM and COME FROM with a helping of extra tentacles.
+
+* Made a start on the new optimiser.
+
+* Changed some operators and bytecode with inappropriate names to
+  something less so.  For example the "OWN" bytecode is now called
+  "BLM". Old names and old syntax will still be accepted, to be
+  able to run old programs.
+
+* Added code to make sure that loops/events where body and condition
+  come from different programs execute correctly. This could happen
+  for example if one of then executes a NEXT or LEARNS, or is the
+  target of a COME FROM / NEXT FROM.
+
+* Added functionality to allow ABSTAINing FROM a GIVE UP by
+  label if the compiler is operating in C-INTERCAL compatibility
+  mode. This is controlled by special register %GU which is
+  cleared by ick.iack and set by other compilers.
+
+* The "assign to BUT / what / whirlpool" expression generated
+  an "Impossible assignment" splat a bit too freely for bases > 4,
+  a small change in it made it work in a lot more cases. Also
+  added lots of new tests for all operators.
+
+* Removed the RegGrim module - it was never fully implemented,
+  so it can't have been used (all it would do is splat). If we
+  want something like that, it'll do with a redesign anyway.
+
+* Added a few new splat values to change generic error messages
+  (often using SP_INTERNAL or SP_COMMENT) to be more specific.
+
+* Added a new special register to control whether a GIVE UP can
+  be ABSTAINed FROM or REINSTATEd by label, as C-INTERCAL does,
+  or it cannot, as we do; this register is automatically set in
+  C-INTERCAL compatibility mode.
+
+* Added a new opcode to let compilers pass special information about
+  a statement to the runtime, initially this can indicate the
+  presence of PLEASE and ONCE/AGAIN.
+
+* Implemented C-INTERCAL's / Threaded INTERCAL's ONCE and AGAIN.
+  Additionally, implemented a quantum version of it:
+  DO (statement) ONCE AND AGAIN
+  The statement itself could be quantum or not, all possible
+  combinations are supported.
+
+* Updated 1972.iacc, ick.iacc and sick.iacc to record the number of
+  PLEASE. There is no politesse checking at this point as we first
+  need to review all the examples to see if they are in the
+  accptable range; however the ListObject backend now prints the
+  percentage of PLEASE for reference.
+
+* Added a new gerund to sick.iacc: EVOLUTION. It can only be used
+  in ABSTAIN FROM and REINSTATE statements, and it means the opposite
+  of CREATION: so PLEASE REINSTATE EVOLUTION means the same as
+  PLEASE ABSTAIN FROM CREATION. This means that using this in a
+  list of gerunds has the sligtly counterintuitive meaning of
+  abstaining from some statements and reinstating others.
+
+* Re-added the option to inline INTERCAL in Perl sources which was
+  available in very ancient versions of CLC-INTERCAL but had been
+  removed during one of the rewrites; it now uses Sick.pm and a
+  perl source filter, so it will remain supported no matter how
+  much we change CLC-INTERCAL in future.
+
+* Some small changes in sick.iacc result in much improve parse time,
+  for example hello.i (the thing which is nothing short of cruelty
+  to compilers) now compiles in 0.2 seconds instead of 3 seconds
+  on my system. The language accepted is not affected by this, just
+  the time to parse it.
+
+* Major rewrite of the Interpreter to split subroutines which did
+  multiple things into separate subroutines which can be called as
+  needed; this means that it doesn't need to spend most of its
+  time checking what a subroutine was expected to do. Also added
+  some shortcuts which remove the need to scan the whole code when,
+  for example, looking for labels (COME FROM, NEXT FROM, NEXT, LEARNS)
+  and all this results in a substantial improvement. For the
+  unoptimised floatlib test, this means 4 times faster; for the
+  unoptimised syslib test, twice as fast, and for other tests it
+  ranges from a bit faster to a lot faster: the longer a program
+  runs, the more it gains from this.
+
+* While rewriting the Interpreter noticed that converting (for example)
+  a COME FROM (label) to an ABSTAIN FROM (label) did not execute
+  correctly, in general a COME FROM could be converted to a NEXT
+  FROM and vice versa, but conversion with other compatible types of
+  statements (e.g. REINSTATE) did not make the correct changes to the
+  code. This now works. (Issue #11)
+
+* Removed the "MAKE NEW OPCODE" statement which was documented as
+  "may change without notice" and never used, as the new extension
+  mechanism does a better job
+
+* Tidy up of other code (Object, Parser, etc) to remove functions
+  no longer required by the new Interpreter, or to improve functions
+  which are still required and are called a large number of times
+  during the execution of a program.
+
+* Removed the definition of bytecode opcodes which weren't actually
+  implemented in the Interpreter: these are opcodes which will be
+  used by an Optimiser, when one will be written, and are best
+  added by the Optimiser itself using the new extension mechanism.
+
+* Added more tests for bitwise operations and found some issues with
+  assigning to a BUT which must have been there since the operation
+  was made assignable, so figured out what went wrong and fixed it.
+  In the process, moved some operations from Interpreter to Numbers.
+
+* Removed from the Interpreter all ths save state / restore state
+  code which is only used by the calculator; this is still in Base,
+  but in a separate module which may be requested. Also added an
+  option to Sick to request a non-default Interpreter. In future,
+  there could be more options for an Interpreter implementation
+  and this mechanism will select the one to use.
+
+* Support for C-INTERCAL's syslib and floatlib if the user has installed
+  the sources or can provide a copy of them.
+
+* Optimised versions of C-INTERCAL's syslib and floatlib which are always
+  available but must be requested with --optimise
+
+* Added a new special register, %SM, which control the size of the result
+  of a select operation. CLC-INTERCAL has always made this data-dependent:
+  if it fits in one spot, it is one spot, otherwise it is two spot. This
+  seems to correspond to the traditional specification, but it's hard
+  to implement in a compiler. C-INTERCAL has always made this equal to the
+  size of the second operand. The interpretation makes a difference when
+  the result of a select is used as argument to a unary operator, as size,
+  in this rare case, does really matter, and this subtle difference made
+  the syslib.i and floatlib.i occasionally fail. The value of %SM now
+  controls this, and defaults to 1 (data-dependent) for sick and 1972,
+  and to 0 (size of second operand) for ick. Also more changes to ick.iacc
+  to make it more compatible with ick.
+
+Changes from CLC-INTERCAL 1.-94.-2 to 1.-94.-2.1
+
+* Allowed --backend to specify a comma-separated list, so an object
+  can be loaded or compiled once, then passed to several backends.
+
+* Amazing parser performance improvement by changing one single character
+  in Parser.pm.  A very important character but just one nevertheless.
+  Now instead of adding the whole grammar every time it expands a
+  symbol, it just adds the productions which make sense in the context.
+  This change was made possible by the new grammar profiling.
+
+* Added a simple but effective grammar profiling code, to see what the
+  parser is actually do when the compile time is a bit long.
+
+* Added some more test programs
+
+* Almost completely rewritten sickrc file support, which now ties with
+  the new extension mechanism so that an extension can also register
+  new configuration. This means that anything to do with other modules
+  has now been removed from Base and moved to the appropriate place.
+
+* Modified Language::INTERCAL::Server for IPv6 support, where
+  possible. Also added support for joining IPv6 multicast groups.
+  Moved the INET-specific answer to broadcast and multicast packets
+  to a callback specified by the caller.
+
+* Moved all the INTERNET-specific stuff to the INET package with
+  the exception of Server, which is needed to open TCP sockets using
+  the system call interface.
+
+* Added a few sorts when producing objects and object listings, to
+  make the builds reproducible.
+
+* Fixed a bug in _parse_junk() which would produce the wrong
+  message when executing comments.
+
+* Fixed a bug in _guess_charset which made it fail to detect the
+  charset in a number of cases.
+
+* Fixed a minor grammar bug in sick.iacc; added two CREATE tests
+  in t/11compiler-sick.t, to show how one can achieve the
+  undocumented behaviour mentioned in alt.lang.intercal
+  article <slrng27u3p.1ga.qwertyuiop@intercal.dyn-o-saur.com>
+
+* Moved most of t/00use.t to Language::INTERCAL::Distribute so that
+  other modules can just use that
+
+* Removed a "grep" which managed to sneak into the ddsh distribution,
+  making it an invalid DD/SH program.
+
+* added an option to "sick" to append any preloads to the list guessed
+  from suffix, rather than replacing the list.
+
+* added an option to "sick" to force all outputs to go to a specified
+  directory (instead of going to the directory which contained the
+  source)
+
+* fixed some issues when generating objects (as opposed to running them
+  immediately).
+
+Changes from CLC-INTERCAL 1.-94.-3 to 1.-94.-2
+
+* Moved all documentation, user interfaces and the calculator
+  stuff to separate packages, so their installation is now
+  optional. The documentation is always available from the
+  website, so people may not need to install that at all.
+  There is a plan to move the INTERNET stuff to its own separate
+  package as well, but this hasn't been done yet.
+
+* Changed Makefile.PL to be a thin wrapper around a new module,
+  Language::INTERCAL::InstallModule - this is going to do all
+  the work for CLC-INTERCAL but also for all the optional modules.
+  One day, it'll also be possible to have a Build.PL without
+  extra effort.
+
+* Added $VERSION (derived from $PERVERSION) to all modules; this
+  is required so that the compiler can be uploaded to CPAN and
+  made available to a wider unsuspecting audience. Added a check
+  in the test programs to make sure the $VERSION can be found
+  by ExtUtils::MakeMaker, and hence by the CPAN software.
+
+* Made generic filehandle code (GenericIO.pm) more generic and
+  modular; this will allow extensions to define new file types.
+
+* Make some changes in Interpreter.pm because the above changes to
+  GenericIO broke it.
+
+* FIxed some invalid HTML in the documentation. As I was there, I
+  changed the Makefile so that it can generate the file error.html
+  from the list of splats, and parsers.html from the list of
+  bytecodes. The generated HTML will be produced in blib/htmldoc
+
+* A new version of Language::INTERCAL::HostIP has been produced
+  for better integration with the rest of CLC-INTERCAL. This
+  version is no longer derived (just inspired) from Sys::HostIP,
+  after I tried to submit patches to it and could not contact
+  the author.
+
+* Fixed a bug in the Hollerith encoding (thanks to ais523 for
+  the bug report); see the end of doc/html/charset.html
+
+* Fixed a problem that caused the calculator to splat when dealing
+  with registers overloaded by a previous line.
+
+* Fixed a problem with class WRITE IN. Also added test programs for
+  class I/O.
+
+* Fixed a problem with the theft server when invoked with --linger=0
+
+Changes from CLC-INTERCAL 1.-94.-4 to 1.-94.-3
+
+* Fixed some incompatibility between the implementation of REINSTATE
+  and the documentation. Thanks ais523 for pointing that out.
+
+* Updated documentation (see doc/html) to reflect the current
+  state of the compiler.
+
+* Fixed error building CLC-INTERCAL when a previous version was
+  present. I always clean up after myself :-) so I never noticed
+  this. Thanks to Mark Brown (maintainer of the debian package
+  of clc-intercal as well as more useful packages) for the report.
+
+  A similar problem also occurred while testing (t/??intercalc-*),
+  which has also been fixed
+
+* Added the two crawling horrors as accessible registers; however,
+  there isn't much one can do with them apart from enslaving and
+  overloading them. Still, they are there, ready for the time they
+  can be used properly.
+
+* Fixed a problem where constant labels did not have the correct
+  value if the, ehm, constant had been changed. This can happen if
+  you use overloading. This isn't the same as computed labels.
+  Something similar could also happen with ABSTAIN FROM (label)
+  where the label was a modified constant. Fixed that too.
+
+* Made some changes to the grammars (see 1972.iacc, iacc.iacc, ick.iacc
+  and sick.iacc) to speed up the compilation process (there was an urgent
+  need for it!). My favourite example of pathological parser behaviour,
+  examples/hello.i now takes about 2 minutes to compile, compared with
+  the over 30 minutes of 1.-94.-4). Moreover, there is now a faster way
+  to enable/disable the buttons in the calculator which makes it usable
+  in "sick" mode. For this reason, the calculator now defaults to "sick"
+  mode, the previous default was "ick" because "sick" was too slow.
+
+* Added some more tests to the test suite; this allowed me to find
+  and fix a bug in "ick" compatibility mode which generated wrong
+  bytecode for REINSTATE, and to notice that ABSTAIN and REINSTATE
+  weren't supported in the calculator (they are now).
+
+* Written a reference implementation for the INTERNET (INTERcal NETworking).
+  See files under directory doc/INTERNET in this distribution for the draft
+  specification, which is a modification of the article originally posted
+  on alt.lang.intercal. If you have any comments, do let me know.
+
+* Made some changes to .sickrc and system.sickrc so that they
+  can contain defaults for programs other than sick; these are specified
+  as mappings for weird program suffixes, to allow older versions of
+  CLC-INTERCAL to read new sickrc files without producing an error -
+  however in the unlikely case a program has suffix ..<program>.<option>
+  the older versions will get confused by it (but you wouldn't be able
+  to compile these programs under any version of CLC-INTERCAL anyway).
+  
+  Intercalc now uses two options from the sickrc: ..INTERCALC.LANGUAGE
+  defines the default language and default language options, to be used
+  when the command line does not contain a -l / --language; and
+  ..INTERCALC.MODE defines the operating mode (one, expr, full) to be
+  used when the command line does not contain -m / --mode.
+
+  The new INTERNET library also uses options from the sickrc:
+  ..INTERNET.PORT contains the port number to be used for communication
+  (default 64928 until we can obtain an official port assignment) and
+  ..INTERNET.DEVICE.<device_name> contains the broadcast address for
+  an interface (default: try to determine them - or disable part of the
+  functionality of the CASE statement if that fails). See the appropriate
+  section of the README file for another discussion of this.
+
+* Fixed a bug in intercalc which made it impossible to perform an assignment
+  in "full" mode! Well, it worked in batch mode...
+
+* Added menus in intercalc (as well as special syntax to access the menu
+  functions in batch mode) to change language, base and (un)select options.
+  Note that some changes (change base, change mode) will just load the
+  changes in memory, while other (change language, unselect option)
+  require a reload of the compiler; doing this in the middle of entering
+  a statement or expression is permitted but may cause unexpected results.
+  Even when the compiler needs to be reloaded, the contents of registers
+  remains unchanged (except for the special registers, if the options
+  loaded change them). It is also possible to read out the current state
+  (to a file) and write it back in (from a file) so you can quit the
+  calculator and start it again in the same state (with the limitations,
+  to be removed in a future version, that the operating mode must be
+  the same). In a future version, the calculator will also be able to
+  change the options stored in your .sickrc to correspond to the current
+  ones selected from the menu. For now, you can "Read as" to save the
+  current state to a file, then when you write that back in you get
+  all your options (mode, language, base, options) restored with it.
+
+* Finished the initialisation code included in compiled objects so that
+  one can select wimp mode and other stuff from the command line; any
+  unrecognised option is saved in special register ^AV and any environment
+  is saved in special register ^EV. Although these registers are not
+  accessible to user programs, one can always add the syntax for them or
+  write an extension which will be able to use them.
+
+* Added new system calls to syscall.iasm to allow file operations and TCP
+  sockets. Note that this is not related to the INTERNET extension.
+
+* Found a very rare bug in the assignment to arithmetic unary divide, which
+  was so rare it only manifested by running "make test" about 100 times in
+  a row. At the same time fuxed a related bug which had never manifested.
+  Changed the test script to run more tests when the result involves random
+  numbers to help picking these things out in future.
+
+Changes from CLC-INTERCAL 1.-94.-5 to 1.-94.-4
+
+* Simplified Makefile.PL
+
+* Changed the system call interface which is now written in
+  assembler (that would be INTERCAL assembler, not your
+  computer's native assembler). It even works in the
+  calculator, if you use -osyscall...
+
+* Improved "sick.iacc" to allow more sensible templates (e.g.
+  "READ OUT REGISTER LIST" or "READ OUT EXPRESSION", whereas
+  before you could only use "READ OUT REGISTER").
+
+* All internal data types (Spot, Twospot, Hybrid, Tail,
+  Whirlpool) are now subclasses of the same thing, DataItem.
+  This allows uniform implementation of calculating and using
+  a register, a simple place where registers and elements can
+  be overloaded, and an easy way to produce splats, for example
+  when arrays are used where classes would be expected etc.
+
+* Added "WRITE IN EXPRESSION" which is roughly equivalent to
+  writing in a numeric value and then assigning the value to
+  the expression. Alphanumeric and binary WRITE INs are currently
+  only possible if EXPRESSION is a single register of suitable
+  type (tail, hybrid or shark fin). For maximum obfuscation do
+  something like PLEASE WRITE IN #1 and see what happens.
+
+* Made substantial changes to the bytecode - this is necessary to
+  implement CONVERT and SWAP. The objects will now be incompatible
+  with 1.-94.-5's objects but hopefully I won't need to make any
+  more incompatible changes later.
+
+  While doing this, going through the various grammar and
+  checking all generated code - needless to say, found and fixed
+  some bugs.
+
+  Language::INTERCAL::Bytecode is now generated automatically from
+  a list of bytecode opcodes and internal registers: this means
+  that a C version (for a C runtime) can be generated from the
+  same list and guaranteed to be consistent; it also means that
+  now the module is much faster to load, as its initialisation
+  can now be done while generating it.
+
+  The new module also allows one to classify opcodes by type and to
+  automate some tasks (such as interpreting bytecode and generating
+  code dependent on a bytecode sequence): this allows a simplification
+  of both interpreters and backends.
+
+  There is also the advantage that the POD documentation is also
+  generated from the same list, so the two don't get inconsistent
+  with each other as they used to.
+
+* Added splat *123, program attempted more than 80 levels of
+  NEXTing, which was never produced by CLC-INTERCAL before.
+  Ditto for *621, RESUME #0, and *632, RESUME instead of GIVE UP.
+
+* Changed Language::INTERCAL::Splats to be generated like the
+  bytecode. In fact, any other module can now be generated from
+  a data file and a template by just including @@DATA anywhere
+  in it: see comments at the start of Generate/Generate.
+
+* Added unary divide because I just couldn't resist. You don't have
+  to use it if you don't approve of it. In fact, you are not very
+  likely to use it as it is almost, but not quite, completely
+  useless.
+
+* Changed the way the compilers (and compiler compilers etc) work,
+  simplifying just about everything. Removed the CoreDump backend,
+  which was only used to produce compilers (etc) and is now
+  unnecessary.
+
+* Extensively changed Language::INTERCAL::Object to bring it up
+  to date with all the other changes. As I was there, implemented
+  CONVERT and SWAP. Note that the functionality is now split
+  between Language::INTERCAL::Object and Language::INTERCAL::Interpreter
+
+* Added the possibility to assign to any expression, providing a
+  shortcut to assigning to an overloaded register: for example:
+
+  DO .&1 <- #2
+
+* Added ABSTAIN FROM / REINSTATE COMPILER BUG, equivalent to
+  requesting that the compiler does not generate a bug. When
+  the compiler bug is ABSTAINed FROM, it may still execute as
+  an unexplainable compiler bug. As a side effect, one can
+  now also COME FROM COMPILER BUG and so on, although this is
+  not likely to be very useful as the COME FROM executes after
+  the bug, or in other words does not execute at all.
+
+  Note that the above does not stop the unexplainable compiler
+  bug. In fact, by ABSTAINing FROM the explainable bug, one
+  may trigger the unexplainable one.
+
+  Also added the ABSTAIN FROM / REINSTATE QUANTUM COMPUTING,
+  together with all the normal friends such as COME FROM
+  QUANTUM COMPUTING etc. These statements refer to any quantum
+  statement in the program.
+
+  Note that there are no template (just gerunds) for COMPILER
+  BUG and QUANTUM COMPUTING.
+
+  Also note that an ABSTAIN FROM QUANTUM COMPUTING WHILE
+  REINSTATING IT will cause the program to have a split personality,
+  one quantum, one classical. Or something like that.
+
+* Also made substantial changes to the parser. The idea is that in
+  many cases the program never needs to be recompiled at runtime,
+  even if the compiler does change during execution. We do this by
+  guessing how many alternative versions of the code we are likely
+  to need, and generating them all. The way it's implemented now it
+  reduces the recompile but could do a lot more, which is planned
+  for 1.-93 or (if I find the time) 1.-94.-3
+
+  As I was there, I've put some code towards writing the optimiser.
+
+* Changed the way the compiler handles top-level symbols (i.e.
+  ?PROGRAM) to avoid the code generated becoming exponentially
+  large, just to be then compressed back to normal by
+  _setcode() (in Parser.pm). This problem is a consequence of the
+  previous change. Note that the compiler is stil slower than it
+  needs to be, but further improvements will need to wait for a
+  new release.
+
+* Added a lot of functionality to the calculator (intercalc),
+  which now works in "oic" and "expr" mode (see the docs), and
+  will probably work in "full" mode but it is untested. Anyway,
+  you can astonish all your friends with a calculator where you
+  can type something like:
+
+    #1 <- #2
+
+  and thereafter whenever you use the number 1 you get 2 instead,
+  for example:
+
+    .1 <- #5
+    .2
+
+  will give you 5 (or rather "V") because you've assigned to .2...
+  OK, it is a bit slow just now but this is because the compiler is
+  slow, and improvements will follow in 1.-94.-3. Honest.
+
+* Minor changes/fixes/etc in:
+  Language::INTERCAL::ArrayIO
+  Language::INTERCAL::Charset
+  Language::INTERCAL::Charset::Baudot
+  Language::INTERCAL::Exporter
+  Language::INTERCAL::GenericIO
+  Language::INTERCAL::Interface::None
+  Language::INTERCAL::Numbers
+  Language::INTERCAL::ReadNumbers
+  Language::INTERCAL::Reggrim
+  Language::INTERCAL::WriteNumbers
+
+Changes from CLC-INTERCAL 1.-94.-6 to 1.-94.-5
+
+* Done some changes to the parser as a preparation for further
+  development (planned between 1.-94.-4 and 1.-94-release).
+
+* Removed licence.* and the corresponding paragraph in the
+  README etc. It was a joke but it is getting difficult to
+  maintain.
+
+* Added a separate gerund for loops and events (before they had
+  a common gerund); added a possibility to ABSTAIN FROM LOOPING,
+  which also abstains from events, and the corresponding templates.
+
+  Ditto for CONVERT/SWAP to distinguish betweem loops/events and
+  generic statements.
+
+* Fixed a bug in the bytecode generated for loops, which could not
+  possibily work in bases other than 2. Ditto for the corresponding
+  CONVERT and SWAP.
+
+* Fixed a typo on the grammar which caused any expression to be
+  recognised as end of comment; computed labels appear as
+  (expression), so this is now the syntax checked. And a related
+  grammar bug caused invalid code when processing labels!
+
+* Fixed the "COME FROM gerund" code, which caused problems with
+  examples/quantum/come-from-gerund.gi
+
+* Made some changes in Language::INTERCAL::GenericIO to fix
+  some problems with the example programs provided.
+
+* Fixed some problems with the bytecode generated for REMEMBER
+
+Changes from CLC-INTERCAL 1.-94.-7 to 1.-94.-6
+
+* Added an INTERCAL desk calculator (intercalc) - just a stub for
+  now but it'll grow into something one day.
+
+* Bug fixes in the sick.iacc grammar: some quantum statements were
+  incorrectly specified; also READ OUT * did not parse correctly.
+
+* Some rewriting of the parser allows more flexibility when writing
+  grammars; also, there is now a mechanism to extract the whitespace
+  discarded by the compiler: this may be, one day, used to embed
+  Whitespace (see http://compsoc.dur.ac.uk/whitespace/) into INTERCAL.
+
+  Also, the code looking for the end of a comment, which used to
+  look for the first DO, PLEASE or (number) after a parse error,
+  now uses symbols defined in the grammar instead. This means that,
+  for example, sick now recovers correctly from a parse error
+  just before a computed label; formerly, it would consider the
+  computed label as part of the comment because it did not match
+  the simple pattern.
+
+  Yes, the compiler is getting slower, but I have ideas on how to
+  improve that, which I plan to work on in 1.-93; meanwhile, this
+  release will test all the grammars and iacc files.
+
+* Removed the "deep recursion" messages when compiling the licence
+  agreement (this would also happen in any other suitably complicated
+  grammar).
+
+* Removed references to the old licence from all source files, and
+  updated copyright statement and perversion number.
+
+* Fixed some weirdness in the generation of manpages from pod, caused
+  by the weirdness of the source directory structure.
+
+* Added an option to link any two objects together; this is similar
+  to the preload used to compile things, but can be applied to
+  any object, even one already compiled. Moreover, using --preload
+  prevents guessing a list of preloads, so you need to specify
+  them all in the command line; --link is an independent mechanism
+  and does not stop the default preloads: see the example in the
+  next bullet.
+
+  Note however that not all objects designed to use with --preload
+  will work with --link; for example, attempting to --link 3.io
+  will not switch the base at runtime: instead it will cause your
+  program to fail to run. The reason is that 3.io has been designed
+  to be included at compile time, not at runtime.
+
+* Added a "trace mode" which allows one to watch bytecode while it
+  is executed. To use it, compile to object as normal and then link
+  with trace.io:
+
+  sick -lObject PROGRAM.i                   (or whatever)
+  sick -lRun PROGRAM.io --link trace.io
+
+  of course, you can combine the two:
+
+  sick -lRun PROGRAM.i --link trace.io
+
+  The advantage of --link over --preload in this case is that --link
+  does not clear the preload list; the equivalent command using
+  --preload, and assuming you haven't changed the system.sickrc is:
+
+  sick -lRun -psick -ptrace -ppostpre PROGRAM.i
+
+  Note that trace.io has been designed to be included at runtime. While
+  it works in this example, it may cause other preloads to stop working
+  if they appear after trace.io in the command line.
+
+* Changed the encoding of Hollerith into bytes to interleave the bits
+  instead of splitting them.
+
+Changes from CLC-INTERCAL 1.-94.-8 to 1.-94.-7
+
+* New licence.
+
+* Minor problems in the documentation fixed (could cause some fussy
+  browsers to display the examples incorrectly).
+
+Changes since CLC-INTERCAL 0.05
+
+* NOTE: CONVERT and SWAP are currently unimplemented in the prerelease
+  1.-94 compiler. Use the new CREATE and DESTROY instead (see below).
+
+* ALSO NOTE: This file is sorted by decreasing order of sanity. You may
+  stop reading at any point, but, if you continue, things are guaranteed
+  to get worse.
+
+* New version scheme including negative revision numbers has been introduced.
+
+* "Version" renamed "perversion" for honesty.
+
+* Implemented the just-too-late compiler people have heard me talking about:
+  see file doc/just-too-late.pod
+
+* Modified the operators to support Tri-INTERCAL (and all bases up to 7)
+  and of course add the extra operators (Unary BUT, etc); the notation will
+  be different from their C-INTERCAL's counterpart (because the whirlpool
+  has already been used for classes); unary BUT is written ?; unary Add
+  Without Carry is written | (in C-INTERCAL compatibility mode, BUT is @
+  and Add is ^).
+
+* Updated the WRITE IN code to allow input in Latin, like C-INTERCAL 0.20;
+  also added an alternative spelling for Gaelic Neoni (0).
+
+* Added new stashes. INTERCAL 1972 and C-INTERCAL have two stashes: one for
+  the program counter (used by NEXT) and one for all the other registers.
+  CLC-INTERCAL 0.05 had three (two independent ones for the program counter:
+  did anybody notice that you can do NEXT from within a lecture, do a FINISH
+  LECTURE, and you can still RESUME? In other words, you could do subroutine
+  returns in the wrong order and it wold work (for INTERCAL values of work);
+  after all, you can already stash registers and then retrieve them in the
+  wrong order, as long as the registers are distinct).
+
+  CLC-INTERCAL 1.-94 has sixteen independent stashes, but we aren't (yet)
+  admitting what they are used for. It helps to remove that unfortunate
+  resemblance between stashes and stacks. You can now stash a register
+  several times and then retrieve it in any order, not just the reverse
+  of the stashing. If this is confusing, don't worry, we can't figure out
+  why one would want to do that either.
+
+* Updated READ code to allow array slices (e.g. if ;1 is a 2-dimensional
+  array, READ OUT ;1 SUB #2 will read out all elements of ;1 which have
+  first subscript #2). For reasons which shall remain unexplained, WRITE IN
+  can only use whole array or single elements, no slices (this, of course,
+  might change in a future release).
+
+* Implemented the CREATE statement, as well as its companion DESTROY: the
+  syntax is different from what had been announced (but never implemented)
+  before, and use of these statements require knowledge of the INTERCAL
+  virtual machine, which will be documented in future (possibly). The parser
+  is now provided in its source form (a list of CREATE statements), and this
+  can be used as example by anybody who is interested to extend the compiler.
+  A mini-compiler is provided in src/iacc.iacc (source) and src/iacc.io
+  (object) to compile the full compiler.
+
+* Implemented a new statement, the "NEXT FROM". This is similar to
+  "COME FROM", except that the current position is stashed. For example,
+  the two programs:
+
+  (1) DO .1 <- #1              |     DO (2) NEXT
+      PLEASE READ OUT .1       |     PLEASE READ OUT .1
+      DO GIVE UP               |     DO GIVE UP
+      DO NEXT FROM .1          | (2) DO .1 <- #2
+      DO .1 <- #2              |     PLEASE RESUME #1
+      PLEASE RESUME #1
+
+  produce the same result ("II"). It is an error to have more than one
+  "NEXT FROM" looking at the same label, or a "NEXT FROM" and a "COME FROM".
+  This limitation might be removed in future releases. Also note that
+  we think this new statement is cool, so you won't have to ask the compiler
+  to include it (as you need to do with "NEXT"/"RESUME"/"FORGET"), it's
+  always available.
+
+* Also allowed "Gerund" forms of "COME FROM" and "NEXT FROM", so they now
+  look like ABSTAINs and REINSTATEs in the grammar. There is an example
+  in examples/quantum/come-from-gerund.gi; Since programs using this
+  construct incur some performance penalty (every statement is now a potential
+  target for a "COME FROM"/"NEXT FROM", not just ones with labels), it needs
+  to be explicitly enabled by preloading "come-from-gerund" or using the
+  suffix ".gi" instead of ".i"
+
+* Also updated the definition of "GERUND" to include "COMMENTING" (which can
+  be abbreviated "COMMENTS") - with all INTERCAL compilers, unrecognised
+  statements are treated as comments; if they are executed, they print
+  themselves as error messages and abort. Now it is possible to ignore
+  errors by saying:
+
+      PLEASE ABSTAIN FROM COMMENTING
+
+  You can, of course, REINSTATE COMMENTS, although this might transform
+  genuine comments ("PLEASE NOTE: THIS IS A COMMENT") into error messages.
+  But then, you had a similar problem when comments had labels.
+
+* Modified the initialisation code to make the command-line and the
+  environment available to the program. These will be found in the special
+  array registers ^1 and ^2, respectively. The arrays are bidimensional,
+  with ^1 SUB #1 containing the first argument, ^1 SUB #2 the second, and
+  so on. Needless to say, these arguments are provided as if they had been
+  written in, so they are likely to be in Baudot or something as bad as that.
+  A class library to implement associative arrays is going to be provided
+  one day - this would be just what you need to use ^2 (the environment).
+
+  Please note that these registers are used by the initialisation code, and
+  are not normally accessible to the program (but see the next point)
+
+* Made some of the program's internal state accessible to the program via a
+  set of special registers (%n). For example, "DO %1 <- #1" will cause the
+  program to do something unexpected (because %1 is the first part of the
+  instruction pointer, the rest being %2 and %3). Note that a statement
+  starting with "DO %1" can now be an assignment or something else, for
+  example "DO %10 <- #1" is an assignment, and "DO %10 READ OUT .1" is a
+  statement which reads out a register one time in ten. This is OK because
+  IACC (the parser generator) happily accepts nondeterministic grammars, and
+  sometimes even produces the expected results.
+
+  The use of these registers should be limited to the compiler itself. In
+  fact, they are currently only available to the compiler, but nobody stops
+  the programmer from making them available with the appropriate CREATEs.
+
+  If you really must, the list of these register is around line 82 of
+  Language/INTERCAL/Object.pm -- look for %special_registers. Note that
+  you cannot use any % or ^ register unless it's listed there, and you
+  cannot always resize ^ registers. Some of the registers behave weirdly.
+
+* Rewritten the write/read code to allow more flexibility from within the
+  program - this is used by the compiler itself as well as by other things
+  which are currently kept secret. The word "Outercal" has been uttered again.
+
+* Added some more quantum constructs:
+
+      DO register <- expression WHILE NOT ASSIGNING TO IT
+      DO COME FROM (label) WHILE NOT COMING FROM THERE
+      DO CREATE ... WHILE NOT CREATING IT
+      DO DESTROY(... WHILE NOT DESTROYING IT
+      DO ENROL register TO LEARN subjects WHILE NOT ENROLLING
+      DO ENSLAVE register TO register WHILE LEAVING IT FREE
+      DO FINISH LECTURE WHILE CONTINUING IT
+      DO FORGET expression WHILE NOT FORGETTING
+      DO FREE register TO register WHILE LEAVING IT IN SLAVERY
+      DO NEXT FROM (label) WHILE NOT NEXTING FROM THERE
+      DO GIVE UP WHILE CONTINUING TO RUN
+      DO register GRADUATES WHILE REMAINING A STUDENT
+      DO register LEARNS subject WHILE NOT LEARNING IT
+      DO (label) NEXT WHILE NOT NEXTING
+      DO RESUME expression WHILE NOT RESUMING
+      DO RETRIEVE registers WHILE NOT RETRIEVING THEM
+      DO STASH registers WHILE NOT STASHING THEM
+      DO STUDY subject AT (label) IN CLASS @(number) WHILE NOT STUDYING IT
+      DO WRITE IN registers WHILE NOT WRITING THEM
+
+  Note that quantum assignment will also generate quantum bits on side effects:
+  if the expression contains some overloading, the overloading will take effect
+  while not taking effect; if the assignment modifies constants (see next
+  point), they will retain their previous value while assuming a new one.
+  This applies to most of the new constructs except (just to be different)
+  quantum COME FROM, which always applies side effects but causes the program
+  to jump while remaining stationary (similarly quantum NEXT FROM and
+  behaves like quantum COME FROM)
+
+  Examples for all forms of quantum constructs are found in directory
+  examples/quantum: all these files can be compiled with the default
+  CLC-INTERCAL compiler; in addition, examples/threads.i is a program
+  which demonstrates the use of (non-quantum) threads, and must be
+  compiled using the Threaded INTERCAL compatibility mode ("thick").
+
+* Allowed to modify constants by assigning to an overloaded register, for
+  example:
+
+      PLEASE DO .1 <- .1/#1
+
+  will (shock! horror!) leave the value of .1 unchanged, but at the same
+  time modifies the value of #1 to whatever value was in .1 before the
+  assignment. Note that this changes more than you might expect: for
+  example, the "1" in ".1" will now change too... so when you try to
+  assign to .1 (for example to restore #1 to its former value), you might
+  get a different register. The way around it is:
+
+      PLEASE DO .2 <- #1
+      PLEASE ENSLAVE .2 TO .1
+      DO .1 <- #1234
+      DO .1 <- .1/#1
+      DO SOMETHING WITH #1 CHANGED TO #1234
+      DO $.2 <- .2
+      DO FREE .2 FROM .1
+
+  You need to use $.2, because .1 is not accessible in any other way. Of
+  course, you are responsible for keeping the value of #2 constant during
+  the above code.
+
+  You probably guessed a simpler solution already:
+
+      PLEASE DO .1234 <- #1
+      PLEASE ENSLAVE .1234 TO .1
+      DO .1 <- #1234
+      DO .1 <- .1/#1
+      DO SOMETHING WITH #1 CHANGED TO #1234
+      DO $.1 <- .1
+      DO FREE .1234 FROM .1
+
+  This works because the references to .1 are really references to .1234,
+  which of course contains .1; and $.1 is really $.1234 which is the real .1
+
+  People who want to keep their sanity should avoid assigning to constants.
+  (come to think of it, people who want to keep their sanity should avoid
+  INTERCAL...)
+
+  People who are not so worried about their sanity can read all about
+  overloading in the documentation.
+
+* A new operating system interface is available via the use of the special
+  register %OS and the compiler module "syscall.iacc" (which can be added to
+  sick by using the option "-psick -psyscall" or, better, "--suffix=si").
+  After you added "syscall.iacc" to your program, it will behave as if the
+  operating system had, lurking in its darkest corner, the statement:
+
+      DO NEXT FROM (666)
+
+  (In fact, it is a computed NEXT FROM and the label is specified by the
+  internal register %OS; however, since the register is not accessible to
+  the program, it is just as good as a noncomputed one, unless you use CREATE
+  to make the register accessible). The operation code is contained in
+  register +.1-$%OS which is just a shortand for "the spot register with the
+  same number as the last register assigned to before the system call". For
+  example, the following:
+
+      (666) DO .666 <- #2
+
+  would execute system operation #2, whatever it is. However, the following:
+
+      (666) DO :123 <- #2
+
+  would execute the system operation with code in .123 (the assignment was to
+  :123, which of course does not alter .123, but sets the register number to
+  be used to 123, so the expression "+.1-$%OS" becomes equivalent to
+  "+.1-:123" which is of course ".123".
+
+  Also note that if a thread has never assigned to a register, it is an error
+  to use the syscall interface. A program starting with:
+
+      (666) DO NOT GIVE UP
+
+  would therefore produce an error.
+
+  One more note, "writing" a register means assigning to it. For example,
+  the following program would obtain a system operation number from the
+  operator:
+
+      (666) PLEASE WRITE IN .1
+
+  An then there is:
+
+      (666) DO RETRIEVE :1 + ,2 + ;3
+
+  which can decide to use .1, .2 or .3 depending on the actual order of
+  evaluation (the RETRIEVE is considered to modify all the registers listed).
+  In all versions of CLC-INTERCAL, registers are retrieved in order, so,
+  until we change something, this uses .3 for the opcode.
+
+  Enslaving, freeing, enrolling and graduating are not considered
+  modifications in this context. Overloading is also not considered a
+  modification (including assignment to overloads) although it probably
+  ought to be. If you want consistency, don't use INTERCAL. For example:
+
+            PLEASE .1 <- .2/#3
+      (666) DO .2 <- #4
+
+  would execute the system call with ".1", not ".2", because the last
+  assignment is to an overloaded register (in fact, it is altering #3
+  to be the same as #4, so it is not assigning to a register at all!)
+
+  The list of system operations does not necessarily correspond with the
+  O.S. kernel's list of syscalls, or with anything else. It is currently
+  documented only by the self-explanatory source code in syscall.i - which
+  also doubles as example for "COME FROM GERUND" and "CREATE".
+
+  Parameters to the call are contained in registers with the same number
+  as the opcode: +:1-$%OS for numbers, +,1-$%OS for strings and +;1-$%OS
+  for lists of numbers. Of course, some opcodes have nonstandard calling
+  conventions.
+
+  It is possible to disable system calls using "DO ABSTAIN FROM NEXTING FROM",
+  and re-enable them with "DO REINSTATE NEXTING FROM".
+
+* Since you are still here, you can read the comment before subroutine
+  _forall_statement() in Language::INTERCAL::Object and reproduced below:
+
+  # The following subroutine handles the rather dubious case in which the
+  # compiled program has changed, and the program counter needs adjusting
+  # in all threads to find where the current code has gone. The reason it
+  # is called _forall_statements is because this can only happen when we
+  # sweep through the program, for example to find come froms, labels, and
+  # what have you. In all other cases, the program counter automagically
+  # adapts to the code. Really. Look at _run_code() if you don't believe me
+

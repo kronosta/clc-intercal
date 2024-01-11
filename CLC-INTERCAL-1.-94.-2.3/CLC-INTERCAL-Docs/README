@@ -1,0 +1,57 @@
+CLC-INTERCAL 1.-94.-2.3 -- Documentation
+
+This package provides documentation for CLC-INTERCAL.
+
+You do not normally install this package, rather you can build it then
+copy the resulting documentation to some web server (or a local directory
+where you can point your browser).
+
+An online version will be made available in the near future.
+
+To build the documentation, make sure you install at least:
+
+* CLC-INTERCAL-Base >= 1.-94.-2.3
+* CLC-INTERCAL-INET >= 1.-94.-2.3
+
+(or else install this as part of the Bundle): these two packages are
+required to build the generated documentation and examples.
+
+Run:
+
+    perl Makefile.PL
+    make
+
+This will copy the files into
+
+    blib/htmldoc
+
+You can then copy the documentation somewhere useful.
+There is no (useful) "install" script at this time.
+
+A number of very simple example programs have been collected in
+
+    doc/examples
+
+These don't do anything useful, but demonstrate a particular statement or
+concept. After installing the Base package, most of these can run as they
+are with a command like:
+
+    sick -lRun doc/examples/(name).i
+
+Some of these programs require the INET package to be installed, and they
+have suffix ".ri".
+
+The build process will try to generate syntax highlighting for all example
+programs, and put the result in
+
+    blib/htmlexamples
+
+There is an online copy of the latest version, including any information
+about work in progress which has not appeared in an escape yet, at:
+
+    https://uilebheist.srht.site/docs/
+
+The example programs (in the syntax highlighted version) can also be seen at:
+
+    https://uilebheist.srht.site/examples/
+

@@ -1,0 +1,68 @@
+PLEASE NOTE: This configuration file provides defaults to the calculator
+
+Copyright (c) 2023 Claudio Calvelli, all rights reserved.
+
+CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+and distribute it is granted provided that the conditions set out in the
+licence agreement are met. See files README and COPYING in the distribution.
+
+PERVERSION "CLC-INTERCAL/ICALC INTERCAL/Include/ICALC.sickrc 1.-94.-2.1"
+
+DO NOTE: Calculator's default language
+I CAN CALCULATE sick + 2
+
+DO NOTE: Calculator's default mode
+I CAN OPERATE full
+
+PLEASE NOTE: these configuration items relate to how we display things
+using a windowed user interface; this may move to Base in future if the
+"sick" compiler tool starts using interfaces.
+
+DO NOTE: specially for the Curses interface, we ask that the frames
+around buttons and menus be displayed using line-drawing characters;
+change "LINE DRAWING" to "ASCII" if your terminal cannot display them
+I DON'T FRAME
+I CAN FRAME WITH LINE DRAWING WHEN USING Curses
+
+DO NOTE: The following options control how each element appears on
+the calculator's window. First we clear all the configuration,
+which reverts all elements to system default (for example, terminal
+settings in force at the time of starting Curses, or Gtk theme)
+I DON'T EMBOLDEN
+I DON'T ITALICISE
+I DON'T UNDERLINE
+I DON'T REVERSE
+I DON'T DIM
+I DON'T PAINT
+I DON'T DRAW
+
+DO NOTE: none of the following line is actually recognised as
+configuration because they use "J" rather than "I", so they are
+all part of a comment: they are included to provide some examples
+but all values will use the default, To add any non-default
+configuration, refer to the documentation as well as the examples
+below.
+
+Font and size for all parts which display test:
+J CAN DRAW MESSAGES + ENABLED KEYS + DISABLED KEYS +
+           CURRENT ITEM + ENABLED MENUS + DISABLED MENUS
+      IN "Courier" AT 12
+
+Some text will be made bold:
+J CAN EMBOLDEN ENABLED KEYS + ENABLED MENUS
+
+And some will be shown in reverse video:
+J CAN REVERSE CURRENT ITEM
+
+In addition to making them bold, enabled keys are shown in red
+with the default background
+J CAN PAINT ENABLED KEYS IN RED
+
+And disabled items will be dimmed and displayed in white on a
+blue background:
+J CAN PAINT DISABLED KEYS + DISABLED MENUS IN WHITE ON BLUE
+J CAN DIM DISABLED KEYS + DISABLED MENUS
+
+Frames around buttons etc will also be dimmed
+J CAN DIM FRAMES
+

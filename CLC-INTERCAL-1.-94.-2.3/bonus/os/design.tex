@@ -1,0 +1,300 @@
+\documentclass[12pt,titlepage,a4paper,twoside]{article}
+\renewcommand{\contentsname}{Root Directory}
+\title{The INTERCAL Operating system\\Design document}
+\author{Claudio Calvelli}
+\renewcommand{\today}{Draft of 18 December 1999}
+\begin{document}
+\pagestyle{myheadings}
+\thispagestyle{empty}
+\makeatletter
+\markboth{\@title}{\@title}
+\makeatother
+\newlength{\strikesize}
+\def\strike#1{\settowidth{\strikesize}{#1}%
+\makebox[0pt][l]{\rule[0.3ex]{\strikesize}{0.05ex}}%
+\makebox[0pt][l]{\rule[0.5ex]{\strikesize}{0.05ex}}%
+\makebox[0pt][l]{\rule[0.7ex]{\strikesize}{0.05ex}}%
+#1}
+
+\maketitle
+\begin{abstract}
+This paper describes the basic philosophy and design decisions behind the
+INTERCAL Operating System (``FUN''), in particular the design of the kernel.
+Other issues, such that user interfaces, metric and number-theoretic
+properties, and the internals of the kernel, are briefly introduced but
+are beyond the scope of this document.
+\end{abstract}
+\clearpage
+%\thispagestyle{plain}
+%\def\thepage{\roman{page}}
+\setcounter{page}{1}
+\tableofcontents
+
+%\let\mycleardoublepage=\cleardoublepage
+%\def\cleardoublepage{\clearpage\thispagestyle{empty}\mycleardoublepage}
+
+\addcontentsline{toc}{section}{\numberline{}.}
+\addcontentsline{toc}{section}{\numberline{}..}
+
+\clearpage
+
+%\def\thepage{\arabic{page}}
+%\setcounter{page}{1}
+%\thispagestyle{plain}
+
+%-------------------------------------------------------------------------------
+
+\section{Introduction}
+\label{introduction}
+
+This document details the (mis)design decisions behind the INTERCAL Operating
+System (which will henceforth be abbreviated ``FUN''). Only the ``kernel'' of
+FUN is discussed here, a separate paper will deal with (l)user interface
+issues.
+
+The various components of the kernel are described in the order they are
+loaded at boot time. The first thing taking control of your
+computer is the bytecode interpreter (see section~\ref{bytecode interpreter}),
+which is the only CPU-dependent part of the kernel. The rest of the kernel
+is written in a high-level language (such as INTERCAL, DD/SH, Malbolge, or
+Befunge), compiled into bytecode, and fed into this subsystem.
+
+The bytecode interpreter fully supports Quantum INTERCAL's emulator for
+classical computers, which means that Quantum program can run unchanged on
+any CPU by just porting the bytecode interpreter. In addition, Threaded
+INTERCAL's thread are also supported.
+Section~\ref{process model} describes how these are implemented by the kernel.
+
+Once the bytecode interpreter has finished initialising, it automatically
+starts a few Quantum INTERCAL programs. Since the interpreter doesn't know
+any better, all these programs share the same memory space. However, the
+memory manager (see section~\ref{memory management}) will soon take care
+of this problem by adding arbitrary constraint on the memory usage of each
+process.
+
+Once the memory manager is running, two big components of the kernel can
+start: the file system (section~\ref{file system}) and the device manager
+(section~\ref{device manager}). They depend on each other in the sense
+that the file system needs the device manager to access the necessary
+resources (floppies, tapes, card readers, etc.);\ conversely, the device
+manager needs to read configuration files which are provided by the file
+system. This produces a circular dependency which is never broken until
+the kernel is brought down (by removing the bytecode interpreter from
+memory, using the memory manager), but the two processes cooperate (and
+sometime fight) towards an approximation of the desired running system.
+See also section~\ref{overall design philosophy}, in particular
+subsection~\ref{overall design philosophy:metric properties}.
+
+Last, but not least, the compiler interface process (see
+section~\ref{compiler interface}) also starts. The description of this
+process is beyond the scope of this document, however we include a few
+hints here which we hope will be useful to re-read when we actually
+write the accompanying document on user interfaces. We might, however,
+disregard the contents of this section and just design something completely
+different.
+
+Unlike most papers, we do not include any references, because we are making
+all this up from thin air; and we do not include any acknowledgements because
+all contributors have requested to remain anonymous.
+
+%-------------------------------------------------------------------------------
+
+\section{Overall Design Philosophy}
+\label{overall design philosophy}
+
+The guiding principle in the design of FUN is that everything we do
+must differ from the way other operating systems do it.
+
+\subsection{Everything is a process}
+\label{overall design philosophy:everything is a process}
+The first victim of this guiding principle is the concept of file. While
+we do have a file system, we employ the name ``file'' purely for convenience,
+since we did not quite know what to call that part of the kernel; in fact,
+a file will be just a special type of process (see section~\ref{file system}).
+While we are aware that datatypes (and hence files) are represented as
+processes in $\pi$-calculus and similar laguages, we must stress that they use
+this as a purely theoretical device to simplify the language to something
+tractably small, but no operating system has ever taken the idea seriously.
+Therefore, we do.
+
+This paragraph intentionally left blank to give the reader time to prepare
+herself for the next blow.
+
+As we are there, we push the conept a bit further, so we
+end up declaring that ``everything is a process''. One important
+implication is that any file can be executed, so the file permission model
+will necessarily differ from what other operating systems do. Also, a file
+does not ``reside'' on a particular medium, as it might be partly in RAM,
+partly on tape, partly on a disk, a bit of it stored in the printer's
+memory, you get the picture. If the kernel has a mechanism to ``push''
+bits of a process out of a device, we can end up with a file (or indeed
+a process---there's no difference) entirely contained on a tape, for
+example. As a result, a running process can be ``pushed'' onto a tape
+while it is still running; the tape ejected and moved to a separate
+computer; and the process will keep running, having transparently migrated
+to the new node. Just think of the advantages. Now think of the FUN we're
+going to have implementing this in the kernel.
+
+One final implication of this process-based paradigm is that anything the
+user does is also seen as a process, and therefore the user interface (see
+section~\ref{compiler interface}) will require the user to provide something
+which looks like a valid process---bytecode, or any of the supported high-level
+languages will do.
+
+\subsection{Number theoretic properties}
+\label{overall design philosophy:number theoretic properties}
+A secondary design principle is that the whole kernel must be based on solid
+number-theoretic properties. The visible effect is that everything will be
+represented by prime numbers: file sizes, device sizes, date and time, etc.
+We do not discuss here how this is going to happen, but we have some ideas.
+We think of writing a separate paper, on the number theory of the FUN
+kernel.
+
+\subsection{Metric properties}
+\label{overall design philosophy:metric properties}
+Finally, the whole kernel is based on an asynchronous design. This means that
+things happen when they happen. There are no clocks, and definitely not
+something like {\tt cron}. The only type of ordering between events is
+defined by their interdependency. Circular dependencies (such as the one
+between the device manager and the file system, discussed in
+section~\ref{introduction}) are solved by successive approximations. A
+suitable metric is defined on the kernel so that every circular dependency
+defines a contracting transformation on this metric, and this will necessarily
+provide a unique fix point for the transformation. A side effect of these
+metric properties is that it is possible to prove mathematically that the
+kernel will reach a stable state at some point after booting, and, once
+this state is reached, it is impossible for the system to crash. A companion
+paper will deal with the metric properties of the kernel.
+
+%-------------------------------------------------------------------------------
+
+\section{Bytecode interpreter}
+\label{bytecode interpreter}
+
+The FUN bytecode is designed to model a simple virtual machine, which runs
+all the other components of the system. The virtual machine can be described
+as a ``Quantum RISC\footnote{Redundant Instruction Set Computer}'', and is
+briefly described here.
+
+\subsection{Instruction Set}
+\label{bytecode interpreter:instruction set}
+
+Table~\ref{bytecode interpreter:instruction set:table} shows the virtual
+machine's instruction set. A full description of these instruction is beyond
+\strike{hope} the scope of this paper, but we can give some hints:
+\begin{table}[hpbt]
+\begin{center}\fbox{\begin{tabular}{|l|l|l|}
+\hline
+Opcode & Mnemonic & Description \\
+\hline
+NIHIL  & HCF      & Halt and Catch Fire \\
+XLII   & ROAST    & ROtate And STash \\
+CXVII  & SMOKE    & Select Meaningless Operating Kernel Environment \\
+XXXIII & BURN     & Begin Uninteresting Random Numbering \\
+CLIX   & CRASH    & Convert Register to Array or Hash \\
+IV     & AND      & Alter Network Data \\
+CCIX   & EXPLODE  & EXPort LOcal Datatypes Everywhere \\
+LIV    & TOAST    & Ten Operands Arithmetic Symmetric Transformation \\
+XIX    & VOMIT    & Variable Operand Mutually-recursive \\
+       &          & Impossible Transformation \\
+CC     & BARF     & Begin Alternate Reality Field \\
+CL     & PUKE     & Parse Unfinished Kernel Extensions \\
+\hline
+\end{tabular}}\end{center}
+\caption{Quantum RISC Instruction Set}
+\label{bytecode interpreter:instruction set:table}
+\end{table}
+
+\begin{description}
+\item[HCF] (Halt and Catch Fire).
+This is implemented by most hardware, but usually undocumented (I've heard
+of vendors denying its existence). Its effect is to stop the system in
+the most terminal way.
+
+\item[ROAST] (ROtate And STash).
+This instruction takes two numbers (let's call them $\alpha$ and
+$\omega$), and performs a series of rotations and copies on $\alpha$. The
+number $\omega$ is split into bits, parts of which specifying rotations,
+and parts stashing (copies).
+
+\item[SMOKE] (Select Meaningless Operating Kernel Environment).
+This description temporarily left blank.
+
+\item[BURN] (Begin Uninteresting Random Numbering).
+This description temporarily left blank.
+
+\item[CRASH] (Convert Register to Array or Hash).
+This description temporarily left blank.
+
+\item[AND] (Alter Network Data).
+This description temporarily left blank.
+
+\item[EXPLODE] (EXPort LOcal Datatypes Everywhere).
+This description temporarily left blank.
+
+\item[TOAST] (Ten Operands Arithmetic Symmetric Transformation).
+This description temporarily left blank.
+
+\item[VOMIT] (Variable Operand Mutually-recursive Impossible Transformation).
+This description temporarily left blank.
+
+\item[BARF] (Begin Alternate Reality Field).
+This description temporarily left blank.
+
+\item[PUKE] (Parse Unfinished Kernel Extensions).
+This description temporarily left blank.
+
+\end{description}
+
+\subsection{Example Program}
+\label{bytecode interpreter:example program}
+
+The following program is similar in effect to a fork bomb, but affects the
+whole network (and takes the word ``bomb'' more seriously):
+
+\begin{verbatim}
+        EXPLODE
+        CRASH AND BURN
+        HCF
+\end{verbatim}
+
+%-------------------------------------------------------------------------------
+
+\section{Process Model}
+\label{process model}
+
+This section temporarily left blank.
+
+%-------------------------------------------------------------------------------
+
+\section{Memory Management}
+\label{memory management}
+
+This section temporarily left blank.
+
+%-------------------------------------------------------------------------------
+
+\section{File System}
+\label{file system}
+
+This section temporarily left blank.
+
+%-------------------------------------------------------------------------------
+
+\section{Device Manager}
+\label{device manager}
+
+This section temporarily left blank.
+
+%-------------------------------------------------------------------------------
+
+\section{Compiler Interface}
+\label{compiler interface}
+
+This section temporarily left blank.
+
+%-------------------------------------------------------------------------------
+
+\addcontentsline{toc}{section}{\numberline{}End Of File}
+
+\end{document}

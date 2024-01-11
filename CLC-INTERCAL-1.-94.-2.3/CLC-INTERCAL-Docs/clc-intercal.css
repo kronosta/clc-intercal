@@ -1,0 +1,75 @@
+pre.clc-intercal {
+    color: rgb(128, 128, 128);
+    background: black;
+    font-weight: normal;
+    font-style: normal;
+}
+
+em.comment {
+    text-decoration: underline;
+    font-weight: normal;
+    font-style: normal;
+}
+
+em.modifier {
+    text-decoration: none;
+    font-weight: normal;
+    font-style: italic;
+    color: white;
+}
+
+em.prefix {
+    text-decoration: none;
+    font-weight: normal;
+    font-style: italic;
+    color: white;
+}
+
+em.quantum {
+    text-decoration: none;
+    font-weight: bold;
+    font-style: italic;
+    color: green;
+}
+
+em.statement {
+    text-decoration: none;
+    font-weight: bold;
+    font-style: normal;
+    color: yellow;
+}
+
+strong.constant {
+    text-decoration: none;
+    font-weight: bold;
+    font-style: italic;
+}
+
+strong.expression {
+    text-decoration: none;
+    font-weight: normal;
+    font-style: italic;
+    color: lightblue;
+}
+
+strong.label {
+    text-decoration: none;
+    font-weight: normal;
+    font-style: italic;
+    color: red;
+}
+
+strong.operator {
+    text-decoration: none;
+    font-weight: normal;
+    font-style: normal;
+    color: lightblue;
+}
+
+strong.register {
+    text-decoration: none;
+    font-weight: normal;
+    font-style: italic;
+    color: lightblue;
+}
+

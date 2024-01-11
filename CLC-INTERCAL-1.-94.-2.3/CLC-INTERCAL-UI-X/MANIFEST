@@ -1,0 +1,8 @@
+Makefile.PL                              1.-94.-2.3
+MANIFEST
+README
+COPYING
+Changes
+INTERCAL/Include/UI-X.sickrc             1.-94.-2.1
+INTERCAL/Interface/X.pm                  1.-94.-2
+t/00use.t                                1.-94.-2.2

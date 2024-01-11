@@ -1,0 +1,22 @@
+	PLEASE NOTE: EXAMPLE OF CALLING SYSTEM CALL #3, OPEN FILE
+                     THIS CREATES FILE /tmp/tf AND PUTS "CXIV" AND ITS FILENAME IN IT
+
+	PLEASE :5 <- #114
+	PLEASE ,5 <- #14
+	DO ,5 SUB #1 <- #95
+	DO ,5 SUB #2 <- #91
+	DO ,5 SUB #3 <- #93
+	DO ,5 SUB #4 <- #95
+	DO ,5 SUB #5 <- #95
+	DO ,5 SUB #6 <- #80
+	DO ,5 SUB #7 <- #92
+	DO ,5 SUB #8 <- #86
+	DO ,5 SUB #9 <- #91
+	DO ,5 SUB #10 <- #93
+	DO ,5 SUB #11 <- #95
+	DO ,5 SUB #12 <- #95
+	DO ,5 SUB #13 <- #80
+	DO ,5 SUB #14 <- #77
+(666)	DO .5 <- #3
+	PLEASE READ OUT @5 + :5 + ,5
+	PLEASE GIVE UP

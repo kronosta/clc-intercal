@@ -1,0 +1,46 @@
+# run the calculator
+
+# Copyright (c) 2006-2008, 2023 Claudio Calvelli, all rights reserved.
+
+# CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+# and distribute it is granted provided that the conditions set out in the
+# licence agreement are met. See files README and COPYING in the distribution.
+
+# PERVERSION: CLC-INTERCAL/ICALC t/run-calculator 1.-94.-2.1
+
+use File::Spec::Functions qw(catdir catfile);
+use IPC::Open3 qw(open3);
+
+my (@rcpath, @libs);
+for my $inc (@INC) {
+    push @libs, "-I$inc";
+    my $d = catdir($inc, qw(Language INTERCAL Include));
+    -d $d or next;
+    push @rcpath, $d;
+}
+
+my @rc;
+for my $look (qw(system.sickrc ICALC.sickrc)) {
+    for my $path (@rcpath) {
+	my $f = catfile($path, $look);
+	-f $f or next;
+	push @rc, '--rcfile', $f;
+	last;
+    }
+}
+
+sub run_calculator {
+    my ($mode, $language, @options) = @_;
+    my ($rfh, $wfh);
+    my @language = defined $language ? ("-l$language") : ();
+    push @language, map { "-o$_" } @options;
+    my $pid = open3($rfh, $wfh, $wfh, $^X, @libs, 'bin/intercalc',
+		    '--extension', 'ICALC', @rc, '--batch', "-m$mode", @language,
+		    '--bug=0', '--ubug=0', '--nouserrc', '--nosystemrc');
+    my $so = select $rfh;
+    $| = 1;
+    select $so;
+    ($pid, $rfh, $wfh);
+}
+
+1

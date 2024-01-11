@@ -1,0 +1,67 @@
+Changes from CLC-INTERCAL 1.-94.-2.2 to 1.-94.-2.3
+
+* Added an optional XS-based module to find the list of network
+  interfaces, which will be built if Makefile.PL determines that
+  it is likely to work; otherwise, it falls back on looking for
+  Net::Interface, after checking that the installed version
+  provides the necessary information (it still requires a patch
+  on NetBSD, so the aim is to get our module to work there instead,
+  and of course to use our module in other systems if possible).
+
+* Changed the register steal/smuggle protocol to use the same save/load
+  functions as the calculator; if both ends support it, the new protocol
+  will be used, otherwise they fall back to the old one. The new protocol
+  can provide more information about the registers, such as enrols,
+  belonging and the new trickle down structure.
+
+* Improved some error messages to help figure out what might have gone
+  wrong with the network.
+
+* Updated Makefile.PL for the build system changes
+
+Changes from CLC-INTERCAL 1.-94.-2.1 to 1.-94.-2.2
+
+* Updated the extension module to reflect changes in the extension
+  mechanism.
+
+Changes from CLC-INTERCAL 1.-94.-2 to 1.-94.-2.1
+
+* Added code to support IPv6 multicast groups other than the "all nodes"
+  group.
+
+* Updated the extension code to also register new configuration it needs,
+  like port number and multicast groups. Updated the code which needs to
+  access configuration to use the new mechanism.
+
+* Changed t/00use.t to use Language::INTERCAL::Distribute
+
+* IPv6 support added to the INTERNET library. Also see changes in the
+  "Docs" package explaining how 128-bit addresses end up stored in
+  32-bit registers. For here, it suffices to say that no other language
+  does it the same way, for very good reasons.
+
+* Removed Language::INTERCAL::HostIP and added a dependency on
+  Net::Interface instead. Considered IO::Interface but it seems that
+  Net::Interface suits our needs better. This also allows us to remove
+  the dependency on Net::Netmask which was used but not checked.
+
+* Moved all INTERNET-specific stuff from Base package except Server which
+  is still needed by Base.
+
+* Change the code starting a theft-server to locate the one associated
+  with the running program, and if not finding one in $PATH. This means
+  that it's now possible to run the compiler from an uninstalled build,
+  with the appropriate "-I" to perl, and the theft-server will run from
+  the build directory even if another one is installed in $PATH: this
+  obviously helps with testing new versions.
+
+* Various other networking improvements.
+
+Changes from CLC-INTERCAL 1.-94.-3 to 1.-94.-2
+
+* Created new package containing just the INTERNET stuff, so
+  that it doesn't need to be distributed with every version
+  of CLC-INTERCAL. Also, people who don't like the idea of
+  their INTERCAL programs reaching out to the world don't
+  need to install this.
+

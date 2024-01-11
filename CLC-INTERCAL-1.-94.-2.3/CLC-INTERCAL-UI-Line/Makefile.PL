@@ -1,0 +1,60 @@
+#!/usr/bin/perl -w
+
+eval 'exec perl -S $0 ${1+"$@"}'
+    if 0;
+
+# This script will create the Makefile to build and install a line-oriented
+# user interface for CLC-INTERCAL
+
+# This file is part of CLC-INTERCAL
+
+# Copyright (c) 2008, 2023 Claudio Calvelli, all rights reserved.
+
+# CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+# and distribute it is granted provided that the conditions set out in the
+# licence agreement are met. See files README and COPYING in the distribution.
+
+require 5.005;
+use strict;
+use File::Spec::Functions qw(catfile);
+
+use vars qw($VERSION $PERVERSION);
+($VERSION) = ($PERVERSION = "CLC-INTERCAL/UI-Line Makefile.PL 1.-94.-2.3") =~ /\s(\S+)$/;
+
+my $in_bundle = $ENV{CLC_INTERCAL_BUNDLE} && $ENV{CLC_INTERCAL_BUNDLE} eq '42' && $ENV{CLC_INTERCAL_ROOT};
+
+for my $module (qw(InstallModule Exporter)) {
+    if ($in_bundle) {
+	eval {
+	    require (catfile($ENV{CLC_INTERCAL_ROOT}, 'INTERCAL', "$module.pm"));
+	    eval "import Language::INTERCAL::$module '$VERSION';";
+	    die $@ if $@;
+	};
+    } else {
+	eval "use Language::INTERCAL::$module '$VERSION';";
+    }
+    if ($@) {
+	$@ =~ /can't locate/i and die "You don't appear to have CLC-INTERCAL installed:\n$@";
+	die "Error loading the CLC-INTERCAL installer:\n$@";
+    }
+}
+
+# The Line interface requires Perl::ReadLine::Gnu although support for other
+# implementation is planned; we cannot "require" it directly so we go looking
+# for it in @INC
+my $ok = 0;
+for my $inc (@INC) {
+    -f catfile($inc, qw(Term ReadLine Gnu.pm)) or next;
+    $ok = 1;
+    last;
+}
+$ok or warn "Warning - this package requires Term::ReadLine::Gnu!\n";
+
+$ENV{PERL_RL} = 'Gnu';
+
+install Language::INTERCAL::InstallModule 'UI-Line',
+    prereq => {
+	'Term::ReadLine' => 0,
+    };
+
+1;

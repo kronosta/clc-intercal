@@ -1,0 +1,99 @@
+<HTML>
+    <HEAD>
+	<TITLE>CLC-INTERCAL Reference</TITLE>
+    </HEAD>
+    <BODY>
+	<H1>CLC-INTERCAL Reference</H1>
+	<H2>... Compiler extensions</H2>
+
+	<P>
+	Table of contents:
+	<UL>
+	    <LI><A HREF="index.html">Parent directory</A>
+	    <LI><A HREF="#compiling">Compiling a program with extensions</A>
+	    <LI><A HREF="#list">List of available extensions</A>
+	</UL>
+	</P>
+
+	<H2><A NAME="compiling">Compiling a program with extensions</A></H2>
+
+	<P>
+	Some program syntax or behaviour is available by including a
+	compiler extension. A program using such extensions must use the
+	appropriate mechanism to load them.
+	</P>
+
+	<P>
+	The command-line compiler tool, <I>sick</I>, determines which
+	extensions are required from the program suffix: in general,
+	each letter in the suffix enables an extension. Alternatively,
+	if you are not relying on sick's guesses and are specifying
+	a list of preloads yourself, just add <I>-pextension-name</I>
+	to your command line as many times as necessary.
+	</P>
+
+	<P>
+	Using the INTERCAL Calculator, INTERCALC, you can add extensions
+	by listing them in the command like (with <I>-oextension-name</I>),
+	or by enabling or disabling them using the Options menu.
+	</P>
+
+	<P>
+	Extensions are implemented as special compiler objects, which are
+	designed to run in the context of your program just before the
+	program itself. The kind of things extensions can do is extending
+	the compiler, changing internal registers, or, in some cases,
+	use some undocumented features of the runtime system.
+	</P>
+
+       <H2><A NAME="list">List of available extensions</A></H2>
+
+       <P>
+       In the following list, the extension name is the one you find in
+       the calculator's Options menu, which is also the name you use on
+       the command line to both <I>sick</I> and <I>intercalc</I>. The
+       letter is the suffix letter which causes loading of the extension.
+       </P>
+
+       <TABLE>
+	   <TR><TH>Name</TH><TH>Letter</TH><TH>Description</TH></TR>
+	   <TR><TD>bitwise-divide</TD><TD>d</TD><TD>Changes the <A HREF="expressions.html#unary">unary division</A> operator to act as a bitwise operator</TD></TR>
+	   <TR><TD>come-from-gerund</TD><TD>g</TD><TD>Enables the <A HREF="statements.html#come_from">COME FROM gerund</A> and <A HREF="statements.html#next_from">NEXT FROM gerund</A> statements</TD></TR>
+	   <TR><TD>computed-labels</TD><TD>l</TD><TD>Adds syntax for computed statement labels; when the compiler is <I>ick</I> it also adds computed NEXT etc</TD></TR>
+	   <TR><TD>next</TD><TD>n</TD><TD>Adds syntax for the NEXT statement; only works with the <I>sick</I> compiler (<I>ick</I> and <I>1972</I> do not require it)</TD></TR>
+	   <TR><TD>internet</TD><TD>r</TD><TD>Adds syntax and runtime support for the <A HREF="internet.html">INTERNET</A></TD></TR>
+	   <TR><TD>syscall</TD><TD>s</TD><TD>Adds runtime support for the <A HREF="syscall.html">system call interface</A></TD></TR>
+	   <TR><TD>thick</TD><TD>t</TD><TD>Modifies the default behaviour of COME FROM to enable threads</TD></TR>
+	   <TR><TD>trace</TD><TD></TD><TD>Enables program tracing</TD></TR>
+	   <TR><TD>wimp</TD><TD>w</TD><TD>Makes the compiled program default to wimp mode when it runs</TD></TR>
+       </TABLE>
+
+       <P>
+       Since CLC-INTERCAL 1.-94.-2, the <i>internet</i> extension is
+       only available if the optional package CLC-INTERCAL-INET has
+       been installed.
+       </P>
+
+       <P>
+       When used in a suffix, the letter "t" also changes the default
+       compiler to <I>ick</I>: this is for compatibility with the old
+       <I>thick</I> compiler, or with <I>ick</I> with thread support. Use
+       <I>.clcti</I> as a suffix to use <I>sick</I> with threads, or use
+       <I>-Apthick</I> to do the normal preload guess, then add <I>thick</I>
+       to the list.
+       </P>
+
+       <P>
+       The <I>trace</I> extension does not correspond to a suffix letter;
+       normally one does not enable tracing at compile time, but rather
+       uses the <I>--trace</I> command-line option when running the
+       program. This option is available in the command-line compiler
+       tool, <I>sick</I>, as well as in all executable programs produced
+       by the compiler. The calculator offers the <I>trace</I> option in
+       its Options menu and in its command line, to allow tracing to be
+       enabled and disabled as required.
+       </P>
+
+  </BODY>
+</HTML>
+

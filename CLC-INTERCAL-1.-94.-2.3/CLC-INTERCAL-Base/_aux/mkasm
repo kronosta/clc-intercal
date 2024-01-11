@@ -1,0 +1,59 @@
+#!/usr/bin/perl -w
+
+# Creates aux/asm.src from bytecode and register lists
+# usage:
+# mkasm aux/asm.src
+
+# Copyright (c) 2008, 2023 Claudio Calvelli, all rights reserved.
+
+# CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+# and distribute it is granted provided that the conditions set out in the
+# licence agreement are met. See files README and COPYING in the distribution.
+
+use strict;
+
+use vars qw($VERSION $PERVERSION);
+($VERSION) = ($PERVERSION = "CLC-INTERCAL/Base aux/mkasm 1.-94.-2.3") =~ /\s(\S+)$/;
+
+use FindBin qw($Bin);
+use lib "$Bin/../blib/arch", "$Bin/../blib/lib";
+use Language::INTERCAL::ByteCode '1.-94.-2.3', qw(bc_list bytedecode);
+use Language::INTERCAL::Registers '1.-94.-2.3',
+    qw(reg_name reg_list reg_translate reg_code2 reg_typename);
+
+die "Usage: mkasm file\n" if @ARGV != 1;
+
+my ($file) = @ARGV;
+open(STDOUT, "> $file") or die "$file: $!\n";
+
+print "!\n!PLEASE NOTE: DATA VERSION: $Language::INTERCAL::ByteCode::DATAVERSION\n";
+
+my @reg_list = sort { reg_name($a) cmp reg_name($b) } reg_list;
+my $last = '';
+for my $reg (@reg_list) {
+    my ($type, $number) = reg_translate($reg);
+    my @code = reg_code2($type, $number);
+    my $code = $code[0];
+    my $name = reg_typename($type);
+    if ($last ne $name) {
+	my $op = bytedecode($code);
+	print "!\n",
+	      "!PLEASE NOTE: NAMES OF \"$name\" REGISTERS\n",
+	      "SPECIAL_REGISTER \"$name\" REG$code=* : REG$code\n",
+	      "REG$code CONSTANT : \"$op\" CONSTANT\n";
+	$last = $name;
+    }
+    my $len = scalar(@code);
+    print "REG$code \"$reg\"=$len : \"$name$reg\"\n";
+}
+
+print "!\n!PLEASE NOTE: \"BYTECODE\" INSTRUCTION NAMES\n";
+for my $bc (bc_list) {
+    print "BYTECODE \"$bc\"=1 : \"$bc\"\n";
+}
+
+print "!\n!PLEASE NOTE: \"BYTECODE\" COMPATIBILITY WITH OLD SOURCES\n";
+print "BYTECODE \"ENS\"=1 : \"MKB\"\n";
+print "BYTECODE \"FRE\"=1 : \"NLB\"\n";
+print "BYTECODE \"OWN\"=1 : \"BLM\"\n";
+

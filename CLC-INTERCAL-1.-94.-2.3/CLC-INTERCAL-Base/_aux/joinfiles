@@ -1,0 +1,67 @@
+#!/usr/bin/perl -w
+
+# Joins two or more files together, changing the PERVERSION strings as
+# necessary; usage:
+# joinfiles aux/destination aux/source1 aux/source2 ...
+
+# Copyright (c) 2023 Claudio Calvelli, all rights reserved.
+
+# CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+# and distribute it is granted provided that the conditions set out in the
+# licence agreement are met. See files README and COPYING in the distribution.
+
+use strict;
+
+use vars qw($VERSION $PERVERSION);
+($VERSION) = ($PERVERSION = "CLC-INTERCAL/Base aux/joinfiles 1.-94.-2.3") =~ /\s(\S+)$/;
+
+use FindBin qw($Bin);
+use lib "$Bin/../blib/arch", "$Bin/../blib/lib";
+use Language::INTERCAL::Exporter '1.-94.-2.3', qw(compare_version);
+
+@ARGV >= 2 or die "Usage: $0 destination source source ...\n";
+my $destination = shift;
+
+# find appropriate version number
+my $destversion;
+my $perversion;
+for my $source (@ARGV) {
+    (my $sb = $source) =~ s|.*/||;
+    open(SRC, '<', $source) or die "$source: $!\n";
+    while (<SRC>) {
+	if (/\b(PERV|DATA\s*)ERSION\b.*\Q$sb\E\s*\b(\S+)\b/) {
+	    my ($pv, $dv) = ($1, $2);
+	    $pv eq 'PERV' and $perversion = 1;
+	    defined $destversion && compare_version($destversion, $dv) >= 0
+		or $destversion = $dv;
+	}
+    }
+    close SRC;
+    defined $destversion or die "No source provided versions?\n";
+    $perversion or die "No destination version?\n";
+}
+
+# and now copy data
+open(DEST, '>', $destination) or die "$destination: $!\n";
+(my $db = $destination) =~ s|.*/||;
+my $added_version = 0;
+for my $source (@ARGV) {
+    (my $sb = $source) =~ s|.*/||;
+    open(SRC, '<', $source) or die "$source: $!\n";
+    while (<SRC>) {
+	if (/\bPERVERSION\b.*\Q$sb\E\s*\b(\S+)\b/) {
+	    my $sv = $1;
+	    if ($added_version) {
+		s/\b(PERVERSION\b)/OLD_PERVERSION/;
+	    } else {
+		compare_version($sv, $destversion) < 0 and $sv = $destversion;
+		s/\b(PERVERSION\b.*)\Q$sb\E(\s*)\b\S+\b/$1$db$2$sv/;
+		$added_version = 1;
+	    }
+	}
+	print DEST $_ or die "$destination: $!\n";
+    }
+    close SRC;
+}
+close DEST or die "$destination: $!\n";
+
