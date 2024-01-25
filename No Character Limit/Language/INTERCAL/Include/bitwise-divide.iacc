@@ -1,0 +1,14 @@
+	PLEASE NOTE: THIS FILE, LOADED AFTER sick.io, CHANGES THE DEFAULT
+		     "ARITHMETIC" UNARY DIVISION TO A "BITWISE" OPERATION.
+
+Copyright (c) 2006-2008 Claudio Calvelli, all rights reserved.
+
+CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+and distribute it is granted provided that the conditions set out in the
+licence agreement are met. See files README and COPYING in the distribution.
+
+PERVERSION "CLC-INTERCAL/Base INTERCAL/Include/bitwise-divide.iacc 1.-94.-2"
+
+	DO ?TYPE <- ?OPTION
+	PLEASE %DM <- #1
+	DO GIVE UP

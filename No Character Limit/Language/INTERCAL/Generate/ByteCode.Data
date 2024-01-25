@@ -1,0 +1,595 @@
+# Data used to generate ByteCode.pm and documentation
+
+# This file is part of CLC-INTERCAL
+
+# Copyright (c) 2007-2008, 2023 Claudio Calvelli, all rights reserved.
+
+# CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+# and distribute it is granted provided that the conditions set out in the
+# licence agreement are met. See files README and COPYING in the distribution.
+
+# PERVERSION "CLC-INTERCAL/Base INTERCAL/Generate/ByteCode.Data 1.-94.-2.3";
+
+# all defined opcodes
+@GROUP OPCODES NAME=w TYPE=s NUMBER=d ARGS=s DESCR=s ASSIGNABLE=d CONST=d DOC=m
+@SOURCE STATEMENTS
+@SOURCE REGISTERS
+@SOURCE PREFIXES
+@SOURCE EXPRESSIONS
+@SOURCE CONSTANTS
+@END OPCODES
+
+# all opcodes which can be evaluated as part of an expression
+@GROUP EVALUABLES NAME=w TYPE=s NUMBER=d ARGS=s DESCR=s ASSIGNABLE=d CONST=d DOC=m
+@SOURCE REGISTERS
+@SOURCE PREFIXES
+@SOURCE EXPRESSIONS
+@SOURCE CONSTANTS
+@END EVALUABLES
+
+# all opcodes which can be assigned to
+@GROUP ASSIGNABLES NAME=w TYPE=s NUMBER=d ARGS=s DESCR=s ASSIGNABLE=d CONST=d DOC=m
+@GREP REGISTERS ASSIGNABLE=1
+@GREP PREFIXES ASSIGNABLE=1
+@GREP EXPRESSIONS ASSIGNABLE=1
+@GREP CONSTANTS ASSIGNABLE=1
+@END ASSIGNABLES
+
+# all opcodes which reger ti regusters
+@GROUP REGNAMES NAME=w TYPE=s NUMBER=d ARGS=s DESCR=s ASSIGNABLE=d CONST=d DOC=m
+@SOURCE REGISTERS
+@SOURCE PREFIXES
+@END REGNAMES
+
+# statements - opcodes 0x00..0x3f
+@GROUP STATEMENTS NAME=w TYPE=s NUMBER=d ARGS=s DESCR=s ASSIGNABLE=d CONST=d DOC=m
+    STS S 0x00 '###C(#)S'     'STart of Statement'                0  0
+	Takes a variable number of constants, not less than four. The
+	first constant indicates the byte position in the source code
+	where this statement was compiled from; the second constant
+	indicates the length of the statement in the source code;
+	the third indicates whether the statement may be a comment (it has
+	not been recognised using the currently active grammar) or not;
+	the fourth indicates the number of constants following. The
+	rest of the constants indicate which grammar rules were used to
+	compile this particular statement.
+
+	At runtime, not all grammar rules may be available at all times,
+	depending on the history of I<CRE> and I<DES>. To execute
+	a statement corresponding to a given bit of source code, the
+	runtime will find all relevant I<STS> statements find the best one
+	which could have been compiled given the current state of the
+	grammar, and executes it; if a non-comment statement is available,
+	it will be used, otherwise a comment one will have to do.
+	If execution is to proceed sequentially,
+	the second constant is used to figure out how to repeat this
+	process. Execution starts at byte offset 0 in the source code.
+
+	Grammar rules are numbered at compile time, and may differ from
+	program to program.
+    STO S 0x01 'EA'           'STOre'                             0  0
+	Followed by two expressions, assigns the value of the first
+	expression to the second. It is common to have a register as the
+	second expression, but any assignable expression will do.
+    CRE S 0x02 '#VC(<)C(>)'   'CREate'                            0  0
+	Followed by a constant (a grammar) and an expression (a symbol),
+	another constant (a left count), I<left count> rules, another
+	constant (a right count) and I<right count> chunks of code,
+	executes a CREATE statement. This is documented elsewhere.
+    DES S 0x03 '#VC(<)'       'DEStroy'                           0  0
+	Followed by a constant (a grammar) and an expression (a symbol),
+	another constant (a left count), and I<left count> rules,
+	executes a DESTROY statement.
+    MSP S 0x04 'EC(V)'        'Make SPlat'                        0  0
+	Followed by an expression, the splat code, a number, the count, and
+	I<count> more expressions, generates a splat. The first expression
+	is the splat code, the rest are used to generate the splat message.
+	The splat code determines the correct number of arguments, if the
+	wrong number is provided the message may look weird.
+    DSX S 0x05 'ES'           'Double-oh-Seven eXecution'         0  0
+	Followed by an expression (which should
+	have value between 0 and 100), it executes the statement with
+	a probability indicated by the expression, between 0% (never)
+	and 100% (always).
+    NOT S 0x06 'S'            'NOT'                               0  0
+	Signals that this statement is initially abstained from. A
+	statement might be abstained from without containing a I<NOT>,
+	or might contain one and not be abstained from, depending on the
+	I<ABL>, I<ABG>, I<REL> and I<REG> executed since the start of
+	the program.
+    NXT S 0x07 'E'            'NeXT'                              0  0
+	Followed by an expression, a label, stashes the address of
+	the next statement and continues execution at that label. It is
+	an error if the label is multiply defined or not defined at all.
+    RES S 0x08 'E'            'RESume'                            0  0
+	Followed by an expression, pops that many levels from
+	the stash containing the return addresses for I<NXT>, I<NXL>
+	and I<NXG>. All the addresses except one are then discarded, and
+	execution continues at the last address extracted from the stash.
+    FOR S 0x09 'E'            'FORget'                            0  0
+	Followed by an expression, pops that many levels from
+	the stash containing the return addresses for I<NXT>, I<NXL>
+	and I<NXG> and throws these addresses in the bit bucket.
+    STA S 0x0a 'C(R)'         'STAsh'                             0  0
+	Followed by a constant (the count) and I<count> registers, STASHes
+	these registers.
+    RET S 0x0b 'C(R)'         'RETrieve'                          0  0
+	Followed by a constant (the count) and I<count> registers, RETRIEVEs
+	these registers.
+    IGN S 0x0c 'C(R)'         'IGNore'                            0  0
+	Followed by a constant (a count) and I<count> registers, ignores the
+	registers.
+    REM S 0x0d 'C(R)'         'REMember'                          0  0
+	Followed by a constant (a count) and I<count> registers, remembers
+	the registers.
+    ABL S 0x0e 'E'            'ABstain from Label'                0  0
+	Followed by an expression, representing a label, ABSTAINs FROM the
+	corresponding statement(s).
+    ABG S 0x0f 'C(O)'         'ABstain from Gerund'               0  0
+	Followed by a constant (the count) and I<count> gerunds, ABSTAINs FROM
+	the corresponding statement(s).
+    REL S 0x10 'E'            'REinstate Label'                   0  0
+	Followed by an expression, representing a label,
+	REINSTATEs the corresponding statement(s).
+    REG S 0x11 'C(O)'         'REinstate Gerund'                  0  0
+	Followed by a constant (the count) and I<count> gerunds, REINSTATEs the
+	corresponding statement(s).
+    GUP S 0x12 ''             'Give UP'                           0  0
+	Causes program termination. When used in a compiler module, causes
+	module processing to stop, the compiler will then load the next
+	module or, if no more modules are to be loaded, it will start
+	compiling the program.
+    WIN S 0x13 'C(A)'         'Write IN'                          0  0
+	Followed by a constant (a count) and I<count> assignable
+	expressions, writes them in.
+    ROU S 0x14 'C(E)'         'Read OUt'                          0  0
+	Followed by a constant (a count) and I<count> expressions,
+	reads them out.
+    LAB S 0x15 'ES'           'LABel'                             0  0
+	Followed by an expression, indicates this statement's
+	label. If the expression is nonzero, after this statement the ICBM
+	will go looking for corresponding I<CFL> and I<NXL> statements
+	(COME FROMs and NEXT FROMs). It is also used to abstain/reinstate
+	by label.
+    CFL S 0x16 'E'            'Come From Label'                   0  0
+	Followed by an expression, executes a COME FROM
+	label. The special register I<%CF> determines, amongst other
+	things, whether it is admissible to have multiple COME FROM
+	(and NEXT FROM) all pointing at the same label. The default is
+	to cause a splat; linking with the object I<thick.io> changes
+	this to allow multiple COME FROMs and NEXT FROMs to create threads.
+	See I<CFG> for the other function of the I<%CF> register.
+    CFG S 0x17 'C(O)'         'Come From Gerund'                  0  0
+	Followed by a constant (the count) and I<count> gerunds (opcodes),
+	executes a COME FROM gerund. The special register I<%CF>
+	determines, amongst other things, whether these statements
+	are really executed or not. The default is not, and linking a
+	program with the object I<come-from-gerund.io> will change this
+	register to allow these statements: this object is normally linked
+	automatically when the program source has a suffix I<.gi>. See
+	I<CFL> for the other function of the I<%CF> register.
+    QUA S 0x18 'S'            'QUAntum statement'                 0  0
+	Executes the rest of the statement in "quantum
+	bit creation" mode. This means that anything which modifies data
+	will end up creating quantum bits.
+    CWB S 0x19 'SS'           'loop: Condition While Body'        0  0
+	Followed by two statements, executes a loop. This implements
+	the (default) loop where the condition is before the WHILE and the
+	body after. The first statement is the body and the second is
+	the condition, not the other way around as one would expect.
+    BWC S 0x1a 'SS'           'loop: Body While Condition'        0  0
+	Followed by two statements, executes a loop. This implements
+	the (non default) loop where the body is before the WHILE and the
+	condition after. The first statement is the condition and the
+	second is the body, not the other way around as one would expect.
+    MKB S 0x1b 'RR'           'MaKe Belong'                       0  0
+	Followed by two registers, makes the first one belong to the second one.
+    NLB S 0x1c 'RR'           'No Longer Belong'                  0  0
+	Followed by two registers, where the first one must belong to the
+	second one, removes such BELONG TO relationship.
+    STU S 0x1d 'EER'          'STUdy'                             0  0
+	Followed by an expression (the subject), a label (the
+	lecture) and a register (the class), executes a STUDY statement.
+    ENR S 0x1e 'C(E)R'        'ENRol'                             0  0
+	Followed by a count of subjects, I<count> expressions representing
+	the subjects, and a register wishing to study these subjects,
+	looks for a class teaching the subjects and enrols the register there.
+    LEA S 0x1f 'ER'           'LEArns'                            0  0
+	Followed by an expression (the subject), and a register (the student)
+	looks for a lecture where that subject is taught in one of the
+	classes the student is enrolled in. The class register is made to
+	belong to the student until the end of the lecture; execution continues
+	at the label which represents the start of the lecture.
+    FIN S 0x20 ''             'FINish lecture'                    0  0
+	Execution continues after the I<LEA> which took us to the lecture.
+	Also removes the belonging relation of the class to the student.
+    GRA S 0x21 'R'            'GRAduate'                          0  0
+	Followed by a register (a student) it causes the
+	student to graduate, that is to drop all classes.
+    NXL S 0x22 'E'            'Next From Label'                   0  0
+	Similar to I<CFL>, but executes a NEXT FROM instead: the difference
+	is that I<NXL> stashes the return address in the same way as I<NXT>
+	does. See I<CFL> and I<NXT>.
+    NXG S 0x23 'C(O)'         'Next From Gerund'                  0  0
+	Similar to I<CFG>, but executes a NEXT FROM instead: the difference
+	is that I<NXG> stashes the return address in the same way as I<NXT>
+	does. See I<CFG> and I<NXT>.
+    CON S 0x24 'OO'           'CONvert'                           0  0
+	Followed by two opcodes, converts the first into the
+	second. The two opcodes must be compatible, in the sense that
+	they take the same operands.
+    SWA S 0x25 'OO'           'SWAp'                              0  0
+	Followed by two opcodes, swaps them. The two opcodes must
+	be compatible, in the sense that they take the same operands.
+    BUG S 0x26 '#'            'compiler BUG'                      0  0
+	This opcode is automatically inserted by the compiler where
+	appropriate. Takes one argument, the bug type (#0 - explainable,
+	\#1 - unexplainable).
+    DIV S 0x27 'EEEE'         'Install DIVersion'                 0  0
+	Followed by four expressions, representing labels, installs a
+	diversion. The first two labels represent the code to be closed
+	off to execution, and the other two labels represent the actual
+	diversion to be taken.
+    EBC S 0x28 'ES'           'Event: Body while Condition'       0  0
+	Followed by an expression and a statement, schedules an event. This
+	implements the (non default) event where the body is before the WHILE
+	and the condition after, and therefore produces a runtime error unless
+	its implementation is CONVERTed to or SWAPped with I<ECB>.
+    ECB S 0x29 'ES'           'Event: Condition while Body'       0  0
+	Followed by an expression and a statement, schedules an event. This
+	implements the (default) event where the condition is before the
+	WHILE and the body after.
+    FRZ S 0x2a ''             'FReeZe'                            0  0
+	Freezes the current program by removing the source code and replacing
+	the grammar used to compile it with the "secondary" grammar; this
+	means that subsequent I<CRE> and I<DES> will be an error if they
+	cause recompilation. A compiler works by creating a secondary grammar,
+	then freezing itself and then continuing with the user's program,
+	which is compiled using the new grammar just created, rather than
+	the one used to compile the compiler itself.
+    SYS S 0x2b 'EC(S)'        'SYStem call'                       0  0
+	Followed by an expression (the system call number), a count, and
+	I<count> statements (the system call implementation), defines a
+	system call.
+    UNS S 0x2c '#EEC(E)'      'UNdocumented Statement'            0  0
+	This opcode is documented in the CLC-INTERCAL reference manual.
+    # opcodes 0x2d .. 0x2f are used by the INTERNET extension
+    TRD S 0x30 'REC(R)'       'TRickle Down'                      0  0
+	Set up two registers for trickling down of values
+    TRU S 0x31 'C(R)'         'TRUss up'                          0  0
+	Tie values to stop them trickling down
+    # opcodes 0x32 .. 0x3b are reserved
+    UNA S 0x3c '#EEC(E)C(A)'  'UNdocumented Assignment'           0  0
+	This opcode is documented in the CLC-INTERCAL reference manual.
+    REO S 0x3d 'EE'           'REOpen'                            0  0
+	Followed by two expressions, representing labels, removes the
+	road closure identified by these labels.
+    BIT S 0x3e 'O'            'set statement BIT'                 0  0
+	This opcode should never be executed, and will cause a runtime
+	error; compilers can generate this opcode to update the bitmap
+	of flags which describes a statement. It takes a small constant,
+	between 0 and 31, indicating a bit to set. This statement is
+	executed at the time the object is created and removed from
+	the instruction stream.
+    FLA S 0x3f ''             'set object FLAg'                   0  0
+	This opcode should never be executed, and will cause a runtime
+	error; compilers can generate this opcode to set an object flag,
+	but the opcode will be executed at compile time and removed
+	from the object.
+@END STATEMENTS
+
+# registers - opcodes 0x40..0x4f
+@GROUP REGISTERS NAME=w TYPE=s NUMBER=d ARGS=s DESCR=s ASSIGNABLE=d CONST=d DOC=m
+    SPO R 0x40 'E'            'SPOt'                              1  0
+	Spot register (e.g. I<.4>)
+    TSP R 0x41 'E'            'Two SPot'                          1  0
+	Two spot register (e.g. I<:7>)
+    TAI R 0x42 'E'            'TAIl'                              1  0
+	Tail register (e.g. I<,2>). This represents the whole array. See
+	I<SUB> for subscripting.
+    HYB R 0x43 'E'            'HYBrid'                            1  0
+	Hybrid register (e.g. I<;9>). This represents the whole array. See
+	I<SUB> for subscripting.
+    WHP R 0x44 'E'            'WHirlPool'                         1  0
+	Whirlpool (e.g. I<@9>). This represents CLC-INTERCAL's class
+	registers. When used for I/O, it represents the filehandle
+	associated with the class.
+    DOS R 0x45 'E'            'Double-Oh-Seven'                   1  0
+	Double-oh-seven: a special internal spot register used by the
+	compilers.
+    SHF R 0x46 'E'            'SHark Fin'                         1  0
+	Shark fin: a special internal tail register used by the compilers
+	(e.g. I<^1>, the arguments given to the program on startup)
+    CHO R 0x47 'E'            'Crawling HOrror'                   1  0
+	Crawling horror: a special register holding a compiler, grammar
+	or something similar. Currently, these registers cannot be used
+	directly, they are implicitely used by I<CRE> and I<DES>.
+    # opcodes 0x48..0x4e are reserved for future register types
+    TYP R 0x4f 'RE'           'TYPe'                              1  0
+	Followed by any register, returns its type.
+	For example, I<TYP> I<SPO> I<136> is equivalent
+	to I<SPO>. It can be useful to find out the type of an
+	indirect register, and is used to translate CLC-INTERCAL's
+	intersection-worm.
+@END REGISTERS
+
+# register prefixes - opcodes 0x50..0x5f
+@GROUP PREFIXES NAME=w TYPE=s NUMBER=d ARGS=s DESCR=s ASSIGNABLE=d CONST=d DOC=m
+    OVR R 0x50 'ER'           'OVerload Register'                 1  0
+	Followed by an expression and a register, overloads the register
+	and returns the register itself. Any type of register can be
+	overloaded whether this is a good idea or not.
+    # opcode 0x51 is reserved
+    BLM R 0x52 'ER'           'BeLong'                            1  0
+	Followed by a constant N and a register, finds the N-th register
+	it belongs to, and uses that.
+    SUB R 0x53 'ER'           'SUBscript'                         1  0
+	Followed by an expression and a subscriptable register,
+	it accesses the given subscript. For multidimensional arrays,
+	repeat as in I<SUB> I<131> I<SUB> I<132> I<TAI> I<133> for I<:5 SUB
+	\#4 SUB #3>. In addition to hybrid, tail and shark fin registers,
+	whirlpools also accept subscripts, allowing to access the subjects
+	directly.
+    # opcodes 0x53..0x5f are reserved
+@END PREFIXES
+
+# expressions - opcodes 0x60..0x7d
+@GROUP EXPRESSIONS NAME=w TYPE=s NUMBER=d ARGS=s DESCR=s ASSIGNABLE=d CONST=d DOC=m
+    MUL E 0x60 'C(E)'         'MULtiple number'                   0  0
+	Followed by an expression (the count) and then a number of
+	expressions, represents a ``multiple number''. This can be used
+	to assign to an array, to dimension it (e.g. translating the
+	statement C<;42 <- #3 BY #5> results in the code I<STO>
+	I<MUL> #2 #3 #5 I<HYB> #42). Not assignable.
+    STR E 0x61 'C(N)'         'STRing'                            0  0
+	Similar to I<MUL>, but used in the special case where all the
+	arguments are constant characters. This may result in internal
+	optimisations and the like. Otherwise it is just a more compact
+	way of using I<MUL> where all arguments are constants and fit
+	in a byte. Not assignable.
+    BUT E 0x62 '#E'           'unary BUT'                         1  0
+	Followed by two expressions, computes the unary BUT of the
+	second expression, preferring the value of the first - so this
+	can also be used for unary 3BUT etc. The special preference
+	value 7, which is invalid for unary BUT, is used to indicate
+	unary AND. Assignable if the second argument is assignable.
+    # opcode 0x63 is reserved
+    SWB E 0x64 'E'            'unary Subtract Without Borrow'     1  0
+	Followed by one expression, it computes the unary subtract
+	without borrow. In base 2, corresponds to the unary exclusive
+	or. Assignable if the argument is.
+    # opcodeE 0x65 is reserved
+    AWC E 0x66 'E'            'unary Add Without Carry'           1  0
+	Followed by one expression, it computes the unary Add without
+	carry; invalid in base 2. Assignable if the argument is.
+    # opcodeE 0x67 is reserved
+    SEL E 0x68 'EE'           'SELect'                            1  0
+	Followed by two expressions, it selects them. Assignable if the
+	arguments are assignable.
+    INT E 0x69 'EE'           'INTerleave'                        1  0
+	Followed by two expressions, interleaves them. Assignable if both
+	arguments are assignable.
+    NUM E 0x6a 'R'            'NUMber'                            1  0
+	Followed by a register, returns its number. So for example I<NUM>
+	I<SPO> I<#2> would be the same as I<#2>. This is more useful when
+	the register provided is reached using I<BLM>. Assignable.
+    OVM E 0x6b 'EE'           'OVerload Many'                     1  0
+	Followed by two expressions, overloads a range of registers. Note
+	that all "user" types of registers are overloaded, but "special"
+	registers, including whirlpool, are not. The range is determined
+	by uninterleaving the second argument. See also I<OVR>. Assignable.
+    #opcode 0x6c is reserved
+    SPL E 0x6d ''             'SPLat'                             1  0
+	Returns the code of the last splat. This is only useful if the
+	program is quantum or threaded, otherwise it won't be executing
+	after a splat. If there was no splat, generates one. Assignable,
+	but in this case it unconditionally splats for obvious reasons.
+    UDV E 0x6e 'E'            'Unary DiVide'                      1  0
+	The "most useless" operation, but surely somebody will find a
+	use for it. This operation can be considered arithmetic or
+	bitwise, depending on the value of special register I<%DM>.
+    RSE E 0x6f 'EE'           'Reverse SElect'                    1  0
+	Like I<SEL>, but swaps its operands.
+    RIN E 0x70 'EE'           'Reverse INterleave'                1  0
+	Like I<INT>, but swaps its operands.
+    UNE E 0x71 'EEC(E)'       'UNdocumented Expression'           0  0
+	This opcode is documented in the CLC-INTERCAL reference manual.
+    # opcodes 0x72 .. 0x7d are reserved
+@END EXPRESSIONS
+
+# constants - opcodes 0x7e..0x7f
+@GROUP CONSTANTS NAME=w TYPE=s NUMBER=d ARGS=s DESCR=s ASSIGNABLE=d CONST=d DOC=m
+    HSN # 0x7e 'N'            'Half Spot Number'                  1  1
+	Followed by a second byte, represents the value of that byte.
+    OSN # 0x7f 'NN'           'One Spot Number'                   1  1
+	Followed by two bytes, represents the 16 bit number which has the
+	first such byte as higher significant half, and the second byte
+	as lower significant half.
+@END CONSTANTS
+
+# all special registers
+@GROUP SPECIAL NAME=w TYPE=s NUMBER=d DEFAULT=s CODE=s DESCR=s DOC=m
+@SOURCE DOUBLE_OH_SEVEN
+@SOURCE SHARK_FIN
+@SOURCE WHIRLPOOL
+@END SPECIAL
+
+# special "spot" registers
+@GROUP DOUBLE_OH_SEVEN NAME=w TYPE=s NUMBER=d DEFAULT=s CODE=s DESCR=s DOC=m
+    WT '%'  1 '0'                  'zeroone'     'Write Type'
+	Determines how numeric WRITE IN behaves. The default value of
+	\#0 corresponds to the standard, traditional form; the value
+	\#1 enables wimp mode for input. Any other value is invalid.
+    RT '%'  2 '1'                  'roman'       'Read Type'
+	Determines how numeric READ OUT produces its output. Assigning
+	a number to this register causes the corresponding style to be
+	selected; assigning a I<MUL> causes a symbolic lookup to determine
+	the style number. See L<Language::INTERCAL::ReadNumbers>.
+    IO '%'  3 '1'                  'iotype'      'I/O type'
+	Determines how non-numeric WRITE IN and READ OUT work. Assigning
+	a number to this register causes the corresponding style to be
+	selected; assigning a I<MUL> causes a symbolic lookup to determine
+	the style number. See L<Language::INTERCAL::ArrayIO>.
+    BA '%'  4 '2'                  'base'        'BAse'
+	Holds the base used for all arithmetic. Assigning a value less
+	than 2 or greater than 7 causes an error.
+    CF '%'  5 '0'                  'comefrom'    'Come From style'
+	This register can only hold values from #0 to #3. The lowest bit
+	(in base 2) determines what happens when multiple COME FROM or
+	NEXT FROM all point at the same label: if zero, you get a splat,
+	if one you get a multithreaded program. The other bit determines
+	whether COME FROM gerund (and NEXT FROM gerund) will work: zero
+	disables these statements, one enables them. Thus all compilers
+	set %CF to #0, except I<thick.io> which sets it to #1 and
+	I<come-from-gerund.io> which sets it to #2 (if both these objects
+	are preloaded, they work together to set %CF to #3).
+    CR '%'  6 '0'                  'charset'     'Charset for Reads'
+	The character set used by alphanumeric READ OUT when %IO is CLC.
+	Assigning a number to this register causes the corresponding character
+	set to be selected; assigning a I<MUL> causes a symbolic lookup to
+	determine the character set number. See L<Language::INTERCAL::Charset>.
+    CW '%'  7 '0'                  'charset'     'Charset for Writes'
+	The character set used by alphanumeric WRITE IN when %IO is CLC.
+	Assigning a number to this register causes the corresponding character
+	set to be selected; assigning a I<MUL> causes a symbolic lookup to
+	determine the character set number. See L<Language::INTERCAL::Charset>.
+    OS '%'  8 '0'                  'spot'        'Operating System'
+	Hidden in the darkest corner of the operating system lurks a
+	"DO NEXT FROM %OS". As long as %OS has the default value of zero,
+	you are safe from this.
+
+	If %OS is assigned some other value, it behaves like a normal
+	(?) NEXT FROM, with one added twist to do with parameter
+	passing. Every time your program assigns a value to a register,
+	%OS will be made to belong to the register being assigned to,
+	and any previous belonging removed. This allows the system call code
+	to refer to I<$%OS> to try to guess what you want. The system call
+	will use up to five arguments, provided by registers I<.-$%OS>,
+	I<:-$%OS>, I<,-$%OS>, I<;-$%OS> and I<@%$OS>, in other words the spot,
+	two spot, tail, hybrid and whirlpool register with the same number as whatever
+	you last assigned to. This is called "call by vague resemblance
+	to the last assignment" and, to our knowledge, no other language
+	has ever used this style of parameter passing.
+
+	To use, you do something like "(666) DO .5 <- #1" which would
+	execute syscall #1, assuming %OS has the value #666. This
+	particular example would store the version number of CLC-INTERCAL
+	in ,5.
+    TM '%'  9 '0'                  'zeroone'     'Trace Mode'
+	If %TM is zero, the program is not traced. If it is #1 the program
+	will send bytecode trace information to @TRFH. Assigning any other
+	value to %TM is an error.
+    AR '%' 10 '0'                  'spot'        'Array read value'
+	Contains the last byte READ OUT when %IO is C.
+    AW '%' 11 '0'                  'spot'        'Array write value'
+	Contains the last byte WRITten IN when %IO is C.
+    JS '%' 12 "'END_JUNK'"         'symbol'      'Junk Symbol'
+	When parsing a comment, the compiler needs to be told how to
+	recognise the start of next statement: for example, I<1972.io> and
+	I<ick.io> set this to a grammar symbol meaning "optional (number)
+	followed by DO or PLEASE"; I<sick.io> does something similar, but
+	the complication caused by computed labels (if enabled) makes it
+	alightly more difficult to describe what this symbol does.
+
+	Changing the value of this register at runtime can be a great
+	obfuscation tool.
+    SS '%' 13 "'SPACE'"            'symbol'      'Space symbol'
+	The compiler will automatically ignore anything matched by this
+	symbol. If the Whitespace extension is installed, anything matched
+	by this symbol is passed to the Whitespace compiler. See the
+	documentation which comes with the Whitespace extension. Changing
+	the value of this register at runtime can be a great obfuscation
+	tool.
+    PS '%' 14 "'PROGRAM'"          'symbol'      'Program symbol'
+	Determines where the compiler starts when parsing a program.
+	This should be a grammar symbol corresponding to a single
+	statement, the symbol is automaticaly used repeatedly to
+	parse the whole program. Changing the value of this register
+	at runtime can be a great obfuscation tool. See also I<%IS>.
+    FS '%' 15 "'CALC_FULL'"        'symbol'      '"full" symbol'
+	Used by the Intercal calculator (intercalc) to determine how to
+	parse lines when operating in "full" mode.
+    ES '%' 16 "'CALC_EXPR'"        'symbol'      '"expr" symbol'
+	Used by the Intercal calculator (intercalc) to determine how to
+	parse lines when operating in "expr" mode.
+    IS '%' 17 '0'                  'symbol'      'Intersection symbol'
+	Determines what separates statements in the program; this is
+	not currently used in any compiler and can be left at the
+	default, zero. If set to any other value, the corresponding
+	grammar symbol is used to compile the bit of source between
+	consecutive statements; if this generates code, it will be
+	executed with the preceding statement. Changing the value of
+	this register at runtime can be a great obfuscation tool.
+	See also I<%PS>.
+    DM '%' 18 '0'                  'zeroone'     'unary Division mode'
+	This register can only have value #0 or #1, and determines
+	the style of unary division employed. The default value #0
+	corresponds to the "arithmetic" style of division, while
+	value #1 corresponds to the "bitwise" style. See the
+	I<UDV> opcode.
+    SP '%' 19 '1000'               'splat'       'SPlat'
+	This register contains the code of the last splat, just like
+	the '*' expression. Assigning to it, however, does not cause
+	a splat, but will trigger any events depending on splats.
+	This register is intended for internal use by the compiler;
+	programs should use I<SPL> instead.
+    # register %20 is used by the INTERNET extension
+    RM '%' 21 '0'                  'zeroone'     'Reinstate Mode'
+	This register can only have value #0 or #1, and determines
+	whether a REINSTATE of an IGNOREd register behaves in the
+	traditional way (#0) or in the way documented by the CLC-INTERCAL
+	documentation (#1).
+    SM '%' 22 '1'                  'zeroone'     'Select Mode'
+	This register can only have value #0 or #1, and determines the
+	size of the result of a select binary operator: #1 means that
+	the size of the result is data-dependent: if it fits in one
+	spot, it's one spot, otherwise it's two spot: this is the
+	normal CLC-INTERCAL behaviour; #0 means that the result has
+	the size of the second operant: this is the C-INTERCAL behaviour.
+    GU '%' 23 '0'                  'zeroone'     'abstain Give Up'
+	This register can only have value #0 or #1, and determines
+	whether an ABSTAIN FROM (label) or the corresponding REINSTATE
+	acts on a GIVE UP at that label. CLC-INTERCAL traditionally
+	does not allow this, but this register can be set to have
+	behaviour compatible with C-INTERCAL, which does allow it.
+@END DOUBLE_OH_SEVEN
+
+# special "tail" registers
+@GROUP SHARK_FIN NAME=w TYPE=s NUMBER=d DEFAULT=s CODE=s DESCR=s DOC=m
+    AV '^'  1 '[]'                 'vector'      'Argument Vector'
+	The runtime initialises it with any command-line arguments provided
+	to the program.
+    EV '^'  2 '[]'                 'vector'      'Environment Vector'
+	The runtime initialises it with environment variables available
+	when the program starts.
+@END SHARK_FIN
+
+# whirlpool registers are not special, but they get some added value
+@GROUP WHIRLPOOL NAME=w TYPE=s NUMBER=d DEFAULT=s CODE=s DESCR=s DOC=m
+    OR   '@' 0 'undef'             'whirlpool'   'Overload Register'
+	This register cannot be used directly. During overload, it belongs
+	to the register being overloaded, so it's possible to access that
+	register using I<BLM> I<1> I<WHP> I<0>, or the corresponding
+	INTERCAL source (I<$@0>). Any other use will probably splat.
+    OWFH '@' 1 '$stdwrite'         'whirlpool'   'Object\'s write filehandle'
+	Used by default for all WRITE IN statements. Defaults to the standard
+	write filehandle, which your operating system may call "standard
+	input".
+    ORFH '@' 2 '$stdread'          'whirlpool'   'Object\'s read filehandle'
+	Used by default for all READ OUT statements. Defaults to the standard
+	read filehandle, which your operating system may call "standard
+	output"
+    OSFH '@' 3 '$stdsplat'         'whirlpool'   'Object\'s splat filehandle'
+	Used by default for the text produced by a splat. Defaults to the
+	standard splat filehandle, which your operating system may call
+	"standard error".
+    SNFH '@' 7 '$devnull'          'whirlpool'   'Null filehandle'
+	If you READ OUT to @7 nothing happens. If you WRITE IN from @7
+	you get an empty write (for numeric writes, a value of #0, for
+	non-numeric writes an empty array).
+    TRFH '@' 9 '$stdsplat'         'whirlpool'   'Trace filehandle'
+	Trace output, if enabled by I<%TM>, is sent here. Defaults to the
+	standard splat filehandle, which your operating system may call
+	"standard error"
+@END WHIRLPOOL
+

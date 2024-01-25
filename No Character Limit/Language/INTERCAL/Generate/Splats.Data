@@ -1,0 +1,341 @@
+# splat codes, used to generate Splats.pm and errors.html
+
+# This file is part of CLC-INTERCAL
+
+# Copyright (c) 2007-2008, 2023 Claudio Calvelli, all rights reserved.
+
+# CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+# and distribute it is granted provided that the conditions set out in the
+# licence agreement are met. See files README and COPYING in the distribution.
+
+# PERVERSION "CLC-INTERCAL/Base INTERCAL/Generate/Splats.Data 1.-94.-2.3";
+
+@GROUP SPLATS NUMBER=d NAME=w DESCR=s PARM=@s DOC=m
+   0  COMMENT      '%' ['invalid statement']
+		   This error code is used by the compiler when it does
+		   not have a more appropriate error code. If you try to
+		   execute the statement, the error message will be the
+		   statement itself.
+   1  TODO         'Not implemented: %' ['description']
+		   The requested compiler or runtime feature has not
+		   been written.
+   4  ROMAN        'Unknown read type for Roman numerals: %' ['type']
+		   The compiler attempted to specify an invalid default
+		   representation for Roman numerals. Numeric output
+		   cannot work.
+   5  SPOT         '% des not look like a one spot value' ['number']
+		   A special register expected a spot value and got this
+		   instead.
+   6  INVSPEC      'Invalid value % for special register' ['number']
+		   Attempt to assign something to a special register,
+		   but the register didn't like it.
+   8  BASE         'Base must be between 2 and 7 (got %)' ['base']
+		   The program assigned an invalid value to %BA
+   9  IOTYPE       'Invalid I/O Type: %' ['type']
+		   The compiler attempted to set the default input/output
+		   mechanism (usually one of CLC or C). Binary and
+		   alphanumeric I/O cannot work.
+  10  CHARSET      'Invalid character set: %' ['name']
+		   The compiler attempted to set an invalid default
+		   character set. Try using one of ASCII, Baudot, EBCDIC
+		   or Hollerith.
+  69  INVALID      'Invalid bytecode (%) for %' ['code' 'item']
+		   An expression or overload contains bytecode designed for
+		   use in statements; or conversely a statement contains
+		   an expression bytecode where the interpreter doesn't
+		   expect it.
+  70  REGNUM       'Invalid register number "%"' ['register']
+		   The program used something like I<.0> or I<.65536>. Note
+		   that this may be an unintentional consequence of assigning
+		   to a constant.
+ 109  NOSUCHCHAR   'Invalid character (%) for %' ['code' 'charset']
+		   The conversion between character sets just could not
+		   cope with this. This splat is currently generated when
+		   converting to Baudot or Hollerith, when a character does
+		   not exist in that character set; or when converting from
+		   Hollerith when an overpunch just cannot be represented.
+ 123  NEXTING      'Program attempted more than % levels of NEXTing' ['number']
+		   INTERCAL programs aren't supposed to do that.
+ 128  JUNK         'Cannot use JUNK in this grammar' []
+		   A grammar used the special predefined symbol JUNK but
+		   did not provide enough evidence that it knows what to
+		   do with it.
+ 129  NOSUCHLABEL  'Could not find label %' ['label']
+		   A NEXT or STUDY refers to an undefined label.
+ 130  TOOMANYLABS  'Cannot decide between % instances of label %' ['number' 'label']
+		   A NEXT or STUDY refers to a label which is multiply
+		   defined. This may be an unintended effect of using
+		   computed labels.
+ 131  INVLABEL     'Invalid label %' ['label']
+		   A NEXT or STUDY refers to a label which is not valid,
+		   for example zero or too large.
+ 241  NODIM        'Array not dimensioned' []
+		   Subscripts have been applied to an array register which
+		   has not been dimensioned; or they have been applied to
+		   a non-array register.
+ 242  NOTCLASS     'Non-class value used as class' []
+		   A number or array was used where a class would be better.
+ 243  ISARRAY      'Array register used as value' []
+		   An array was used where a number would be more appropriate.
+ 244  ISCLASS      'Class register used as value' []
+		   A value was assigned to a class register, or a class
+		   register was used for arithmetic.
+ 245  NOARRAY      'Non-array register used as array' []
+		   A non-array register (or a simple value) was used where
+		   the system would like an array.
+ 247  SPECIAL      'Attempt to use special register %' ['name']
+		   The given special register does not accept assignments.
+		   This may indicate a bug in CLC-INTERCAL.
+ 248  ISSPECIAL    'Attempt to use special register as number' []
+		   The special type indicator from a special register has
+		   leaked to places where we expect a number. This is very
+		   likely to be a bug in CLC-INTERCAL.
+ 249  DIVERSION    'Invalid diversion: % is % %' ['label', 'problem', 'label']
+		   The region specified for a road closure or a diversion is
+		   not valid: the two labels exist, but they cannot be used to
+		   delimit a region.
+ 250  NOCLASS      'Invalid value % assigned to class' ['value']
+		   The program assigned a value to a class register. This
+		   is not a good idea.
+ 251  INVARRAY     'Invalid value in array element: %' ['reason']
+		   An array is being created, but assignment to one of its
+		   elements provided an invalid value, such as another array.
+ 252  OVREG        'Cannot use overload register %' ['name']
+		   The overload register can only be used to find which other
+		   register it belongs to, and that only during overloading.
+		   Any other use is forbidden.
+ 253  INVCLASS     'Invalid lecture: %' ['reason']
+		   A lecture is being defined (e.g. by STUDY) but something
+		   went wrong.
+ 254  CLASS        'Invalid subject: %' ['reason']
+		   Class registers can be used only in special ways. This
+		   wasn't one of them.
+ 256  NOVALUE      'This register cannot hold a value' []
+		   You may be wondering what's for...
+ 257  NOSPECIAL    'Normal register used as special' []
+		   Somehow the program managed to use a normal register
+		   (spot, two spot, tail, hybrid, whirlpool) as a special
+		   (double-oh-seven, shark fin). May indicate a compiler bug.
+ 274  SPOTS        'Number % too large for %' ['value' 'number of spots']
+		   An arithmetic calculation intended for the given number
+		   of spots resulted in a number too large to fit there.
+ 276  SUBSCRIPT    'Invalid subscript %: %' ['value' 'reason']
+		   A subscript is out of range, for example greater than
+		   the size of the array, or zero.
+ 277  ASSIGN       'Impossible assignment (base %): cannot find #X such that #%X is #%' ['base' 'operation' 'result']
+		   Assigning to a unary operator is sometimes impossible.
+ 279  SUBSIZE      'Invalid number of subscripts: % provided, % required' ['number' 'number']
+		   The number of subscripts supplied to an array is wrong.
+ 280  ARRAY        'Invalid array: %' ['reason']
+		   Program attempted to create an array (for example by
+		   dimensioning a tail or hybrid register) but something
+		   went wrong.
+ 281  NUMBER       'Invalid number: %' ['reason']
+		   The program attempted to use something weird where a
+		   number would have been a good idea instead.
+ 315  SUBVERSION   'Program trying to subvert natural order' []
+		   The program attempted to install a diversion which overlaps its
+		   own road closure. This is not permitted.
+ 369  NOTHREAD     'Thread % does not exist' ['thread ID']
+		   An attempt was made to duplicate or kill a thread which
+		   does not exist; it may have already terminated or maybe
+		   it was never created.
+ 398  CONTEXT      'Invalid context: %' ['explanation']
+		   Something was used in the wrong place.
+ 432  READ         'Not suitable for %' ['operation']
+		   The program attempted to READ OUT or WRITE IN something which
+		   is not suitable for I/O. You can use numbers, arrays or
+		   classes but this was none of the above.
+ 433  REGISTER     'Not a valid register: %' ['register']
+		   The program used something hoping it would work as a register.
+		   It didn't.
+ 436  HIDDEN       'Register % stashed away too well' ['name']
+		   The program RETRIEVEd more than it SHASHed.
+ 437  NOREGISTER   'Cannot % numbers' ['operation']
+		   The program attempted to STASH or RETRIEVE a number rather
+		   than a register. This may be an unintended effect of
+		   overloading.
+ 438  ISNUMBER     'Numbers cannot %' ['operation']
+		   The program did something like #1 LEARNS or #2 GRADUATES.
+		   In other words, a number was used where one would like
+		   a register. This may be an unintended effect of overloading.
+ 444  CONVERT      'Cannot convert % to %' ['opcode' 'opcode']
+		   The two opcodes are not compatible; it won't work.
+ 445  SWAP         'Cannot swap % and %' ['opcode' 'opcode']
+		   The two opcodes are not compatible; it won't work.
+ 456  SPLAT        'No splat' []
+		   Program used the splat (*) operator to find out the code
+		   of the last splat, but the program hasn't splatted yet.
+ 457  INVSPLAT     'Invalid splat %' ['number']
+		   Invalid splat. This is likely to happen when you assign to
+		   the '*' expression.
+ 511  INDEPENDENT  'Register % does not belong to anything' ['name']
+		   The program applied a belonging path to a register which did
+		   not belong to anything.
+ 512  NOBELONG     'Register % does not belong to register %' ['register' 'group']
+		   The program attempted to MAKE a register NO LONGER BELONG to
+		   another, but it didn't belong in the first place.
+ 513  NOSUCHBELONG 'Register % does not belong to % registers (just %)' ['name' 'number' 'number']
+		   The program requested the n-th register this one belongs
+		   to, but it does not belong to that many groups.
+ 514  INVBELONG    'Invalid belong number: %' ['value']
+		   The program requested an invalid belong number, probably zero.
+ 534  DIGITS       'Wrong number of digits for base %: %' ['base' 'number']
+		   An arithmetic calculation in the specified base resulted
+		   in a number with too many digits.
+ 535  SYMBOL       'Invalid symbol: %' ['name']
+		   The program used I<name> as a symbol, but this is not OK.
+ 555  COMEFROM     'Multiple "COME FROM" %' ['label']
+		   The program has multiple COME FROMs all pointing at the
+		   same statement, and multithreading is disabled. This splat
+		   is also very likely to happen if "come from gerund" is
+		   enabled and multithreading is disabled.
+ 578  BCMATCH      'Invalid bytecode pattern in %: %' ['name' 'problem']
+		   A bytecode pattern specified in an optimiser contained
+		   a problem.
+ 603  CLASSWAR     'Class war between % and %' ['class' 'class']
+		   Two classes teach the same subject and a register is
+		   enrolled in both. Can't decide which lecture to use.
+ 621  NORESUME     'Pointless RESUME' []
+		   A program attempted to RESUME #0.
+ 632  RESUME       'Program terminated via RESUME' []
+		   A program RESUMEd more than NEXTed.
+ 633  FALL_OFF     'Falling off the edge of the program' []
+		   The program tried to execute past its end. Try adding
+		   a PLEASE GIVE UP somewhere.
+ 634  INTERNAL     'Internal error: %' ['explanation']
+		   The unthinkable happened and there appears to be
+		   a bug in CLC-INTERCAL. Probably an illusion but do
+		   submit a bug report. Include your program (if not
+		   too embarrassed) and the precise text of the error
+		   message (it does contain clues to the developers);
+		   also include any other useful information, including,
+		   but not limited to, compiler options used, perversion
+		   of CLC-INTERCAL, any patches and/or modifications
+		   you have applied to the compiler, and what colour was
+		   selected by the system to display the error message.
+ 635  UNDOCUMENTED 'No such undocumented % as %' ['what', 'name']
+		   An extension used one of the various undocumented opcodes
+		   to ask for something, but the something didn't appear to
+		   exist. This is likely to be a bug in the extension, maybe
+		   it didn't load the appropriate module. Refer to the online
+		   documentation for a full description of undocumented
+		   opcodes (so they aren't actually undocumented!)
+ 636  INVUNDOC     'Invalid undocumented operation (%): %s' ['name', 'reason']
+		   An extension used one of the various undocumented opcodes
+		   but did something wrong or unsupported with it.
+ 641  IOMODE       'Invalid I/O mode %' ['mode']
+		   Program attempted to open a filehandle using a silly code
+		   for the I/O mode. It won't work.
+ 642  IOERR        'Input output error in %: %' ['file' 'error']
+		   Something bad happened.
+ 643  SEEKERR      'Seek/tell error: %' ['problem']
+		   You shouldn't have done that.
+ 644  MODEERR      'I/O error: %' ['problem']
+		   You shouldn't have done that.
+ 660  NOSYSCALL    'Undefined system call %' ['number']
+		   Program made a system call but the system did not
+		   know what to do about it.
+ 661  SYSCALL      'Missing system call number' []
+		   Program attempted to make a system call but did not
+		   provide a system call number.
+ 662  DIVIDE       'Unary division by zero' []
+		   Program attempted unary division by zero.
+ 664  INDIGESTION  'Program is too large' []
+		   Either the source or the comnpiled code exceeded some
+		   built-in arbitrary limits.
+ 665  HEADSPIN     'Confused by your diversions, my head is spinning' []
+		   There is something not quite right with your road closures,
+		   or maybe you tried to remove a diversion which wasn't there.
+ 666  QUANTUM      '% does not have a quantum version' ['statement']
+		   Program attempted to run a statement in quantum mode,
+		   but the statement cannot do that. This is likely to
+		   be either a READ OUT (because it is observable) or
+		   a WHILE (because it does not have a Quantum version).
+ 699  LECTURE      'Not in a lecture' []
+		   Cannot FINISH LECTURE unless there is one.
+ 700  LANGUAGE     'Invalid language: %' ['language']
+		   The compiler does not know about that language. Try
+		   something more standard, such as Scottish Gaelic.
+ 701  NONUMBER     'Value written in is not a number: %' ['value']
+		   You typed something like ZERRO instead of ZERO. Or
+		   perhaps you used a language which is not understood
+		   by CLC-INTERCAL.
+ 702  THREESPOT    'Value written in is larger than two spots' []
+		   You typed too many digits.
+ 703  NODATA       'End of file encountered when writing an array in' []
+		   It helps if there is some input.
+ 742  OSERR        '%' ['error']
+		   Something bad happened; this will show the error message
+		   from the operating system.
+ 751  EVENT        'Invalid event: BODY WHILE CONDITION' []
+		   Before you can use it you must CONVERT it to a
+		   CONDITION WHILE BODY (or you must SWAP them).
+ 752  NOASSIGN     'Cannot assign %: %' ['value' 'reason']
+		   The program attempted to assign an invalid value to
+		   a register.
+ 774  BUG          'Compiler error' []
+		   Program encountered a compiler error.
+ 775  UBUG         'Unexplainable compiler error' []
+		   Program encountered a compiler error, even though the
+		   "compiler error" has been disabled by a compiler option.
+ 796  FORBIDDEN    '% is forbidden in INTERCAL-1972' ['operation']
+		   You asked for a compiler compatible with INTERCAL-1972
+		   but used some extensions, such as binary I/O. Select
+		   CLC-INTERCAL native mode or compatibility with C-INTERCAL
+		   to use these things.
+ 799  HOLIDAY      'No class teaches subjects %' ['number']
+		   Maybe it's some kind of holiday?
+ 815  EVOLUTION    'Creation not allowed: %' ['reason']
+		   A CREATE (or DESTROY) statement attempted something illegal.
+ 816  CREATION     'CREATE statement misconfiguration: %' ['reason']
+		   The production contained some invalid code.
+ 818  CIRCULAR     'Circular reasoning in %' ['symbol']
+		   Recursion is acceptable, but here the problem is that
+		   the symbol is defined as being identical to itself,
+		   which is true but not useful.
+ 822  NOSTUDENT    'Register % is not a student' ['name']
+		   The program attempted to LEARN something, but the
+		   register has not enrolled in a class.
+ 823  NOCURRICULUM 'Subject % is not in %\'s curriculum' ['number' 'register']
+		   Program attempted to LEARN something, but the register
+		   is not in the right class.
+ 899  INTERNET     'INTERcal NETwork error talking to %: %' ['server' 'error']
+		   A problem was encountered while talking to a theft server.
+# 900 to 902 are reserved for the INTERcal NETworking (INTERNET) extension
+ 997  ILLEGAL      'Illegal operator % for base %' ['name' 'base']
+		   Maybe you forgot to include the appropriate compiler option
+		   for the correct base? Or used the wrong suffix? Or you
+		   overloaded the base and so can't tell what base you are using
+		   for calculations?
+ 998  LATE         'Too late to run this program' []
+		   The program's state cannot be saved because the year is
+		   2,510,588,971,096,165 or later and the file format does not
+		   allow storing a number large enough.  Did you forget to
+		   upgrade your compiler?  See issue 14.
+ 999  EARLY        'Lecture at % is too early' ['label']
+		   Program attempted to define a lecture before 1000.
+		   That's way too early.
+@END SPLATS
+
+# add any new splats as necessary
+#    15  ENCODE       'Cannot encode %'
+#    57  GARBAGE      'Extra garbage at end of %'
+#   246  NOSPACE      'Data written in (% elements) does not fit in array % (% elements)'
+#   248  OVERLOAD     'Cannot % overload code'
+#   275  TWOSPOT      'Register % cannot hold two spot value %'
+#   278  CONFUSION    'Cannot share % and %'
+#   316  INDECISION   'Cannot decide between your threads'
+#   458  REPEATLABEL  'Found % statements with label %'
+#   533  INTERLEAVE   'Cannot interleave % and %: too many spots'
+#   576  NOOPTIMISER  'No such optimiser %'
+#   577  OPTIMISE     'Invalid optimisation: %' ['description']
+#                     The optimiser has detected a problem.
+#   634  SCHEDULE     'Internal error: loop stash corrupted'
+#   703  TOOMANYSPOTS 'Value % assigned to % larger than two spots'
+#   797  CLASSIO      'Class @% cannot be used for %ing'
+#   798  IGNORANCE    'Cannot find class @%'
+#   817  NOCREATE     'Syntax error'
+#   898  REGGRIM      'Error in Regular Grimace: %' ['problem']
+#   942  PURE         'No such sin (%)'
+

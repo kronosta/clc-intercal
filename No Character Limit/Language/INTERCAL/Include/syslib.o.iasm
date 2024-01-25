@@ -1,0 +1,241 @@
+PLEASE NOTE: optimised version of the C-INTERCAL system library, all bases
+
+Copyright (c) 2023 Claudio Calvelli, all rights reserved.
+
+CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+and distribute it is granted provided that the conditions set out in the
+licence agreement are met. See files README and COPYING in the distribution.
+
+PERVERSION "CLC-INTERCAL/Base INTERCAL/Include/syslib.o.iasm 1.-94.-2.2"
+
+	PLEASE NOTE: Tell the compiler we are an optimiser
+	[ FLA { #111 #112 #116 #105 #109 #105 #115 #101 #114 } { #48 } ]
+
+	PLEASE NOTE: DON'T WANT TO ACTUALLY EXECUTE THIS!
+	[ GUP ]
+
+	PLEASE NOTE: .3 <- .1 plus .2, error on overflow
+(1000)	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :97 :100 :100 :101 :114 :114 }
+	      [ SPO #1 + SPO #2 + #0 + %BA ]
+	      [ SPO #3 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: undocumented label
+(1001)	[ RES SPO #5 ]
+
+	PLEASE NOTE: .3 <- .1 plus .2, overflow checked
+(1009)	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :97 :100 :100 :99 :107 }
+	      [ SPO #1 + SPO #2 + #0 + %BA ]
+	      [ SPO #3 + SPO #4 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: .3 <- .1 minus .2, no action on overflow
+(1010)	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :115 :117 :98 :108 :111 }
+	      [ SPO #1 + SPO #2 + #0 + %BA ]
+	      [ SPO #3 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: .1 <- .1 plus #1, no action on overflow
+(1020)	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :97 :100 :100 :108 :111 }
+	      [ SPO #1 + #1 + #0 + %BA ]
+	      [ SPO #1 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: undocumented label
+(1023)	[ RES SPO #3 ]
+
+	PLEASE NOTE: .3 <- .1 times .2, error on overflow
+(1030)	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :109 :117 :108 :101 :114 :114 }
+	      [ SPO #1 + SPO #2 + #0 + %BA ]
+	      [ SPO #3 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: .3 <- .1 times .2, overflow checked
+(1039)	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :109 :117 :108 :99 :107 }
+	      [ SPO #1 + SPO #2 + #0 + %BA ]
+	      [ SPO #3 + SPO #4 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: .3 <- .1 divided by .2
+(1040)	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :100 :105 :118 :108 :111 }
+	      [ SPO #1 + SPO #2 + #0 + %BA ]
+	      [ SPO #3 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: .2 <- :1 divided by .1, error exit on overflow
+(1050)	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :100 :105 :118 :101 :114 :114 }
+	      [ TSP #1 + SPO #1 + #0 + %BA ]
+	      [ SPO #2 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: .2 <- .1 times #2, overflow captured in .3 (base 4 & 6 only)
+(1200)	[ UNS #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :98 :97 :115 :101 }
+	      [ %BA + #80 ] ]
+	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :109 :117 :108 :50 }
+	      [ SPO #1 + #2 + #0 + %BA ]
+	      [ SPO #2 + SPO #3 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: .2 <- .1 divided by #2, one digit after the quartic
+			      or sextic point stored in .3 (base 4 & 6 only)
+(1210)	[ UNS #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :98 :97 :115 :101 }
+	      [ %BA + #80 ] ]
+	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :100 :105 :118 :50 }
+	      [ SPO #1 + #2 + #0 + %BA ]
+	      [ SPO #2 + SPO #3 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: :3 <- :1 plus :2, error exit on overflow
+(1500)	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :97 :100 :100 :101 :114 :114 }
+	      [ TSP #1 + TSP #2 + #1 + %BA ]
+	      [ TSP #3 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: undocumented label
+(1504)	[ RES SPO #6 ]
+
+	PLEASE NOTE: :3 <- :1 plus :2, overflow checked - the documentation
+		     implies that the overflow goes in .4 but running the
+		     thing we see it in :4 so this is what we do here
+(1509)	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :97 :100 :100 :99 :107 }
+	      [ TSP #1 + TSP #2 + #1 + %BA ]
+	      [ TSP #3 + TSP #4 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: :3 <- :1 minus :2, no action on overflow
+(1510)	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :115 :117 :98 :108 :111 }
+	      [ TSP #1 + TSP #2 + #1 + %BA ]
+	      [ TSP #3 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: :1 <- .1 concatenated with .2
+(1520)	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :99 :97 :116 }
+	      [ SPO #1 + SPO #2 + %BA ]
+	      [ TSP #1 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: :1 <- .1 times .2
+(1530)	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :109 :117 :108 :108 :111 }
+	      [ SPO #1 + SPO #2 + #1 + %BA ]
+	      [ TSP #1 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: :3 <- :1 times :2, error exit on overflow
+(1540)	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :109 :117 :108 :101 :114 :114 }
+	      [ TSP #1 + TSP #2 + #1 + %BA ]
+	      [ TSP #3 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: :3 <- :1 times :2, overflow captured - the documentation suggests
+		     overflow captured in .4 but running it we see it in :4
+(1549)	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :109 :117 :108 :99 :107 }
+	      [ TSP #1 + TSP #2 + #1 + %BA ]
+	      [ TSP #3 + TSP #4 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: :3 <- :1 divided by :2
+(1550)	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :100 :105 :118 :108 :111 }
+	      [ TSP #1 + TSP #2 + #1 + %BA ]
+	      [ TSP #3 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: :2 <- :1 times #2, overflow captured in .1 (base 4 & 6 only)
+(1700)	[ UNS #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :98 :97 :115 :101 }
+	      [ %BA + #80 ] ]
+	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :109 :117 :108 :50 }
+	      [ TSP #1 + #2 + #1 + %BA ]
+	      [ TSP #2 + SPO #1 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: :2 <- :1 divided by #2, one digit after the quartic
+			      or sextic point stored in .1 (base 4 & 6 only)
+(1710)	[ UNS #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :98 :97 :115 :101 }
+	      [ %BA + #80 ] ]
+	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :100 :105 :118 :50 }
+	      [ TSP #1 + #2 + #1 + %BA ]
+	      [ TSP #2 + SPO #1 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: :2 <- :1 times the least significant digit of .1,
+			      overflow captured in .2 (base 5 & 7 only)
+(1720)	[ UNS #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :98 :97 :115 :101 }
+	      [ %BA + #160 ] ]
+	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :109 :111 :100 }
+	      [ SPO #1 + %BA ]
+	      [ SPO #2 ] ]
+	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :109 :117 :108 :50 }
+	      [ TSP #1 + SPO #2 + #1 + %BA ]
+	      [ TSP #2 + SPO #2 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: .1 <- uniform random number from #0 to #65535
+(1900)	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :117 :114 :97 :110 :100 }
+	      #0
+	      [ SPO #1 ] ]
+	[ RES #1 ]
+
+	PLEASE NOTE: .2 <- normal random number from #0 to .1,
+		     with standard deviation .1 divided by #12
+(1910)	[ UNA #0
+	      STR { :67 :108 :97 :115 :115 :108 :105 :98 }
+	      STR { :110 :114 :97 :110 :100 }
+	      [ SPO #1 ]
+	      [ SPO #2 ] ]
+	[ RES #1 ]
+

@@ -1,0 +1,98 @@
+	DO NOTE: THIS LIBRARY ADDS SYSTEM CALL INTERFACE TO "SICK"
+
+Copyright (c) 2006-2008, 2023 Claudio Calvelli, all rights reserved.
+
+CLC-INTERCAL is copyrighted software. However, permission to use, modify,
+and distribute it is granted provided that the conditions set out in the
+licence agreement are met. See files README and COPYING in the distribution.
+
+PERVERSION "CLC-INTERCAL/Base INTERCAL/Include/syscall.iasm 1.-94.-2.3"
+
+	[ FLA { #84 #89 #80 #69}
+	      { #69 #88 #84 #69 #78 #83 #73 #79 #78 } ]
+	[ STO #666 %OS ]
+
+	PLEASE NOTE: SYSCALL #0 - NO OPERATION
+	[ SYS #0 #0 ]
+	
+	PLEASE NOTE: SYSCALL #1 - (PER)VERSION NUMBER
+	[ SYS #1 [
+	  STO #13         TAI NUM BLM #1 %OS +
+	  STO #95 SUB  #1 TAI NUM BLM #1 %OS +
+	  STO #91 SUB  #2 TAI NUM BLM #1 %OS +
+	  STO #87 SUB  #3 TAI NUM BLM #1 %OS +
+	  STO #92 SUB  #4 TAI NUM BLM #1 %OS +
+	  STO #67 SUB  #5 TAI NUM BLM #1 %OS +
+	  STO #88 SUB  #6 TAI NUM BLM #1 %OS +
+	  STO #74 SUB  #7 TAI NUM BLM #1 %OS +
+	  STO #92 SUB  #8 TAI NUM BLM #1 %OS +
+	  STO #67 SUB  #9 TAI NUM BLM #1 %OS +
+	  STO #83 SUB #10 TAI NUM BLM #1 %OS +
+	  STO #92 SUB #11 TAI NUM BLM #1 %OS +
+	  STO #65 SUB #12 TAI NUM BLM #1 %OS +
+	  STO  #0 SUB #13 TAI NUM BLM #1 %OS] ]
+
+	PLEASE NOTE: SYSCALL #2 - INTERCAL DIALECT
+	[ SYS #2 [
+	  STO #17         TAI NUM BLM #1 %OS +
+	  STO #91 SUB  #1 TAI NUM BLM #1 %OS +
+	  STO #95 SUB  #2 TAI NUM BLM #1 %OS +
+	  STO #78 SUB  #3 TAI NUM BLM #1 %OS +
+	  STO #83 SUB  #4 TAI NUM BLM #1 %OS +
+	  STO #78 SUB  #5 TAI NUM BLM #1 %OS +
+	  STO #91 SUB  #6 TAI NUM BLM #1 %OS +
+	  STO #67 SUB  #7 TAI NUM BLM #1 %OS +
+	  STO #95 SUB  #8 TAI NUM BLM #1 %OS +
+	  STO #70 SUB  #9 TAI NUM BLM #1 %OS +
+	  STO #76 SUB #10 TAI NUM BLM #1 %OS +
+	  STO #80 SUB #11 TAI NUM BLM #1 %OS +
+	  STO #65 SUB #12 TAI NUM BLM #1 %OS +
+	  STO #74 SUB #13 TAI NUM BLM #1 %OS +
+	  STO #78 SUB #14 TAI NUM BLM #1 %OS +
+	  STO #67 SUB #15 TAI NUM BLM #1 %OS +
+	  STO #83 SUB #16 TAI NUM BLM #1 %OS +
+	  STO  #0 SUB #17 TAI NUM BLM #1 %OS] ]
+
+	PLEASE NOTE: SYSCALL #3 - OPEN FILE
+	[ SYS #3 [
+	  UNA #0 STR { :71 :101 :110 :101 :114 :105 :99 :73 :79 }
+		 STR { :110 :101 :119 }
+		 [ STR { :91 :91 :67 :76 :65 :83 :83 :93 :93 } +
+		   STR { :70 :73 :76 :69 } +
+		   TSP NUM BLM #1 %OS +
+		   TAI NUM BLM #1 %OS ]
+	         [ WHP NUM BLM #1 %OS ] ] ]
+
+	PLEASE NOTE: SYSCALL #4 - RESET FILE
+	[ SYS #4 [
+	  UNS #0 WHP NUM BLM #1 %OS
+		 STR { :114 :101 :115 :101 :116 }
+		 #0 ] ]
+
+	PLEASE NOTE: SYSCALL #5 - SEEK FILE (SEEK_SET ONLY)
+	[ SYS #5 [
+	  UNS #0 WHP NUM BLM #1 %OS
+		 STR { :115 :101 :101 :107 }
+		 [ TSP NUM BLM #1 %OS ] ] ]
+
+	PLEASE NOTE: SYSCALL #6 - OPEN TCP SOCKET
+	[ SYS #6 [
+	  UNA #0 STR { :71 :101 :110 :101 :114 :105 :99 :73 :79 }
+		 STR { :110 :101 :119 }
+		 [ STR { :91 :91 :67 :76 :65 :83 :83 :93 :93 } +
+		   MUL { #91 #95 #80 #78 #86 } +
+		   TSP NUM BLM #1 %OS +
+		   TAI NUM BLM #1 %OS +
+		   STR { :91 :91 :73 :78 :84 :95 :115
+			 :101 :114 :118 :101 :114 :93 :93 } ]
+	         [ WHP NUM BLM #1 %OS ] ] ]
+
+	PLEASE NOTE: SYSCALL #7 - TOGGLE NEWLINE HANDLING
+	[ SYS #7 [
+	  UNS #0 STR {}
+		 STR { :95 :110 :101 :119 :108 :105 :110 :101 }
+		 [ STR { :91 :91 :84 :80 :93 :93 } ] ] ]
+
+	PLEASE NOTE: THAT'S IT FOR NOW
+	[ GUP ]
+
