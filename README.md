@@ -12,10 +12,10 @@ CLC-INTERCAL unfortunately has a built-in, human-reachable limit of 65535 charac
 
 ## How to install
 - Install CLC-INTERCAL 1.-94.-2.3.
-- Type `perl -E 'print "@INC";'` into your shell to find a list of directories that the Language::INTERCAL files could be in.
-- Look for the `Language/INTERCAL` directory with inside each of them. It should have a lot of files and several directories inside (there may be a few extra directories named Language/INTERCAL in @INC)
+- Type `perl -E 'print "@INC";'` into your shell to find a list of directories that the `Language::INTERCAL` files could be in.
+- Look for the `Language/INTERCAL` directory with inside each of them. It should have a lot of files and several directories inside (there may be a few extra directories named `Language/INTERCAL` in `@INC`)
 - Replace the directory you found with the `No Character Limit/Language/INTERCAL` directory in this repo. 
-- Make sure `Language/INTERCAL.pm` is intact in @INC (it's the exact same as the INTERCAL.pm provided in this repo)
+- Make sure `Language/INTERCAL.pm` is intact in `@INC` (it's the exact same as the `INTERCAL.pm` provided in this repo)
 
 ## Preparation
 Before you can run this version of CLC-INTERCAL, you need to prepare a few compilers. This is because this variant changes the format used for .io files. When `iacc.io` or `postpre.io` are read from the `Language/INTERCAL/Include` directory or the current directory, they automatically get treated as the original format so that everything else can be made. This means you shouldn't create those in the current directory as that will mess things up.
