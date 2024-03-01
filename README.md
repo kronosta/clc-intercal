@@ -7,8 +7,8 @@ Make sure to extract the .tar.gz file. Installing from the folder will not work 
 This works in both WSL and Linux on a virtual machine.
 
 
-# No character limit version
-CLC-INTERCAL unfortunately has a built-in, human-reachable limit of 65535 characters in a program. After toiling away for two days, I have the no character limit version. It doesn't work as a tar file because the default .io files aren't sufficient to compile programs.
+# 32-bit character limit version
+CLC-INTERCAL unfortunately has a built-in, human-reachable limit of 65535 characters in a program. After toiling away for two days, I have the a version which changes that to about 4 billion. It doesn't work as a tar file because the default .io files aren't sufficient to compile programs.
 
 ## How to install
 - Install CLC-INTERCAL 1.-94.-2.3.
