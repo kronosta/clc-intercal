@@ -10,12 +10,20 @@ This works in both WSL and Linux on a virtual machine.
 # 32-bit character limit version
 CLC-INTERCAL unfortunately has a built-in, human-reachable limit of 65535 characters in a program. After toiling away for two days, I have the a version which changes that to about 4 billion. It doesn't work as a tar file because the default .io files aren't sufficient to compile programs.
 
-## How to install
-- Install CLC-INTERCAL 1.-94.-2.3.
+## How to install to 1.-94.-2.3
+- Install CLC-INTERCAL 1.-94.-2.3. (See How to install to 1.00 section for 1.00 directions)
 - Type `perl -E 'print "@INC";'` into your shell to find a list of directories that the `Language::INTERCAL` files could be in.
-- Look for the `Language/INTERCAL` directory with inside each of them. It should have a lot of files and several directories inside (there may be a few extra directories named `Language/INTERCAL` in `@INC`)
+- Look for the `Language/INTERCAL` directory inside each of them. It should have a lot of files and several directories inside (there may be a few extra directories named `Language/INTERCAL` in `@INC`)
 - Replace the directory you found with the `32-bit Character Limit/Language/INTERCAL` directory in this repo. 
 - Make sure `Language/INTERCAL.pm` is intact in `@INC` (it's the exact same as the `INTERCAL.pm` provided in this repo)
+- See the Preparation section for how to compile and run programs (it's a bit more complicated than usual).
+
+## How to install to 1.00
+- Install CLC-INTERCAL 1.00
+- Type `perl -E 'print "@INC";'` into your shell to find a list of directories that the `Language::INTERCAL` files could be in.
+- Look for the `Language/INTERCAL` directory inside each of them. It should have a lot of files and several directories inside (there may be a few extra directories named `Language/INTERCAL` in `@INC`)
+- Replace `Object.pm` and `Parser.pm` with the files in the `32-bit 1.00` directory in this repo
+- See the Preparation section for how to compile and run programs (it's a bit more complicated than usual).
 
 ## Preparation
 Before you can run this version of CLC-INTERCAL, you need to prepare a few compilers. This is because this variant changes the format used for .io files. When `iacc.io` or `postpre.io` are read from the `Language/INTERCAL/Include` directory or the current directory, they automatically get treated as the original format so that everything else can be made. This means you shouldn't create those in the current directory as that will mess things up.
