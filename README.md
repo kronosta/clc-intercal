@@ -35,3 +35,6 @@ Before you can run this version of CLC-INTERCAL, you need to prepare a few compi
 - You can do this same process with any other compiler, extension, assembler, etc. by copying it, renaming it, and running `sick -piacc32 whatever.iacc`
 - You can now compile any program, but instead of using `sick program.i` you have to run `sick -pcompiler program.i`.
   - For example, if you have a standard CLC-INTERCAL program named `hello-world.i`, to compile it you can run `sick -psick32 hello-world.i`. You can also of course use `sick -psick32 -lRun hello-world.i` to run it immediately instead of compiling.
+
+# Dynamic Register Types extension
+See `DynamicRegTypes/README.md`
