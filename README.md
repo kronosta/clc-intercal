@@ -37,4 +37,4 @@ Before you can run this version of CLC-INTERCAL, you need to prepare a few compi
   - For example, if you have a standard CLC-INTERCAL program named `hello-world.i`, to compile it you can run `sick -psick32 hello-world.i`. You can also of course use `sick -psick32 -lRun hello-world.i` to run it immediately instead of compiling.
 
 # Dynamic Register Types extension
-See `DynamicRegTypes/README.md`
+This is an opcode-conserving extension for custom register types that also makes them a bit easier to add. See `DynamicRegTypes/README.md` and the `DynamicRegTypes` folder for more info.
