@@ -2,7 +2,7 @@ There are only around 40-50 free opcodes in CLC-INTERCAL, so it's good to try no
 Nevertheless, I created a single opcode (78/DRT) which can handle up to 65535 register types including the base types.
 
 # Installation
-Put the files named like `DynamicRegTypes/[module].pm` into one of perl's `@INC` directories (you can find out what these are by running `perl -E 'print "@INC";'` in your shell).
+Put the files named like `DynamicRegTypes/[module].pm` into one of perl's `@INC` directories in `Language/INTERCAL/` (you can find out what these are by running `perl -E 'print "@INC";'` in your shell).
 Then, to use the test register type, copy `reg_add` in the examples folder to your current directory, run `sick reg_add.iacc`, then `sick -Apreg_add your-program` to compile your program, or 
 `sick -Apreg_add -lRun your-program` to run it immediately. (Version 1.0 generates a lot of warnings at this step that don't really matter; this version silences them so it doesn't clog up your terminal).
 
