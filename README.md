@@ -1,4 +1,6 @@
-This repo contains versions 1.00 and 1.-94.-2.3, as well as a few extra bits of work. As of 2025/12/24, the code has disappeared from SourceHut, but the download pages on [https://uilebheist.srht.site] remain, at least for now.
+This repo contains a backup of CLC-INTERCAL, as well as a few extra bits of work. As of 2025/12/24, the code has disappeared from SourceHut, but the download pages on [https://uilebheist.srht.site] remain, at least for now.
+
+This repo was originally created in 2024 when SourceHut got DDOSed.
 
 Make sure to extract the .tar.gz file. Installing from the folder will not work as it has some subfolder naming issues detailed below; the folder is just here so everyone can view the code without having it installed on their system (the SourceHut repository has a few differences from the actual installation).
 
