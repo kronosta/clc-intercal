@@ -1,6 +1,4 @@
-This is version 1.-94.-2.3. SourceHut is up now, so this repo is no longer really necessary, but I'll keep it around as a mirror. 
-
-PLEASE NOTE that I do not plan on regularly updating this to the newest version.
+This repo contains versions 1.00 and 1.-94.-2.3, as well as a few extra bits of work. As of 2025/12/24, the code has disappeared from SourceHut, but the download pages on [https://uilebheist.srht.site] remain, at least for now.
 
 Make sure to extract the .tar.gz file. Installing from the folder will not work as it has some subfolder naming issues detailed below; the folder is just here so everyone can view the code without having it installed on their system (the SourceHut repository has a few differences from the actual installation).
 
@@ -8,7 +6,7 @@ This works in both WSL and Linux on a virtual machine.
 
 
 # 32-bit character limit version
-CLC-INTERCAL unfortunately has a built-in, human-reachable limit of 65535 characters in a program. After toiling away for two days, I have the a version which changes that to about 4 billion. It doesn't work as a tar file because the default .io files aren't sufficient to compile programs.
+CLC-INTERCAL unfortunately has a built-in, human-reachable limit of 65535 characters in a program. After toiling away for two days, I have a version which changes that to about 4 billion. It doesn't work as a tar file because the default .io files aren't sufficient to compile programs.
 
 ## How to install to 1.00
 - Install CLC-INTERCAL 1.00
